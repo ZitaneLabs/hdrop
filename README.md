@@ -4,9 +4,8 @@
 ## API Spec
 
 ### API v1
-Base URL: `/v1`
 
-#### `PUT /file`
+#### `PUT /v1/file`
 > Upload a file.
 
 ##### Request
@@ -14,6 +13,7 @@ Base URL: `/v1`
 {
   "file_data": "bHVsdWx1LnR4dA==",
   "file_name_data": "SGVsbG8sIHdvcmxkIQ==",
+  "file_extension": "txt",
   "iv": "MDAwMDAwMDAwMDAw",
   "salt": "MDAwMDAwMDAwMDAwMDAwMA==",
 }
@@ -39,7 +39,7 @@ Base URL: `/v1`
 }
 ```
 
-#### `GET /file/{shortcode}/metadata`
+#### `GET /v1/file/{shortcode}/metadata`
 > Get metadata for a file.<br>
 
 ##### Response (OK)
@@ -65,7 +65,7 @@ Base URL: `/v1`
 }
 ```
 
-#### `GET /file/{shortcode}`
+#### `GET /v1/file/{shortcode}`
 > Retrieve a file.
 
 ##### Response (OK)

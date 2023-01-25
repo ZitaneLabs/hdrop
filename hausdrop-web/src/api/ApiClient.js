@@ -3,6 +3,9 @@ import { EncryptedFileInfo } from "../util"
 
 const API_BASE = 'http://localhost:8080'
 
+/**
+ * HausDrop API client
+ */
 class ApiClient {
 
     /**
@@ -12,7 +15,7 @@ class ApiClient {
      * @param {(progress: number) => void} onProgress
      * @returns {Promise<number>} Response status code
      */
-static async uploadFile(fileInfo, onProgress) {
+    static async uploadFile(fileInfo, onProgress) {
         /**
          * @type {AxiosRequestConfig}
          */

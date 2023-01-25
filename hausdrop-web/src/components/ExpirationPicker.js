@@ -38,7 +38,8 @@ const ExpirationPicker = ({ className, onExpirationSubmit, active = null, defaul
                         className="expiry"
                         data-active={active === seconds}
                         onClick={() => onExpirationSubmit(seconds)}>
-                        {label}
+                        <span>{label}</span>
+                        <div className="bottom-indicator" />
                     </div>
                 ))}
             </div>
@@ -51,7 +52,7 @@ export default styled(ExpirationPicker)`
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
+    gap: .5rem;
     transition: all .33s ease-in-out;
     opacity: 1;
     pointer-events: all;
@@ -59,45 +60,63 @@ export default styled(ExpirationPicker)`
 
     & .title {
         color: hsl(0,0%,90%);
-        font-size: 1.25rem;
     }
 
     & .expiry__container {
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 1.5rem;
+        border-radius: .5rem;
+        box-shadow: 0 .5rem .75rem hsla(0,0%,0%,.25);
     }
 
     & .expiry {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        width: 3.5rem;
-        height: 3.5rem;
-        font-size: 1.25rem;
-        background: hsl(0,0%,90%);
-        border-radius: 2.5rem;
-        transition: all .2s ease-in-out;
+        position: relative;
+        padding: .5rem 1rem;
+        background: hsl(0,0%,25%);
+        color: hsl(0,0%,80%);
+        transition: all .2s ease;
+        overflow: hidden;
         cursor: pointer;
 
-        &[data-active='false'] {
-            transform: scale(0.9);
+        & .bottom-indicator {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: .1rem;
+            background: hsl(0,0%,30%);
+        }
+        
+        &:first-child {
+            border-top-left-radius: .5rem;
+            border-bottom-left-radius: .5rem;
         }
 
-        &[data-active='true'] {
-            border: .25rem solid hsl(0,0%,75%);
-            box-shadow: 0 0 .5rem 0 hsla(0,0%,100%,.25);
-            transform: scale(1.1);
-            background: hsl(0,0%,45%);
-            color: hsl(0,0%,90%);
+        &:last-child {
+            border-top-right-radius: .5rem;
+            border-bottom-right-radius: .5rem;
         }
 
         &:hover {
-            transform: scale(1.2) rotate(9deg);
-            box-shadow: 0 .25rem .5rem 0 hsla(0,0%,0%,.25);
-            font-size: 1.33rem;
-            border-radius: 2rem;
+            background: hsl(0,0%,30%);
+            color: hsl(0,0%,90%);
+
+            & .bottom-indicator {
+                background: hsl(0,0%,40%);
+            }
+        }
+
+        &[data-active='true'] {
+            background: hsl(0,0%,40%);
+            color: hsl(0,0%,90%);
+
+            & .bottom-indicator {
+                background: hsl(0,0%,50%);
+            }
         }
     }
 

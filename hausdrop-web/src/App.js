@@ -1,25 +1,33 @@
-import logo from './logo.svg';
-import './App.css';
+import styled from 'styled-components'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { RecoilRoot } from 'recoil'
 
-function App() {
+import HomeView from './views/HomeView'
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <HomeView />,
+  },
+  {
+    path: '/:id',
+    element: <HomeView />,
+  }
+])
+
+const App = ({ className }) => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className={className}>
+      <RecoilRoot>
+        <RouterProvider router={router} />
+      </RecoilRoot>
     </div>
-  );
+  )
 }
 
-export default App;
+export default styled(App)`
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+`

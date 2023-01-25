@@ -1,0 +1,330 @@
+openapi: 3.0.3
+
+info:
+  title: HausDrop API v1
+  description: Full specification for the HausDrop API v1.
+  version: 1.0.0
+  contact:
+    email: splittydev@gmail.com
+
+servers:
+  - url: https://hausdrop.io/api/v1
+
+tags:
+  - name: file
+    description: Endpoints for manipulating files
+
+paths:
+  /v1/file:
+    put:
+      summary: Upload a file
+      description: Upload a file
+      tags:
+        - file
+      operationId: uploadFile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadFileRequest'
+        required: true
+      responses:
+        '201':
+          description: File created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadFileResponse'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /v1/file/{access_token}:
+    get:
+      summary: Access a file
+      description: Access a file
+      tags:
+        - file
+      operationId: accessFile
+      parameters:
+        - name: access_token
+          in: path
+          description: Access token for the file
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessFileResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a file
+      description: Delete a file
+      tags:
+        - file
+      operationId: deleteFile
+      parameters:
+        - name: access_token
+          in: path
+          description: Access token for the file
+          required: true
+          schema:
+            type: string
+        - name: update_token
+          in: query
+          description: Update token for the file
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Invalid update token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/file/{access_token}/expiry:
+    post:
+      summary: Update a file's expiry
+      description: Update a file's expiry
+      tags:
+        - file
+      operationId: updateFileExpiry
+      parameters:
+        - name: access_token
+          in: path
+          description: Access token for the file
+          required: true
+          schema:
+            type: string
+        - name: update_token
+          in: query
+          description: Update token for the file
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expiry:
+                  type: integer
+                  example: 3600
+        required: true
+      responses:
+        '200':
+          description: File updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid update token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /v1/file/{access_token}/metadata:
+    get:
+      summary: Access a file
+      description: Access a file
+      tags:
+        - file
+      operationId: accessFileMetadata
+      parameters:
+        - name: access_token
+          in: path
+          description: Access token for the file
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessFileMetadataResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          
+components:
+  schemas:
+    #
+    # Templates
+    #
+    
+    BasicResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/BasicResponse'
+        - type: object
+          properties:
+            status:
+              type: string
+              default: "success"
+    
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/BasicResponse'
+        - type: object
+          properties:
+            status:
+              type: string
+              default: "error"
+            data:
+              type: object
+              properties:
+                reason:
+                  type: string
+    
+    #
+    # Requests
+    #
+    
+    UploadFileRequest:
+      type: object
+      properties:
+        file_data:
+          type: string
+          format: base64
+          example: "bHVsdWx1LnR4dA=="
+        file_name_data:
+          type: string
+          format: base64
+          example: "SGVsbG8sIHdvcmxkIQ=="
+        file_extension:
+          type: string
+          example: "txt"
+        iv:
+          type: string
+          format: base64
+          example: "MDAwMDAwMDAwMDAw"
+        salt:
+          type: string
+          format: base64
+          example: "MDAwMDAwMDAwMDAwMDAwMA=="
+    
+    #
+    # Responses
+    #
+    
+    UploadFileResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            status:
+              type: string
+              default: "success"
+            data:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                  example: "abc123"
+                update_token:
+                  type: string
+                  example: "qec61jytfzj"
+    
+    AccessFileResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            status:
+              type: string
+              default: "success"
+            data:
+              type: object
+              properties:
+                file_data:
+                  type: string
+                  format: base64
+                  example: "bHVsdWx1LnR4dA=="
+                file_name_data:
+                  type: string
+                  format: base64
+                  example: "SGVsbG8sIHdvcmxkIQ=="
+                iv:
+                  type: string
+                  format: base64
+                  example: "MDAwMDAwMDAwMDAw"
+                salt:
+                  type: string
+                  format: base64
+                  example: "MDAwMDAwMDAwMDAwMDAwMA=="
+
+    AccessFileMetadataResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            status:
+              type: string
+              default: "success"
+            data:
+              type: object
+              properties:
+                file_name_data:
+                  type: string
+                  format: base64
+                  example: "SGVsbG8sIHdvcmxkIQ=="
+                iv:
+                  type: string
+                  format: base64
+                  example: "MDAwMDAwMDAwMDAw"
+                salt:
+                  type: string
+                  format: base64
+                  example: "MDAwMDAwMDAwMDAwMDAwMA=="

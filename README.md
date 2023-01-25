@@ -7,7 +7,7 @@
 Base URL: `/v1`
 
 #### `PUT /file`
-Upload a file.
+> Upload a file.
 
 ##### Request
 ```json
@@ -40,7 +40,7 @@ Upload a file.
 ```
 
 #### `GET /file/{shortcode}/metadata`
-Get metadata for a file.
+> Get metadata for a file.<br>
 
 ##### Response (OK)
 ```json
@@ -49,6 +49,8 @@ Get metadata for a file.
     "data": {
         "file_name_data": "SGVsbG8sIHdvcmxkIQ==",
         "file_extension": "txt",
+        "iv": "MDAwMDAwMDAwMDAw",
+        "salt": "MDAwMDAwMDAwMDAwMDAwMA==",
     }
 }
 ```
@@ -64,7 +66,7 @@ Get metadata for a file.
 ```
 
 #### `GET /file/{shortcode}`
-Retrieve a file.
+> Retrieve a file.
 
 ##### Response (OK)
 ```json

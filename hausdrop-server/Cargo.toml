@@ -1,0 +1,16 @@
+[package]
+name = "hausdrop-backend"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.23"
+tokio = { version = "1", features = ["full"] }
+warp = "0.3"
+pretty_env_logger = "0.4.0"
+uuid = { version = "0.8", features = ["v4"] }
+futures = { version = "=0.3.25", default-features = false }
+bytes = "0.5.6"
+rusqlite = { version = "0.28.0", features = ["bundled"] }

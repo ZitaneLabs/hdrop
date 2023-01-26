@@ -1,13 +1,36 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
+const { v4: uuidv4 } = require('uuid')
+const crypto = require('crypto')
 
 const app = express()
-app.use(bodyParser.json())
+app.use(bodyParser.json({ limit: '10gb' }))
 app.use(cors())
 
 const ACCESS_TOKEN = 'abc123'
 const UPDATE_TOKEN = 'def456'
+
+const files = {}
+
+const _generateToken = () => {
+    const uuid = uuidv4()
+    const sha256 = crypto.createHash('sha256').update(uuid).digest('hex')
+    const token = sha256.substring(0, 8)
+    return token
+}
+
+const generateAccessToken = () => {
+    const token = _generateToken()
+    if (token in files) {
+        return generateAccessToken()
+    }
+    return token
+}
+
+const generateUpdateToken = () => {
+    return _generateToken()
+}
 
 app.post('/proxy', (req, res) => {
     console.log(req.body)
@@ -15,18 +38,33 @@ app.post('/proxy', (req, res) => {
 })
 
 app.post('/v1/files', (req, res) => {
+    // Generate tokens
+    const accessToken = generateAccessToken()
+    const updateToken = generateUpdateToken()
+
+    // Store file
+    files[accessToken] = {
+        ...req.body,
+        accessToken,
+        updateToken,
+    }
+
+    // Send response
     res.json({
         status: 'success',
         data: {
-            access_token: ACCESS_TOKEN,
-            update_token: UPDATE_TOKEN,
+            access_token: accessToken,
+            update_token: updateToken,
         }
     })
 })
 
 app.get('/v1/files/:access_token', (req, res) => {
+    // Retrieve file
+    const file = files[req.params.access_token]
+
     // Guard against invalid access token
-    if (req.params.access_token !== ACCESS_TOKEN) {
+    if (!file) {
         return res.status(404).json({
             status: 'error',
             data: {
@@ -34,20 +72,25 @@ app.get('/v1/files/:access_token', (req, res) => {
             }
         })
     }
+
+    // Send response
     res.json({
         status: 'success',
         data: {
-            file_data: "",
-            file_name_data: "",
-            iv: "",
-            salt: "",
+            file_data: file.file_data,
+            file_name_data: file.file_name_data,
+            iv: file.iv,
+            salt: file.salt,
         }
     })
 })
 
 app.get('/v1/files/:access_token/metadata', (req, res) => {
+    // Retrieve file
+    const file = files[req.params.access_token]
+
     // Guard against invalid access token
-    if (req.params.access_token !== ACCESS_TOKEN) {
+    if (!file) {
         return res.status(404).json({
             status: 'error',
             data: {
@@ -55,19 +98,24 @@ app.get('/v1/files/:access_token/metadata', (req, res) => {
             }
         })
     }
+
+    // Send response
     res.json({
         status: 'success',
         data: {
-            file_name_data: "",
-            iv: "",
-            salt: "",
+            file_name_data: file.file_name_data,
+            iv: file.iv,
+            salt: file.salt,
         }
     })
 })
 
 app.delete('/v1/files/:access_token', (req, res) => {
+    // Retrieve file
+    const file = files[req.params.access_token]
+
     // Guard against invalid access token
-    if (req.params.access_token !== ACCESS_TOKEN) {
+    if (!file) {
         return res.status(404).json({
             status: 'error',
             data: {
@@ -75,8 +123,9 @@ app.delete('/v1/files/:access_token', (req, res) => {
             }
         })
     }
+
     // Guard against invalid update token
-    if (req.query('update_token') !== UPDATE_TOKEN) {
+    if (req.query('update_token') !== file.update_token) {
         return res.status(403).json({
             status: 'error',
             data: {
@@ -84,6 +133,11 @@ app.delete('/v1/files/:access_token', (req, res) => {
             }
         })
     }
+
+    // Delete file
+    delete files[req.params.access_token]
+
+    // Send response
     res.json({
         status: 'success',
     })

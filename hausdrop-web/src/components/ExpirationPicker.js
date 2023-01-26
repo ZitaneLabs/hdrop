@@ -60,6 +60,7 @@ export default styled(ExpirationPicker)`
 
     & .title {
         color: hsl(0,0%,90%);
+        cursor: default;
     }
 
     & .expiry__container {

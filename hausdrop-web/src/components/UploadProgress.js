@@ -1,16 +1,31 @@
 import styled from 'styled-components'
-import React, { useState, useMemo, useEffect } from 'react'
-import { Loader } from 'react-feather'
-import { useRecoilState, useRecoilValue } from 'recoil'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil'
 
 import { CryptoUtil } from '../util'
-import { encryptedFileInfoState, fileDataState, fileNameState, passwordState } from '../state'
-import Spinner from '../assets/spinner.svg'
+
+import {
+    encryptedFileInfoState,
+    fileDataState,
+    fileNameState,
+    passwordState,
+    accessTokenState,
+    updateTokenState,
+    fileFullyUploadedState
+} from '../state'
+
 import ApiClient from '../api/ApiClient'
 
-const SYM_STEP_ENCRYPT = Symbol('encrypt')
-const SYM_STEP_UPLOAD = Symbol('upload')
-const SYM_STEP_DONE = Symbol('done')
+import UploadProgressBar from './UploadProgressBar'
+import Spinner from './Spinner'
+import StatusBubbleRow from './StatusBubbleRow'
+import StatusBubble from './StatusBubble'
+import { Check, Cpu, Upload } from 'react-feather'
+
+const SYM_STEP_ENCRYPT = 'encrypt'
+const SYM_STEP_UPLOAD = 'upload'
+const SYM_STEP_DONE = 'done'
+const SYM_STEP_DONE2 = 'done2'
 
 /**
  * 
@@ -29,24 +44,6 @@ const doTimedStep = async (stepPromise, minTime) => {
     return result
 }
 
-const VisEncrypt = ({ className }) => {
-    return (
-        <div className={className}>
-            <div className="lock">
-                <img src={Spinner} alt="Loading" />
-            </div>
-        </div>
-    )
-}
-
-const StyledVisEncrypt = styled(VisEncrypt)`
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: hsl(0, 0%, 90%);
-`
-
 /**
  * 
  * @param {{
@@ -57,10 +54,15 @@ const StyledVisEncrypt = styled(VisEncrypt)`
 const UploadProgress = ({ className }) => {
     const [stepSymbol, setStepSymbol] = useState(SYM_STEP_ENCRYPT)
     const [errorMessage, setErrorMessage] = useState(null)
+    const [uploadProgress, setUploadProgress] = useState(0)
 
     const fileData = useRecoilValue(fileDataState)
     const fileName = useRecoilValue(fileNameState)
     const password = useRecoilValue(passwordState)
+
+    const setAccessToken = useSetRecoilState(accessTokenState)
+    const setUpdateToken = useSetRecoilState(updateTokenState)
+    const setFileFullyUploaded = useSetRecoilState(fileFullyUploadedState)
 
     const [encryptedFileInfo, setEncryptedFileInfo] = useRecoilState(encryptedFileInfoState)
 
@@ -71,33 +73,42 @@ const UploadProgress = ({ className }) => {
     }
 
     const uploadFile = async () => {
-        console.log(encryptedFileInfo)
-        await ApiClient.uploadFile(encryptedFileInfo, progress => {
-            console.log(progress)
+        ApiClient.uploadFile(encryptedFileInfo, progress => {
+            setUploadProgress(progress)
+        }).then(data => {
+            setAccessToken(data.access_token)
+            setUpdateToken(data.update_token)
+        }).catch(({ reason }) => {
+            console.log(reason)
+            setErrorMessage(reason)
         })
     }
 
     const stateMachine = {
         [SYM_STEP_ENCRYPT]: {
-            text: 'Encrypting data...',
             action: encryptFile,
-            visualization: <StyledVisEncrypt />,
+            visualization: <Spinner />,
             transition: SYM_STEP_UPLOAD,
-            minTime: 2000,
+            minTime: 1000,
         },
         [SYM_STEP_UPLOAD]: {
-            text: 'Uploading data...',
             action: uploadFile,
-            visualization: <div />,
+            visualization: <UploadProgressBar progress={uploadProgress} />,
             transition: SYM_STEP_DONE,
-            minTime: 1000
+            minTime: 1000,
         },
         [SYM_STEP_DONE]: {
-            text: 'Done!',
             action: () => {},
             visualization: <div />,
+            transition: SYM_STEP_DONE2,
+            minTime: 500,
+        },
+        [SYM_STEP_DONE2]: {
+            action: () => {
+                setFileFullyUploaded(true)
+            },
+            visualization: <div />,
             transition: null,
-            minTime: 0
         }
     }
 
@@ -122,15 +133,29 @@ const UploadProgress = ({ className }) => {
 
     return (
         <div className={className}>
-            <div className="error">
+            <div className="statusBubbleContainer" data-hidden={stepSymbol === SYM_STEP_DONE2}>
+                <StatusBubbleRow>
+                    <StatusBubble
+                        symbol={Cpu}
+                        label="Encrypting"
+                        isLoading={stepSymbol === SYM_STEP_ENCRYPT}
+                    />
+                    <StatusBubble
+                        symbol={Upload}
+                        label="Uploading"
+                        progress={uploadProgress}
+                        isLoading={stepSymbol === SYM_STEP_UPLOAD}
+                    />
+                    <StatusBubble
+                        symbol={Check}
+                        label="Done"
+                        isLoading={stepSymbol === SYM_STEP_DONE}
+                    />
+                </StatusBubbleRow>
+            </div>
+            <div className="error" data-hidden={errorMessage === null}>
                 {errorMessage}
             </div>
-            {stateMachine[stepSymbol] && (
-                <div className="step">
-                    <span className="step__text">{stateMachine[stepSymbol].text}</span>
-                    <span className="step__visualization">{stateMachine[stepSymbol].visualization}</span>
-                </div>
-            )}
         </div>
     )
 }
@@ -143,12 +168,37 @@ export default styled(UploadProgress)`
     opacity: 0;
     animation: upload-progress-appear .25s ease-in-out forwards;
     color: hsl(0, 0%, 90%);
+    gap: 2rem;
 
-    & .step {
+    & > .statusBubbleContainer {
+        opacity: 1;
+        transform: all .25s ease;
+        pointer-events: none;
+
+        &[data-hidden="true"] {
+            opacity: 0;
+        }
+    }
+
+    & > .error {
         display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 1rem;
+        justify-content: flex-start;
+        align-items: center;
+        padding: .5rem 0.75rem;
+        width: 100%;
+        min-height: calc(1.5rem + (0.5rem * 2) + 4px);
+        line-height: 1.5rem;
+        background-color: hsl(0, 25%, 20%);
+        color: hsl(0, 100%, 85%);
+        border-radius: .5rem;
+        border: 2px solid hsl(0, 33%, 30%);
+        transition: all .25s ease;
+
+        &[data-hidden="true"] {
+            opacity: 0;
+            min-height: 0;
+            padding: 0;
+        }
     }
 
     @keyframes upload-progress-appear {

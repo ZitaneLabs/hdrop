@@ -49,3 +49,27 @@ export const encryptedFileInfoState = atom({
     key: 'encryptedFileInfo',
     default: null,
 })
+
+/**
+ * @type {RecoilState<string | null>}
+ */
+export const accessTokenState = atom({
+    key: 'accessToken',
+    default: null,
+})
+
+/**
+ * @type {RecoilState<string | null>}
+ */
+export const updateTokenState = atom({
+    key: 'updateToken',
+    default: null,
+})
+
+/**
+ * @type {RecoilState<boolean>}
+ */
+export const fileFullyUploadedState = atom({
+    key: 'fileFullyUploaded',
+    default: false,
+})

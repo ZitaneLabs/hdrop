@@ -2,7 +2,7 @@
 
 ### API v1
 
-#### `PUT /v1/file`
+#### `POST /v1/files`
 > Upload a file.
 
 ##### Request
@@ -37,7 +37,7 @@
 }
 ```
 
-#### `POST /v1/file/{access_token}/expiry`
+#### `POST /v1/files/{access_token}/expiry`
 > Update the expiration time for a file.
 
 ##### Request
@@ -70,7 +70,7 @@
 }
 ```
 
-#### `DELETE /v1/file/{access_token}`
+#### `DELETE /v1/files/{access_token}`
 > Delete a file.
 
 ##### Request
@@ -100,7 +100,7 @@
 }
 ```
 
-#### `GET /v1/file/{access_token}`
+#### `GET /v1/files/{access_token}`
 > Retrieve a file.
 
 ##### Response (Success)
@@ -126,7 +126,7 @@
 }
 ```
 
-#### `GET /v1/file/{access_token}/metadata`
+#### `GET /v1/files/{access_token}/metadata`
 > Get metadata for a file.<br>
 
 ##### Response (Success)

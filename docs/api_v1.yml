@@ -11,16 +11,16 @@ servers:
   - url: https://hausdrop.io/api/v1
 
 tags:
-  - name: file
+  - name: files
     description: Endpoints for manipulating files
 
 paths:
-  /v1/file:
-    put:
+  /v1/files:
+    post:
       summary: Upload a file
       description: Upload a file
       tags:
-        - file
+        - files
       operationId: uploadFile
       requestBody:
         content:
@@ -42,12 +42,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   
-  /v1/file/{access_token}:
+  /v1/files/{access_token}:
     get:
       summary: Access a file
       description: Access a file
       tags:
-        - file
+        - files
       operationId: accessFile
       parameters:
         - name: access_token
@@ -73,7 +73,7 @@ paths:
       summary: Delete a file
       description: Delete a file
       tags:
-        - file
+        - files
       operationId: deleteFile
       parameters:
         - name: access_token
@@ -108,12 +108,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /v1/file/{access_token}/expiry:
+  /v1/files/{access_token}/expiry:
     post:
       summary: Update a file's expiry
       description: Update a file's expiry
       tags:
-        - file
+        - files
       operationId: updateFileExpiry
       parameters:
         - name: access_token
@@ -164,12 +164,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   
-  /v1/file/{access_token}/metadata:
+  /v1/files/{access_token}/metadata:
     get:
       summary: Access a file
       description: Access a file
       tags:
-        - file
+        - files
       operationId: accessFileMetadata
       parameters:
         - name: access_token

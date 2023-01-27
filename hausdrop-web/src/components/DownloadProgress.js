@@ -1,10 +1,10 @@
 import styled from 'styled-components'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil'
-import { Check, Cpu, Download } from 'react-feather'
+import { Check, Cpu, Download, Hash, Key } from 'react-feather'
 
 import ApiClient from '../api/ApiClient'
-import { EncryptedFileInfo } from '../util'
+import { Base64Util, CryptoUtil, EncryptedFileInfo } from '../util'
 import {
     passwordState,
     fileFullyDownloadedState,
@@ -19,6 +19,7 @@ import StatusBubbleRow from './StatusBubbleRow'
 import StatusBubble from './StatusBubble'
 import { useParams } from 'react-router-dom'
 
+const SYM_STEP_CHALLENGE = 'challenge'
 const SYM_STEP_DOWNLOAD = 'download'
 const SYM_STEP_DECRYPT = 'decrypt'
 const SYM_STEP_DONE = 'done'
@@ -51,7 +52,7 @@ const doTimedStep = async (stepPromise, minTime) => {
 const DownloadProgress = ({ className }) => {
     const { accessToken } = useParams()
 
-    const [stepSymbol, setStepSymbol] = useState(SYM_STEP_DOWNLOAD)
+    const [stepSymbol, setStepSymbol] = useState(SYM_STEP_CHALLENGE)
     const [errorMessage, setErrorMessage] = useState(null)
     const [downloadProgress, setDownloadProgress] = useState(0)
 
@@ -60,6 +61,44 @@ const DownloadProgress = ({ className }) => {
 
     const [downloadedFileData, setDownloadedFileData] = useRecoilState(downloadedFileInfoState)
     const [decryptedFileInfo, setDecryptedFileInfo] = useRecoilState(decryptedFileInfoState)
+
+    const solveChallenge = async () => {
+        // Request challenge data
+        const challengeResponse = await ApiClient.getChallenge(accessToken);
+
+        // Decode challenge data
+        const challengeData = Base64Util.decode(challengeResponse.challenge)
+        const saltData = Base64Util.decode(challengeResponse.salt)
+        const ivData = Base64Util.decode(challengeResponse.iv)
+
+        // Derive key
+        const recoveredKey = await CryptoUtil.recoverKeyFromPassword(password, saltData, ivData)
+
+        // Solve challenge
+        let challengeSolutionData;
+        try {
+            challengeSolutionData = await CryptoUtil.decryptString(challengeData, recoveredKey)
+        } catch {
+            // Invalid challenge or network error
+            setErrorMessage('Unable to solve cryptographic challenge. Please check your password.')
+
+            // Prevent state transition
+            return false
+        }
+
+        const challengeSolution = await CryptoUtil.hashStringHex(challengeSolutionData)
+
+        try {
+            // Submit challenge
+            await ApiClient.submitChallenge(accessToken, challengeSolution)
+        } catch {
+            // Invalid challenge or network error
+            setErrorMessage('Unable to solve cryptographic challenge. Please check your password.')
+
+            // Prevent state transition
+            return false
+        }
+    }
 
     const downloadFile = async () => {
         ApiClient.getFile(accessToken, progress => {
@@ -77,26 +116,33 @@ const DownloadProgress = ({ className }) => {
             downloadedFileData,
             password
         )
+        console.log(encryptedFileInfo)
         const fileInfo = await encryptedFileInfo.decrypt()
         setDecryptedFileInfo(fileInfo)
     }
 
     const stateMachine = {
+        [SYM_STEP_CHALLENGE]: {
+            action: solveChallenge,
+            visualization: <Spinner />,
+            transition: SYM_STEP_DOWNLOAD,
+            minTime: 250,
+        },
         [SYM_STEP_DOWNLOAD]: {
             action: downloadFile,
             visualization: <UploadProgressBar progress={downloadProgress} />,
             transition: SYM_STEP_DECRYPT,
-            minTime: 1000,
+            minTime: 250,
         },
         [SYM_STEP_DECRYPT]: {
             action: decryptFile,
             visualization: <Spinner />,
             transition: SYM_STEP_DONE,
-            minTime: 1000,
+            minTime: 500,
         },
         [SYM_STEP_DONE]: {
             action: () => {},
-            visualization: <div />,
+            visualization: null,
             transition: SYM_STEP_DONE2,
             minTime: 500,
         },
@@ -104,7 +150,7 @@ const DownloadProgress = ({ className }) => {
             action: () => {
                 setFileFullyDownloaded(true)
             },
-            visualization: <div />,
+            visualization: null,
             transition: null,
         }
     }
@@ -117,7 +163,9 @@ const DownloadProgress = ({ className }) => {
     
             const { action, transition, minTime } = state
             try {
-                await doTimedStep(action, minTime)
+                if (await doTimedStep(action, minTime) === false) {
+                    return
+                }
                 if (transition) {
                     setStepSymbol(transition)
                 }
@@ -133,6 +181,11 @@ const DownloadProgress = ({ className }) => {
             {stepSymbol !== SYM_STEP_DONE2 && (
                 <div className="statusBubbleContainer">
                     <StatusBubbleRow>
+                        <StatusBubble
+                            symbol={Key}
+                            label="Validating"
+                            isLoading={stepSymbol === SYM_STEP_CHALLENGE}
+                        />
                         <StatusBubble
                             symbol={Download}
                             label="Downloading"

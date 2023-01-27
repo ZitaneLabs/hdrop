@@ -59,6 +59,30 @@ export default class CryptoUtil {
     }
 
     /**
+     * Hashes data using SHA-256 and returns a hex string.
+     * 
+     * @param {Uint8Array} data
+     * @returns {Promise<string>} Hashed hex string
+     */
+    static async hashDataHex(data) {
+        const hashData = await window.crypto.subtle.digest('SHA-256', data)
+        const hashArray = Array.from(new Uint8Array(hashData))
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    }
+
+    /**
+     * Hashes a string using SHA-256 and returns a hex string.
+     * 
+     * @param {string} str
+     * @returns {Promise<string>} Hashed hex string
+     */
+    static async hashStringHex(str) {
+        const textEncoder = new TextEncoder()
+        const data = textEncoder.encode(str)
+        return await CryptoUtil.hashDataHex(data)
+    }
+
+    /**
      * Encrypts a file using AES-GCM.
      * 
      * @param {Uint8Array} data 
@@ -131,7 +155,8 @@ export default class CryptoUtil {
     static async encryptFile(fileData, fileName, derivedKeyInfo) {
         const fileDataEncrypted = new Uint8Array(await CryptoUtil.encryptData(fileData, derivedKeyInfo))
         const fileNameEncrypted = new Uint8Array(await CryptoUtil.encryptString(fileName, derivedKeyInfo))
-        return new EncryptedFileInfo(fileDataEncrypted, fileNameEncrypted, derivedKeyInfo)
+        const fileNameHash = await CryptoUtil.hashStringHex(fileName)
+        return new EncryptedFileInfo(fileDataEncrypted, fileNameEncrypted, fileNameHash, derivedKeyInfo)
     }
 
     /**

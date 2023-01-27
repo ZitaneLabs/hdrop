@@ -100,7 +100,9 @@ app.get('/v1/files/:access_token/challenge', (req, res) => {
     res.json({
         status: 'success',
         data: {
-            challenge: file.challenge,
+            challenge: file.file_name_data,
+            iv: file.iv,
+            salt: file.salt,
         }
     })
 })
@@ -120,7 +122,7 @@ app.post('/v1/files/:access_token/challenge', (req, res) => {
     }
 
     // Guard against invalid challenge
-    if (req.body.challenge !== file.challenge) {
+    if (req.body.challenge !== file.file_name_hash) {
         return res.status(403).json({
             status: 'error',
             data: {

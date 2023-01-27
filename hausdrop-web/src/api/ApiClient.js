@@ -16,9 +16,9 @@ const HOMEPAGE = 'http://localhost:3000'
 const API_BASE = 'http://localhost:8080'
 
 /**
- * Identity function that does nothing.
+ * A function that does nothing.
  */
-const IdentityVoid = () => {}
+const NoopHandler = () => {}
 
 /**
  * HausDrop API client
@@ -58,12 +58,12 @@ class ApiClient {
     /**
      * Upload a file to the server.
      * 
-     * @typedef {{ access_token: string, update_token: string }} ResponseData
+     * @typedef {{ access_token: string, update_token: string }} UploadFileResponse
      * @param {EncryptedFileInfo} fileInfo
      * @param {(progress: number) => void} onProgressChange
-     * @returns {Promise<ResponseData>} Response data
+     * @returns {Promise<UploadFileResponse>} Response data
      */
-    static async uploadFile(fileInfo, onProgressChange) {
+    static async uploadFile(fileInfo, onProgressChange = NoopHandler) {
         /**
          * @type {AxiosRequestConfig}
          */
@@ -77,6 +77,7 @@ class ApiClient {
         const data = {
             file_data: fileInfo.fileDataBase64(),
             file_name_data: fileInfo.fileNameDataBase64(),
+            file_name_hash: fileInfo.challenge(),
             iv: fileInfo.ivBase64(),
             salt: fileInfo.saltBase64(),
         }
@@ -98,7 +99,7 @@ class ApiClient {
      * @param {(progress: number) => void} onProgressChange Progress change callback
      * @returns {Promise<void>}
      */
-    static async updateFileExpiration(accessToken, updateToken, expirationS, onProgressChange = IdentityVoid) {
+    static async updateFileExpiration(accessToken, updateToken, expirationS, onProgressChange = NoopHandler) {
         /**
          * @type {AxiosRequestConfig}
          */
@@ -122,14 +123,72 @@ class ApiClient {
     }
 
     /**
-     * Get a file from the server.
+     * Request a file challenge from the server.
      * 
-     * @typedef {{ file_data: string, file_name_data: string, iv: string, salt: string }} ResponseData
+     * @typedef {{ challenge: string, salt: string, iv: string, }} GetChallengeResponse
      * @param {string} accessToken Access token
      * @param {(progress: number) => void} onProgressChange
-     * @returns {Promise<ResponseData>} Response data
+     * @returns {Promise<GetChallengeResponse>} Response data
      */
-    static async getFile(accessToken, onProgressChange = IdentityVoid) {
+    static async getChallenge(accessToken, onProgressChange = NoopHandler) {
+        /**
+         * @type {AxiosRequestConfig}
+         */
+        const config = {
+            onUploadProgress: progressEvent => {
+                onProgressChange(progressEvent.loaded / progressEvent.total)
+            }
+        }
+
+        // Send request
+        const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}/challenge`)
+        const resp = await axios.get(endpoint, config)
+
+        // Process response
+        return ApiClient.processResponse(resp)
+    }
+
+    /**
+     * Submit a file challenge to the server.
+     * 
+     * @typedef {{ salt: string, iv: string, }} SubmitChallengeResponse
+     * @param {string} accessToken Access token
+     * @param {string} challengeSolution Challenge solution hash
+     * @param {(progress: number) => void} onProgressChange
+     * @returns {Promise<SubmitChallengeResponse>} Response data
+     */
+    static async submitChallenge(accessToken, challengeSolution, onProgressChange = NoopHandler) {
+        /**
+         * @type {AxiosRequestConfig}
+         */
+        const config = {
+            onUploadProgress: progressEvent => {
+                onProgressChange(progressEvent.loaded / progressEvent.total)
+            }
+        }
+
+        // Prepare request data
+        const data = {
+            challenge: challengeSolution
+        }
+
+        // Send request
+        const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}/challenge`)
+        const resp = await axios.post(endpoint, data, config)
+
+        // Process response
+        return ApiClient.processResponse(resp)
+    }
+
+    /**
+     * Get a file from the server.
+     * 
+     * @typedef {{ file_data: string, file_name_data: string, iv: string, salt: string }} GetFileResponse
+     * @param {string} accessToken Access token
+     * @param {(progress: number) => void} onProgressChange
+     * @returns {Promise<GetFileResponse>} Response data
+     */
+    static async getFile(accessToken, onProgressChange = NoopHandler) {
         /**
          * @type {AxiosRequestConfig}
          */
@@ -148,32 +207,6 @@ class ApiClient {
     }
 
     /**
-     * Get the metadata of a file from the server.
-     * 
-     * @typedef {{ file_name_data: string, iv: string, salt: string }} ResponseData
-     * @param {string} accessToken Access token
-     * @param {(progress: number) => void} onProgressChange Progress change callback
-     * @returns {Promise<ResponseData>} Response data
-     */
-    static async getFileMetadata(accessToken, onProgressChange = IdentityVoid) {
-        /**
-         * @type {AxiosRequestConfig}
-         */
-        const config = {
-            onUploadProgress: progressEvent => {
-                onProgressChange(progressEvent.loaded / progressEvent.total)
-            }
-        }
-
-        // Send request
-        const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}/metadata`)
-        const resp = await axios.get(endpoint, config)
-
-        // Process response
-        return ApiClient.processResponse(resp)
-    }
-
-    /**
      * Delete a file from the server.
      * 
      * @param {string} accessToken Access token
@@ -181,7 +214,7 @@ class ApiClient {
      * @param {(progress: number) => void} onProgressChange
      * @returns {Promise<void>}
      */
-    static async deleteFile(accessToken, updateToken, onProgressChange = IdentityVoid) {
+    static async deleteFile(accessToken, updateToken, onProgressChange = NoopHandler) {
         /**
          * @type {AxiosRequestConfig}
          */

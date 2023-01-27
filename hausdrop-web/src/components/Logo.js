@@ -6,7 +6,7 @@ const Logo = ({ className }) => {
     const navigate = useNavigate()
 
     const handleClick = () => {
-        navigate('/')
+        window.location.href = '/'
     }
 
     return (

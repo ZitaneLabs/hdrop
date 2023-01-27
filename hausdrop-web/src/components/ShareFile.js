@@ -12,12 +12,13 @@ const ShareFile = ({ className }) => {
     const password = useRecoilValue(passwordState)
 
     const link = useMemo(() => ApiClient.generateLink(accessToken), [accessToken])
+    const linkDisplayText = useMemo(() => link.replace(/https?:\/{2}/, ''), [link])
 
     return (
         <div className={className}>
             <div className="link">
                 <a href={link} target="_blank" rel="noreferrer">
-                    {link.replace(/https?:\/{2}/, '')}
+                    {linkDisplayText}
                 </a>
             </div>
             <CopyToClipboard label="Link" value={link} />

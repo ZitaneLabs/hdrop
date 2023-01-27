@@ -9,7 +9,10 @@ const View = ({ className, children }) => {
             <div className="inner">
                 {children}
             </div>
-            <div className="waves">
+            <div className="footer">
+                <div className="links">
+                    <a href="/security">Security</a>
+                </div>
                 <div className="wave-container">
                     <Wave
                         fill='hsl(0,0%,25%)'
@@ -44,12 +47,36 @@ export default styled(View)`
         justify-content: center;
     }
 
-    & > .waves {
+    & > .footer {
         position: absolute;
         bottom: 0;
         height: 4rem;
         position: relative;
         width: 100%;
+
+        & > .links {
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: hsl(0,0%,90%);
+            gap: 1rem;
+            text-transform: uppercase;
+
+            a {
+                color: inherit;
+                text-decoration: none;
+                border-bottom: 1px solid hsl(0,0%,45%);
+                font-size: 0.8rem;
+
+                &:hover {
+                    border-bottom: 1px solid hsl(0,0%,75%);
+                }
+            }
+        }
 
         & > .wave-container {
             width: 100%;

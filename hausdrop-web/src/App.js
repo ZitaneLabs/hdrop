@@ -5,6 +5,7 @@ import { RecoilRoot } from 'recoil'
 import HomeView from './views/HomeView'
 import FileDetailView from './views/FileDetailView'
 import Logo from './components/Logo'
+import SecurityView from './views/SecurityView'
 
 const router = createBrowserRouter([
   {
@@ -18,7 +19,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/security',
-    element: <div />,
+    element: <SecurityView />,
   }
 ])
 

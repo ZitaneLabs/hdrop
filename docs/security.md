@@ -72,10 +72,10 @@
 #### Server
 
 1. Check challenge solution `Cs` against hashed file name `C`
-   A. `IF Cs == C`: Challenge solved, respond with success
-   B. `IF Cs != C`: Challenge failed, respond with error
+   - `IF Cs == C`: Challenge solved, respond with success
+   - `IF Cs != C`: Challenge failed, respond with error
 
-#### File Decryption
+### File Decryption
 
 1. Decrypt encrypted file contents `EFc` using `AES-256-GCM-DEC(IV, K, EFc)`
    - Producing file contents `Fc`

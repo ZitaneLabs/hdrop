@@ -121,7 +121,6 @@
 {
     "status": "success",
     "data": {
-        "file_name_data": "bHVsdWx1LnR4dA==",
         "iv": "MDAwMDAwMDAwMDAw",
         "salt": "MDAwMDAwMDAwMDAwMDAwMA==",
     }

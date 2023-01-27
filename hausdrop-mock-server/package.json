@@ -5,6 +5,7 @@
   "repository": "https://github.com/splittydev/hausdrop",
   "author": "Marco Quinten",
   "license": "SEE LICENSE IN LICENSE.md",
+  "type": "module",
   "private": true,
   "scripts": {
     "start": "node src/main.js"

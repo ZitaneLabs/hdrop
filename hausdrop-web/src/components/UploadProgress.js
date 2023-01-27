@@ -133,26 +133,28 @@ const UploadProgress = ({ className }) => {
 
     return (
         <div className={className}>
-            <div className="statusBubbleContainer" data-hidden={stepSymbol === SYM_STEP_DONE2}>
-                <StatusBubbleRow>
-                    <StatusBubble
-                        symbol={Cpu}
-                        label="Encrypting"
-                        isLoading={stepSymbol === SYM_STEP_ENCRYPT}
-                    />
-                    <StatusBubble
-                        symbol={Upload}
-                        label="Uploading"
-                        progress={uploadProgress}
-                        isLoading={stepSymbol === SYM_STEP_UPLOAD}
-                    />
-                    <StatusBubble
-                        symbol={Check}
-                        label="Done"
-                        isLoading={stepSymbol === SYM_STEP_DONE}
-                    />
-                </StatusBubbleRow>
-            </div>
+            {stepSymbol !== SYM_STEP_DONE2 && (
+                <div className="statusBubbleContainer">
+                    <StatusBubbleRow>
+                        <StatusBubble
+                            symbol={Cpu}
+                            label="Encrypting"
+                            isLoading={stepSymbol === SYM_STEP_ENCRYPT}
+                        />
+                        <StatusBubble
+                            symbol={Upload}
+                            label="Uploading"
+                            progress={uploadProgress}
+                            isLoading={stepSymbol === SYM_STEP_UPLOAD}
+                        />
+                        <StatusBubble
+                            symbol={Check}
+                            label="Done"
+                            isLoading={stepSymbol === SYM_STEP_DONE}
+                        />
+                    </StatusBubbleRow>
+                </div>
+            )}
             <div className="error" data-hidden={errorMessage === null}>
                 {errorMessage}
             </div>
@@ -165,19 +167,18 @@ export default styled(UploadProgress)`
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    opacity: 0;
-    animation: upload-progress-appear .25s ease-in-out forwards;
     color: hsl(0, 0%, 90%);
     gap: 2rem;
+    
+    opacity: 0;
+    animation: appear .25s ease forwards;
 
     & > .statusBubbleContainer {
-        opacity: 1;
         transform: all .25s ease;
         pointer-events: none;
-
-        &[data-hidden="true"] {
-            opacity: 0;
-        }
+        
+        opacity: 0;
+        animation: appear .25s ease forwards;
     }
 
     & > .error {
@@ -199,10 +200,5 @@ export default styled(UploadProgress)`
             min-height: 0;
             padding: 0;
         }
-    }
-
-    @keyframes upload-progress-appear {
-        from { opacity: 0; }
-        to { opacity: 1; }
     }
 `

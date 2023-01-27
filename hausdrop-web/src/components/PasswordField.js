@@ -112,13 +112,14 @@ export default styled(PasswordField)`
     min-width: 300px;
     width: 100%;
     max-width: 750px;
-    position: absolute;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    opacity: 1;
     pointer-events: all;
+
+    opacity: 0;
+    animation: appear .25s ease forwards;
 
     & .inputField {
         -webkit-appearance: none;
@@ -187,15 +188,6 @@ export default styled(PasswordField)`
             &[data-hidden='true'] {
                 opacity: 0;
             }
-        }
-    }
-
-    &[data-hidden='true'] {
-        opacity: 0;
-        pointer-events: none;
-
-        & .inputField {
-            transform: scale(0);
         }
     }
 `

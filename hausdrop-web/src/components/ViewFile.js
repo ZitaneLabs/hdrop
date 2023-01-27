@@ -51,8 +51,10 @@ export default styled(ViewFile)`
     justify-content: center;
     color: hsl(0, 0%, 90%);
     pointer-events: all;
-    animation: viewFileFadein 0.25s ease forwards;
     gap: 2rem;
+
+    opacity: 0;
+    animation: appear .25s ease forwards;
 
     & .file {
         display: flex;
@@ -84,8 +86,8 @@ export default styled(ViewFile)`
             
             img {
                 object-fit: contain;
-                width: 33vw;
-                height: 33vh;
+                max-width: 33vw;
+                max-height: 33vh;
                 border-radius: .25rem;
             }
 
@@ -110,10 +112,5 @@ export default styled(ViewFile)`
             color: hsl(0, 0%, 90%);
             text-decoration: none;
         }
-    }
-
-    @keyframes viewFileFadein {
-        from { opacity: 0; }
-        to { opacity: 1; }
     }
 `

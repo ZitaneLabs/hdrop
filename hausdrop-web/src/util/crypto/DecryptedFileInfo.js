@@ -48,6 +48,7 @@ export default class DecryptedFileInfo {
             'jpeg',
             'gif',
             'tiff',
+            'webp',
         ].includes(this.extension())
     }
 
@@ -81,6 +82,7 @@ export default class DecryptedFileInfo {
             'jpeg': 'image/jpeg',
             'gif': 'image/gif',
             'tiff': 'image/tiff',
+            'webp': 'image/webp',
         }
 
         // Get mime type by extension

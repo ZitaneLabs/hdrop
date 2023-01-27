@@ -1,6 +1,6 @@
 import { atom, RecoilState } from 'recoil'
 
-import { EncryptedFileInfo } from '../util'
+import { EncryptedFileInfo, DecryptedFileInfo } from '../util'
 
 /**
  * @type {RecoilState<Uint8Array | null>}
@@ -51,6 +51,22 @@ export const encryptedFileInfoState = atom({
 })
 
 /**
+ * @type {RecoilState<EncryptedFileInfo | null>}
+ */
+export const downloadedFileInfoState = atom({
+    key: 'downloadedFileInfo',
+    default: null,
+})
+
+/**
+ * @type {RecoilState<DecryptedFileInfo | null>}
+ */
+export const decryptedFileInfoState = atom({
+    key: 'decryptedFileInfo',
+    default: null,
+})
+
+/**
  * @type {RecoilState<string | null>}
  */
 export const accessTokenState = atom({
@@ -71,5 +87,13 @@ export const updateTokenState = atom({
  */
 export const fileFullyUploadedState = atom({
     key: 'fileFullyUploaded',
+    default: false,
+})
+
+/**
+ * @type {RecoilState<boolean>}
+ */
+export const fileFullyDownloadedState = atom({
+    key: 'fileFullyDownloaded',
     default: false,
 })

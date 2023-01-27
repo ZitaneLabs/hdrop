@@ -41,6 +41,8 @@ const HomeView = ({ className }) => {
                 {/* Stage 2: Enter password */}
                 <PasswordField
                     hidden={fileData === null || password !== null}
+                    showComplexityScore
+                    allowPasswordGeneration
                 />
 
                 {/* Stage 3: Encryption and upload */}

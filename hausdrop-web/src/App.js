@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { RecoilRoot } from 'recoil'
 
 import HomeView from './views/HomeView'
+import FileDetailView from './views/FileDetailView'
 
 const router = createBrowserRouter([
   {
@@ -10,8 +11,8 @@ const router = createBrowserRouter([
     element: <HomeView />,
   },
   {
-    path: '/:id',
-    element: <HomeView />,
+    path: '/:accessToken',
+    element: <FileDetailView />,
   }
 ])
 

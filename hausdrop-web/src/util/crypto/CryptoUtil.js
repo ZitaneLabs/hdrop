@@ -1,61 +1,9 @@
-import Base64Util from "./Base64Util"
+import { DerivedKeyInfo, EncryptedFileInfo, DecryptedFileInfo } from ".."
 
 /**
- * Holds derived PBKDF2 key data.
- * Includes PBKDF2 salt and AES-GCM IV.
+ * A utility class for encrypting and decrypting data.
  */
-class DerivedKeyInfo {
-    /**
-     * 
-     * @param {CryptoKey} key 
-     * @param {Uint8Array} salt 
-     * @param {Uint8Array} iv
-     */
-    constructor(key, salt, iv) {
-        this.key = key
-        this.salt = salt
-        this.iv = iv
-    }
-}
-
-/**
- * Holds encrypted file data.
- * 
- * Includes encrypted file contents and file name,
- * as well as derived key info and utilities for
- * converting data to base64.
- */
-class EncryptedFileInfo {
-    /**
-     * 
-     * @param {Uint8Array} file_data 
-     * @param {Uint8Array} file_name_data 
-     * @param {DerivedKeyInfo} derived_key_info 
-     */
-    constructor(file_data, file_name_data, derived_key_info) {
-        this.file_data = file_data
-        this.file_name_data = file_name_data
-        this.derived_key_info = derived_key_info
-    }
-
-    fileDataBase64() {
-        return Base64Util.encode(this.file_data)
-    }
-
-    fileNameDataBase64() {
-        return Base64Util.encode(this.file_name_data)
-    }
-
-    ivBase64() {
-        return Base64Util.encode(this.derived_key_info.iv)
-    }
-
-    saltBase64() {
-        return Base64Util.encode(this.derived_key_info.salt)
-    }
-}
-
-class CryptoUtil {
+export default class CryptoUtil {
     /**
      * Derives a PBKDF2 key for AES-GCM encryption.
      * 
@@ -84,6 +32,33 @@ class CryptoUtil {
     }
 
     /**
+     *  Recovers a PBKDF2 key for AES-GCM encryption.
+     * 
+     * @param {string} password
+     * @param {Uint8Array} salt
+     * @param {Uint8Array} iv
+     * @returns {Promise<DerivedKeyInfo>}
+     */
+    static async recoverKeyFromPassword(password, salt, iv) {
+        const textEncoder = new TextEncoder()
+        const passwordBuffer = textEncoder.encode(password)
+        const importedKey = await window.crypto.subtle.importKey('raw', passwordBuffer, 'PBKDF2', false, ['deriveKey'])
+        const derivedKey = await window.crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt,
+                iterations: 100000,
+                hash: 'SHA-256',
+            },
+            importedKey,
+            { name: 'AES-GCM', length: 256 },
+            true,
+            ['encrypt', 'decrypt']
+        )
+        return new DerivedKeyInfo(derivedKey, salt, iv)
+    }
+
+    /**
      * Encrypts a file using AES-GCM.
      * 
      * @param {Uint8Array} data 
@@ -92,6 +67,26 @@ class CryptoUtil {
      */
     static async encryptData(data, derivedKeyInfo) {
         return await window.crypto.subtle.encrypt(
+            {
+                name: 'AES-GCM',
+                iv: derivedKeyInfo.iv,
+                additionalData: new ArrayBuffer(0),
+                tagLength: 128,
+            },
+            derivedKeyInfo.key,
+            data
+        )
+    }
+
+    /**
+     * Decrypts a file using AES-GCM.
+     * 
+     * @param {Uint8Array} data 
+     * @param {DerivedKeyInfo} derivedKeyInfo 
+     * @returns {Promise<ArrayBuffer>}
+     */
+    static async decryptData(data, derivedKeyInfo) {
+        return await window.crypto.subtle.decrypt(
             {
                 name: 'AES-GCM',
                 iv: derivedKeyInfo.iv,
@@ -116,6 +111,18 @@ class CryptoUtil {
     }
 
     /**
+     * 
+     * @param {Uint8Array} data
+     * @param {DerivedKeyInfo} derivedKeyInfo  
+     * @returns {Promise<ArrayBuffer>}
+     */
+    static async decryptString(data, derivedKeyInfo) {
+        const textDecoder = new TextDecoder()
+        const decryptedData = await CryptoUtil.decryptData(data, derivedKeyInfo)
+        return textDecoder.decode(decryptedData)
+    }
+
+    /**
      * @param {Uint8Array} fileData
      * @param {string} fileName
      * @param {DerivedKeyInfo} derivedKeyInfo
@@ -126,7 +133,15 @@ class CryptoUtil {
         const fileNameEncrypted = new Uint8Array(await CryptoUtil.encryptString(fileName, derivedKeyInfo))
         return new EncryptedFileInfo(fileDataEncrypted, fileNameEncrypted, derivedKeyInfo)
     }
-}
 
-export default CryptoUtil
-export { DerivedKeyInfo, EncryptedFileInfo }
+    /**
+     * @param {Uint8Array} encryptedFileData
+     * @param {string} fileName
+     * @param {DerivedKeyInfo} derivedKeyInfo
+     * @returns {Promise<DecryptedFileInfo>}
+     */
+    static async decryptFile(encryptedFileData, fileName, derivedKeyInfo) {
+        const fileData = new Uint8Array(await CryptoUtil.decryptData(encryptedFileData, derivedKeyInfo))
+        return new DecryptedFileInfo(fileData, fileName)
+    }
+}

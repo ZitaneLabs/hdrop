@@ -24,7 +24,7 @@ const ExpirationPicker = ({ className, onExpirationSubmit, active = null, defaul
         if (defaultValue) {
             onExpirationSubmit(defaultValue)
         }
-    }, [hidden])
+    }, [hidden, defaultValue])
 
     return (
         <div className={className} data-hidden={hidden}>

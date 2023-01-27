@@ -1,14 +1,14 @@
 openapi: 3.0.3
 
 info:
-  title: HausDrop API v1
-  description: Full specification for the HausDrop API v1.
+  title: hdrop API v1
+  description: Full specification for the hdrop API v1.
   version: 1.0.0
   contact:
     email: splittydev@gmail.com
 
 servers:
-  - url: https://hausdrop.io/api/v1
+  - url: https://hdrop.io/api/v1
 
 tags:
   - name: files

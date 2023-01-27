@@ -1,4 +1,4 @@
-# Hausdrop
+# hdrop
 > Simple, self-hosted encrypted file transfer.
 
 ## Docs

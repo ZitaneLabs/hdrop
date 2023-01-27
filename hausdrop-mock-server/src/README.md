@@ -1,6 +1,6 @@
-# Hausdrop Mock API
+# hdrop Mock API
 
-This is a mock API server for Hausdrop. It is used for testing the Hausdrop client.
+This is a mock API server for hdrop. It is used for testing the hdrop client.
 
 ## Usage
 

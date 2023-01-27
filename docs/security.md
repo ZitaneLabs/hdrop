@@ -1,9 +1,9 @@
 # Security
-> This document describes the HausDrop security model in detail.
+> This document describes the hdrop security model in detail.
 
 ## Crypto APIs
 
-Hausdrop exclusively uses `WebCrypto` APIs for all cryptographic operations.
+hdrop exclusively uses `WebCrypto` APIs for all cryptographic operations.
 
 ## File Storage
 

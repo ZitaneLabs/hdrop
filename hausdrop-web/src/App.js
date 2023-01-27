@@ -14,6 +14,11 @@ const router = createBrowserRouter([
   {
     path: '/:accessToken',
     element: <FileDetailView />,
+    caseSensitive: true,
+  },
+  {
+    path: '/security',
+    element: <div />,
   }
 ])
 

@@ -1,18 +1,15 @@
 import styled from 'styled-components'
-import { Home } from 'react-feather'
-import { useNavigate } from 'react-router-dom'
+import { Droplet } from 'react-feather'
 
 const Logo = ({ className }) => {
-    const navigate = useNavigate()
-
     const handleClick = () => {
         window.location.href = '/'
     }
 
     return (
         <div className={className} onClick={handleClick}>
-            <span><Home size={32} /></span>
-            <span>HausDrop</span>
+            <span><Droplet size={32} /></span>
+            <span>hdrop</span>
         </div>
     )
 }

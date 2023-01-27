@@ -21,7 +21,7 @@ const API_BASE = 'http://localhost:8080'
 const NoopHandler = () => {}
 
 /**
- * HausDrop API client
+ * hdrop API client
  */
 class ApiClient {
     /**

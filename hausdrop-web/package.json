@@ -1,5 +1,5 @@
 {
-  "name": "hausdrop-web",
+  "name": "hdrop-web",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -14,6 +14,7 @@
     "react-file-drop": "^3.1.6",
     "react-router-dom": "^6.7.0",
     "react-scripts": "5.0.1",
+    "react-wavify": "^1.7.0",
     "recoil": "^0.7.6",
     "styled-components": "^5.3.6",
     "web-vitals": "^2.1.4",

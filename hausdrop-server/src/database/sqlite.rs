@@ -16,14 +16,15 @@ impl Database {
         db.connection.execute(
             "CREATE TABLE IF NOT EXISTS files (
                 id          INTEGER PRIMARY KEY,
-                filename     BLOB,
-                uuid         TEXT,
-                short_code   TEXT,
-                update_token TEXT,
-                salt         BLOB,
-                iv           BLOB,
-                created_at   TEXT,
-                expires_at   TEXT,
+                filename_enc     BLOB,
+                filename_hash    TEXT,
+                uuid             TEXT,
+                short_code       TEXT,
+                update_token     TEXT,
+                salt             BLOB,
+                iv               BLOB,
+                created_at       TEXT,
+                expires_at       TEXT,
             );
 
             CREATE TABLE IF NOT EXISTS statistics (
@@ -50,8 +51,8 @@ impl Database {
     pub fn insert_file(&self, file: File) -> Result<()> {
         todo!();
         self.connection.execute(
-            "INSERT INTO files (filename, uuid, short_code, update_token, salt, iv, created_at, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            (&file.filename, 
+            "INSERT INTO files (filename_enc, filename_hash, uuid, short_code, update_token, salt, iv, created_at, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            (&file.filename_enc, &file.filename_hash,
                 &file.access_token.uuid.to_string(), 
                 &file.access_token.short_code.to_string(), 
                 &file.access_token.update_token.to_string(), 
@@ -69,7 +70,8 @@ impl Database {
 }
 
 struct File {
-    filename: Vec<u8>,
+    filename_enc: Vec<u8>,
+    filename_hash: String,
     access_token: AccessToken,
     salt: Vec<u8>,
     iv: Vec<u8>,
@@ -85,7 +87,8 @@ struct AccessToken {
 
 impl File {
     pub fn new(
-        filename: Vec<u8>,
+        filename_enc: Vec<u8>,
+        filename_hash: String,
         access_token: AccessToken,
         salt: Vec<u8>,
         iv: Vec<u8>,
@@ -94,7 +97,8 @@ impl File {
         let time = Utc::now();
 
         let file = File {
-            filename,
+            filename_enc,
+            filename_hash,
             access_token,
             salt,
             iv,

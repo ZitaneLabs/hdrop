@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.23"
 tokio = { version = "1", features = ["full"] }
+serde =  { version = "1.0.152", features = ["derive"] }
 warp = "0.3"
 pretty_env_logger = "0.4.0"
 uuid = { version = "0.8", features = ["v4"] }

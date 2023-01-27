@@ -2,37 +2,37 @@
 
 ### API v1
 
+##### Error Response Format
+```json
+{
+    "status": "error",
+    "data": {
+        "reason": "Error reason.",
+    }
+}
+```
+
 #### `POST /v1/files`
 > Upload a file.
 
 ##### Request
 ```json
 {
-  "file_data": "bHVsdWx1LnR4dA==",
-  "file_name_data": "SGVsbG8sIHdvcmxkIQ==",
+  "file_data": "SGVsbG8sIHdvcmxkIQ==",
+  "file_name_data": "bHVsdWx1LnR4dA==",
   "file_extension": "txt",
   "iv": "MDAwMDAwMDAwMDAw",
   "salt": "MDAwMDAwMDAwMDAwMDAwMA==",
 }
 ```
 
-##### Response (Success)
+##### Response
 ```json
 {
     "status": "success",
     "data": {
         "access_token": "abc123",
         "update_token": "qec61jytfzj",
-    }
-}
-```
-
-##### Response (Error)
-```json
-{
-    "status": "error",
-    "data": {
-        "reason": "File too big (max 5GB)"
     }
 }
 ```
@@ -60,16 +60,6 @@
 }
 ```
 
-##### Response (Error)
-```json
-{
-    "status": "error",
-    "data": {
-        "reason": "Invalid update token"
-    }
-}
-```
-
 #### `DELETE /v1/files/{access_token}`
 > Delete a file.
 
@@ -81,7 +71,7 @@
 | -------------- | -------- | -------------------------- |
 | `update_token` | `string` | Needed for authentication. |
 
-##### Response (Success)
+##### Response
 
 ```json
 {
@@ -89,64 +79,51 @@
 }
 ```
 
-##### Response (Error)
-
-```json
-{
-    "status": "error",
-    "data": {
-        "reason": "Invalid update token"
-    }
-}
-```
-
 #### `GET /v1/files/{access_token}`
 > Retrieve a file.
 
-##### Response (Success)
+##### Response
 ```json
 {
     "status": "success",
     "data": {
-        "file_data": "bHVsdWx1LnR4dA==",
-        "file_name_data": "SGVsbG8sIHdvcmxkIQ==",
-        "iv": "MDAwMDAwMDAwMDAw",
-        "salt": "MDAwMDAwMDAwMDAwMDAwMA==",
+        "file_data": "SGVsbG8sIHdvcmxkIQ==",
+        "file_name_data": "bHVsdWx1LnR4dA==",
     }
 }
 ```
 
-##### Response (Error)
-```json
-{
-    "status": "error",
-    "data": {
-        "reason": "File not found"
-    }
-}
-```
+### `GET /v1/files/{access_token}/challenge`
+> Get a challenge for a file.
 
-#### `GET /v1/files/{access_token}/metadata`
-> Get metadata for a file.<br>
-
-##### Response (Success)
+##### Response
 ```json
 {
     "status": "success",
     "data": {
-        "file_name_data": "SGVsbG8sIHdvcmxkIQ==",
-        "iv": "MDAwMDAwMDAwMDAw",
-        "salt": "MDAwMDAwMDAwMDAwMDAwMA==",
+        "challenge": "bHVsdWx1LnR4dA==",
     }
 }
 ```
 
-##### Response (Error)
+#### `POST /v1/files/{access_token}/challenge`
+> Verify a challenge for a file.
+
+##### Request
 ```json
 {
-    "status": "error",
+    "challenge": "f1fc1ddfba46cc672a56f09a9f3467d75a53b96fc19d78ac0b5fd8e53d272bcc",
+}
+```
+
+##### Response
+```json
+{
+    "status": "success",
     "data": {
-        "reason": "File not found"
+        "file_name_data": "bHVsdWx1LnR4dA==",
+        "iv": "MDAwMDAwMDAwMDAw",
+        "salt": "MDAwMDAwMDAwMDAwMDAwMA==",
     }
 }
 ```

@@ -9,49 +9,60 @@ import PasswordField from '../components/PasswordField'
 import ExpirationPicker from '../components/ExpirationPicker'
 import UploadProgress from '../components/UploadProgress'
 
-import { encryptedFileInfoState, fileDataState, passwordState } from '../state'
+import { accessTokenState, encryptedFileInfoState, fileDataState, fileFullyUploadedState, passwordState } from '../state'
+import ShareFile from '../components/ShareFile'
+import Logo from '../components/Logo'
+import View from './View'
 
 const HomeView = ({ className }) => {
     const fileData = useRecoilValue(fileDataState)
     const password = useRecoilValue(passwordState)
     const encryptedFileInfo = useRecoilValue(encryptedFileInfoState)
+    const accessToken = useRecoilValue(accessTokenState)
     const [expirySeconds, setExpirySeconds] = useState(null)
+    const fileUploadDone = useRecoilValue(fileFullyUploadedState)
 
     const handleExpirationSubmit = expirySeconds => {
         setExpirySeconds(expirySeconds)
     }
 
     return (
-        <div className={className}>
+        <View>
+            <div className={className}>
+                {/* Stage 1: Select file */}
+                {fileData === null && (
+                    <FileDropZone
+                        hidden={fileData !== null}
+                    />
+                )}
 
-            <div className="title">
-                <span><Home size={32} /></span>
-                <span>HausDrop</span>
-            </div>
+                {/* Stage 2: Enter password */}
+                {fileData !== null && password === null && (
+                    <PasswordField
+                        showComplexityScore
+                        allowPasswordGeneration
+                    />
+                )}
 
-            {/* Stage 1: Select file */}
-            <FileDropZone
-                hidden={fileData !== null}
-            />
-
-            {/* Stage 2: Enter password */}
-            <PasswordField
-                hidden={fileData === null || password !== null}
-            />
-
-            <div className="container">
-                <ExpirationPicker
-                    onExpirationSubmit={handleExpirationSubmit}
-                    active={expirySeconds}
-                    defaultValue={24 * 60 * 60}
-                    hidden={encryptedFileInfo === null}
-                />
-
+                {/* Stage 3: Encryption and upload */}
                 {fileData && password && (
                     <UploadProgress fileData={fileData} password={password} />
                 )}
+
+                {/* Stage 4: Share file */}
+                {fileUploadDone && (
+                    <div className="container">
+                        <ExpirationPicker
+                            onExpirationSubmit={handleExpirationSubmit}
+                            active={expirySeconds}
+                            defaultValue={24 * 60 * 60}
+                        />
+
+                        <ShareFile />
+                    </div>
+                )}
             </div>
-        </div>
+        </View>
     )
 }
 
@@ -61,33 +72,31 @@ HomeView.propTypes = {
 
 export default styled(HomeView)`
     width: 100%;
-    height: 100%;
     padding: 1rem;
     overflow: hidden;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     user-select: none;
 
-    & > .title {
-        position: absolute;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: .5rem;
-        top: 25%;
-        color: hsl(0,0%,90%);
-        font-size: 2rem;
-        line-height: 2rem;
-    }
+    opacity: 0;
+    animation: appear .25s ease forwards;
 
     & > .container {
-        position: absolute;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        pointer-events: none;
         gap: 2rem;
+        background: hsla(0,0%,0%,.15);
+        border-radius: 1rem;
+        padding: 2.5rem;
+        min-width: 300px;
+        max-width: 700px;
+        width: 100%;
+
+        opacity: 0;
+        animation: appear .25s ease forwards;
     }
 `

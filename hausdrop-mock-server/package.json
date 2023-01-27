@@ -1,0 +1,19 @@
+{
+  "name": "hausdrop-mock-server",
+  "version": "1.0.0",
+  "main": "src/main.js",
+  "repository": "https://github.com/splittydev/hausdrop",
+  "author": "Marco Quinten",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/main.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "uuid": "^9.0.0"
+  }
+}

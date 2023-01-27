@@ -1,29 +1,26 @@
 import styled from 'styled-components'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil'
-
-import { CryptoUtil } from '../util'
-
-import {
-    encryptedFileInfoState,
-    fileDataState,
-    fileNameState,
-    passwordState,
-    accessTokenState,
-    updateTokenState,
-    fileFullyUploadedState
-} from '../state'
+import { Check, Cpu, Download } from 'react-feather'
 
 import ApiClient from '../api/ApiClient'
+import { EncryptedFileInfo } from '../util'
+import {
+    passwordState,
+    fileFullyDownloadedState,
+    downloadedFileInfoState,
+    decryptedFileInfoState
+} from '../state'
+
 
 import UploadProgressBar from './UploadProgressBar'
 import Spinner from './Spinner'
 import StatusBubbleRow from './StatusBubbleRow'
 import StatusBubble from './StatusBubble'
-import { Check, Cpu, Upload } from 'react-feather'
+import { useParams } from 'react-router-dom'
 
-const SYM_STEP_ENCRYPT = 'encrypt'
-const SYM_STEP_UPLOAD = 'upload'
+const SYM_STEP_DOWNLOAD = 'download'
+const SYM_STEP_DECRYPT = 'decrypt'
 const SYM_STEP_DONE = 'done'
 const SYM_STEP_DONE2 = 'done2'
 
@@ -51,49 +48,49 @@ const doTimedStep = async (stepPromise, minTime) => {
  * }} props 
  * @returns 
  */
-const UploadProgress = ({ className }) => {
-    const [stepSymbol, setStepSymbol] = useState(SYM_STEP_ENCRYPT)
+const DownloadProgress = ({ className }) => {
+    const { accessToken } = useParams()
+
+    const [stepSymbol, setStepSymbol] = useState(SYM_STEP_DOWNLOAD)
     const [errorMessage, setErrorMessage] = useState(null)
-    const [uploadProgress, setUploadProgress] = useState(0)
+    const [downloadProgress, setDownloadProgress] = useState(0)
 
-    const fileData = useRecoilValue(fileDataState)
-    const fileName = useRecoilValue(fileNameState)
     const password = useRecoilValue(passwordState)
+    const setFileFullyDownloaded = useSetRecoilState(fileFullyDownloadedState)
 
-    const setAccessToken = useSetRecoilState(accessTokenState)
-    const setUpdateToken = useSetRecoilState(updateTokenState)
-    const setFileFullyUploaded = useSetRecoilState(fileFullyUploadedState)
+    const [downloadedFileData, setDownloadedFileData] = useRecoilState(downloadedFileInfoState)
+    const [decryptedFileInfo, setDecryptedFileInfo] = useRecoilState(decryptedFileInfoState)
 
-    const [encryptedFileInfo, setEncryptedFileInfo] = useRecoilState(encryptedFileInfoState)
-
-    const encryptFile = async () => {
-        const derivedKey = await CryptoUtil.deriveKeyFromPassword(password)
-        const fileInfo = await CryptoUtil.encryptFile(fileData, fileName, derivedKey)
-        setEncryptedFileInfo(fileInfo)
-    }
-
-    const uploadFile = async () => {
-        ApiClient.uploadFile(encryptedFileInfo, progress => {
-            setUploadProgress(progress)
+    const downloadFile = async () => {
+        ApiClient.getFile(accessToken, progress => {
+            setDownloadProgress(progress)
         }).then(data => {
-            setAccessToken(data.access_token)
-            setUpdateToken(data.update_token)
+            setDownloadedFileData(data)
         }).catch(({ reason }) => {
             console.log(reason)
             setErrorMessage(reason)
         })
     }
 
+    const decryptFile = async () => {
+        const encryptedFileInfo = await EncryptedFileInfo.fromEncryptedFileData(
+            downloadedFileData,
+            password
+        )
+        const fileInfo = await encryptedFileInfo.decrypt()
+        setDecryptedFileInfo(fileInfo)
+    }
+
     const stateMachine = {
-        [SYM_STEP_ENCRYPT]: {
-            action: encryptFile,
-            visualization: <Spinner />,
-            transition: SYM_STEP_UPLOAD,
+        [SYM_STEP_DOWNLOAD]: {
+            action: downloadFile,
+            visualization: <UploadProgressBar progress={downloadProgress} />,
+            transition: SYM_STEP_DECRYPT,
             minTime: 1000,
         },
-        [SYM_STEP_UPLOAD]: {
-            action: uploadFile,
-            visualization: <UploadProgressBar progress={uploadProgress} />,
+        [SYM_STEP_DECRYPT]: {
+            action: decryptFile,
+            visualization: <Spinner />,
             transition: SYM_STEP_DONE,
             minTime: 1000,
         },
@@ -105,7 +102,7 @@ const UploadProgress = ({ className }) => {
         },
         [SYM_STEP_DONE2]: {
             action: () => {
-                setFileFullyUploaded(true)
+                setFileFullyDownloaded(true)
             },
             visualization: <div />,
             transition: null,
@@ -137,15 +134,15 @@ const UploadProgress = ({ className }) => {
                 <div className="statusBubbleContainer">
                     <StatusBubbleRow>
                         <StatusBubble
-                            symbol={Cpu}
-                            label="Encrypting"
-                            isLoading={stepSymbol === SYM_STEP_ENCRYPT}
+                            symbol={Download}
+                            label="Downloading"
+                            progress={downloadProgress}
+                            isLoading={stepSymbol === SYM_STEP_DOWNLOAD}
                         />
                         <StatusBubble
-                            symbol={Upload}
-                            label="Uploading"
-                            progress={uploadProgress}
-                            isLoading={stepSymbol === SYM_STEP_UPLOAD}
+                            symbol={Cpu}
+                            label="Decrypting"
+                            isLoading={stepSymbol === SYM_STEP_DECRYPT}
                         />
                         <StatusBubble
                             symbol={Check}
@@ -162,21 +159,21 @@ const UploadProgress = ({ className }) => {
     )
 }
 
-export default styled(UploadProgress)`
+export default styled(DownloadProgress)`
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     color: hsl(0, 0%, 90%);
     gap: 2rem;
-    
+
     opacity: 0;
     animation: appear .25s ease forwards;
 
     & > .statusBubbleContainer {
         transform: all .25s ease;
         pointer-events: none;
-        
+
         opacity: 0;
         animation: appear .25s ease forwards;
     }

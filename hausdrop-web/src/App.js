@@ -3,6 +3,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { RecoilRoot } from 'recoil'
 
 import HomeView from './views/HomeView'
+import FileDetailView from './views/FileDetailView'
+import Logo from './components/Logo'
 
 const router = createBrowserRouter([
   {
@@ -10,18 +12,18 @@ const router = createBrowserRouter([
     element: <HomeView />,
   },
   {
-    path: '/:id',
-    element: <HomeView />,
+    path: '/:accessToken',
+    element: <FileDetailView />,
   }
 ])
 
 const App = ({ className }) => {
   return (
-    <div className={className}>
-      <RecoilRoot>
+    <RecoilRoot>
+      <div className={className}>
         <RouterProvider router={router} />
-      </RecoilRoot>
-    </div>
+      </div>
+    </RecoilRoot>
   )
 }
 
@@ -30,4 +32,8 @@ export default styled(App)`
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 `

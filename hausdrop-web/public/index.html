@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Initial styling to prevent FOUC -->
+    <style type="text/css">
+      html, body {
+        background: hsl(0,0%,20%);
+      }
+      body {
+        opacity: 1;
+        animation: bodyAppear .25s linear forwards;
+      }
+      @keyframes bodyAppear {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+      }
+    </style>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

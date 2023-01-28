@@ -5,11 +5,13 @@ import Wave from 'react-wavify'
 const View = ({ className, children }) => {
     return (
         <div className={className}>
-            <Logo />
-            <div className="inner">
+            <header>
+                <Logo />
+            </header>
+            <main>
                 {children}
-            </div>
-            <div className="footer">
+            </main>
+            <footer>
                 <div className="links">
                     <a href="/security">Security</a>
                 </div>
@@ -18,14 +20,14 @@ const View = ({ className, children }) => {
                         fill='hsl(0,0%,25%)'
                         paused={false}
                         options={{
-                            height: 10,
+                            height: 1,
                             amplitude: 10,
                             speed: 0.25,
                             points: 3,
                         }}
                     />
                 </div>
-            </div>
+            </footer>
         </div>
     )
 }
@@ -38,26 +40,31 @@ export default styled(View)`
     width: 100%;
     height: 100%;
 
-    & > .inner {
+    & > header {
+        margin-top: 4rem;
         width: 100%;
-        height: 90%;
+    }
+
+    & > main {
+        width: 100%;
+        flex-grow: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
     }
 
-    & > .footer {
-        position: absolute;
+    & > footer {
         bottom: 0;
+        width: 100%;
         height: 4rem;
         position: relative;
-        width: 100%;
+        margin-top: auto;
 
         & > .links {
             width: 100%;
+            height: 100%;
             position: absolute;
-            bottom: 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -65,6 +72,7 @@ export default styled(View)`
             color: hsl(0,0%,90%);
             gap: 1rem;
             text-transform: uppercase;
+            margin-top: .33rem;
 
             a {
                 color: inherit;
@@ -80,12 +88,13 @@ export default styled(View)`
 
         & > .wave-container {
             width: 100%;
+            height: 100%;
             position: relative;
 
             & > * {
-                top: 0;
                 position: absolute;
                 width: 100%;
+                height: 100%;
             }
         }
     }

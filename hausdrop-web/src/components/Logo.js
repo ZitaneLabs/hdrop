@@ -15,8 +15,6 @@ const Logo = ({ className }) => {
 }
 
 export default styled(Logo)`
-    position: absolute;
-    top: 4rem;
     display: flex;
     justify-content: center;
     align-items: center;

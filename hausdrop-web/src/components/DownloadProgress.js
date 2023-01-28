@@ -104,7 +104,22 @@ const DownloadProgress = ({ className }) => {
         ApiClient.getFile(accessToken, progress => {
             setDownloadProgress(progress)
         }).then(data => {
-            setDownloadedFileData(data)
+
+            // Check if file is provided as URL
+            if (data.file_url !== null) {
+                // Download file
+                ApiClient.directDownloadFile(data.file_url).then(rawFileContents => {
+                    // Set file data in original data
+                    data.file_data = rawFileContents
+                    setDownloadedFileData(data)
+                }).catch(({ reason }) => {
+                    console.log(reason)
+                    setErrorMessage(reason)
+                })
+                return
+            } else {
+                setDownloadedFileData(data)
+            }
         }).catch(({ reason }) => {
             console.log(reason)
             setErrorMessage(reason)
@@ -116,7 +131,6 @@ const DownloadProgress = ({ className }) => {
             downloadedFileData,
             password
         )
-        console.log(encryptedFileInfo)
         const fileInfo = await encryptedFileInfo.decrypt()
         setDecryptedFileInfo(fileInfo)
     }

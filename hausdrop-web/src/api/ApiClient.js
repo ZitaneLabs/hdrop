@@ -183,7 +183,7 @@ class ApiClient {
     /**
      * Get a file from the server.
      * 
-     * @typedef {{ file_data: string, file_name_data: string, iv: string, salt: string }} GetFileResponse
+     * @typedef {{ file_data: string | null, file_url: string | null, file_name_data: string, iv: string, salt: string }} GetFileResponse
      * @param {string} accessToken Access token
      * @param {(progress: number) => void} onProgressChange
      * @returns {Promise<GetFileResponse>} Response data
@@ -204,6 +204,32 @@ class ApiClient {
 
         // Process response
         return ApiClient.processResponse(resp)
+    }
+
+    /**
+     * Download a file from an URL.
+     * 
+     * @param {string} url URL
+     * @param {(progress: number) => void} onProgressChange
+     * 
+     * @returns {Promise<Uint8Array>}
+     */
+    static async directDownloadFile(url, onProgressChange = NoopHandler) {
+        /**
+         * @type {AxiosRequestConfig}
+         */
+        const config = {
+            responseType: 'arraybuffer',
+            onUploadProgress: progressEvent => {
+                onProgressChange(progressEvent.loaded / progressEvent.total)
+            }
+        }
+
+        // Download file
+        const resp = await axios.get(url, config)
+
+        // Convert to Uint8Array
+        return new Uint8Array(resp.data)
     }
 
     /**

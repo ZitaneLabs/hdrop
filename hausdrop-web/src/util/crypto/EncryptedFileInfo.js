@@ -34,13 +34,20 @@ export default class EncryptedFileInfo {
      * @param {string} password Password
      */
     static async fromEncryptedFileData(data, password) {
-        console.log(data)
         const salt = Base64Util.decode(data.salt)
         const iv = Base64Util.decode(data.iv)
         const derivedKeyInfo = await CryptoUtil.recoverKeyFromPassword(password, salt, iv)
-        console.log(derivedKeyInfo)
+
+        // Decode file data if necessary
+        let raw_file_data;
+        if (data.file_data instanceof Uint8Array) {
+            raw_file_data = data.file_data
+        } else {
+            raw_file_data = Base64Util.decode(data.file_data)
+        }
+
         return new EncryptedFileInfo(
-            Base64Util.decode(data.file_data),
+            raw_file_data,
             Base64Util.decode(data.file_name_data),
             null,
             derivedKeyInfo,

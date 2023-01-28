@@ -1,33 +1,25 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import cors from 'cors'
-import { v4 as uuidv4 } from 'uuid'
-import { createHash } from 'crypto'
+import * as dotenv from 'dotenv'
 
+import R2Provider from './R2Provider.mjs'
+import FileStorage from './FileStorage.mjs'
+import StoredFile from './StoredFile.mjs'
+
+// Load environment variables
+dotenv.config()
+
+// Create R2 provider
+const r2 = new R2Provider()
+
+// Create file storage
+const storage = new FileStorage()
+
+// Create express app
 const app = express()
 app.use(bodyParser.json({ limit: '10gb' }))
 app.use(cors())
-
-const files = {}
-
-const _generateToken = () => {
-    const uuid = uuidv4()
-    const sha256 = createHash('sha256').update(uuid).digest('hex')
-    const token = sha256.substring(0, 8)
-    return token
-}
-
-const generateAccessToken = () => {
-    const token = _generateToken()
-    if (token in files) {
-        return generateAccessToken()
-    }
-    return token
-}
-
-const generateUpdateToken = () => {
-    return _generateToken()
-}
 
 app.post('/proxy', (req, res) => {
     console.log(req.body)
@@ -35,30 +27,34 @@ app.post('/proxy', (req, res) => {
 })
 
 app.post('/v1/files', (req, res) => {
-    // Generate tokens
-    const accessToken = generateAccessToken()
-    const updateToken = generateUpdateToken()
+    // Create stored file
+    const file = new StoredFile(
+        r2,
+        {
+            fileData: req.body.file_data,
+            fileNameData: req.body.file_name_data,
+            fileNameHash: req.body.file_name_hash,
+            salt: req.body.salt,
+            iv: req.body.iv,
+        }
+    )
 
     // Store file
-    files[accessToken] = {
-        ...req.body,
-        accessToken,
-        updateToken,
-    }
+    storage.storeFile(file)
 
     // Send response
     res.json({
         status: 'success',
         data: {
-            access_token: accessToken,
-            update_token: updateToken,
+            access_token: file.accessToken,
+            update_token: file.updateToken,
         }
     })
 })
 
-app.get('/v1/files/:access_token', (req, res) => {
+app.get('/v1/files/:access_token', async (req, res) => {
     // Retrieve file
-    const file = files[req.params.access_token]
+    const file = storage.retrieveFile(req.params.access_token)
 
     // Guard against invalid access token
     if (!file) {
@@ -70,21 +66,27 @@ app.get('/v1/files/:access_token', (req, res) => {
         })
     }
 
-    // Send response
-    res.json({
+    // Build response data
+    const data = {
         status: 'success',
         data: {
-            file_data: file.file_data,
-            file_name_data: file.file_name_data,
+            file_data: await file.fileData(r2),
+            file_name_data: file.fileNameData,
             iv: file.iv,
             salt: file.salt,
         }
-    })
+    }
+
+    // Print cache statistics
+    StoredFile.printCacheStatistics()
+
+    // Send response
+    res.json(data)
 })
 
 app.get('/v1/files/:access_token/challenge', (req, res) => {
     // Retrieve file
-    const file = files[req.params.access_token]
+    const file = storage.retrieveFile(req.params.access_token)
 
     // Guard against invalid access token
     if (!file) {
@@ -100,7 +102,7 @@ app.get('/v1/files/:access_token/challenge', (req, res) => {
     res.json({
         status: 'success',
         data: {
-            challenge: file.file_name_data,
+            challenge: file.fileNameData,
             iv: file.iv,
             salt: file.salt,
         }
@@ -109,7 +111,7 @@ app.get('/v1/files/:access_token/challenge', (req, res) => {
 
 app.post('/v1/files/:access_token/challenge', (req, res) => {
     // Retrieve file
-    const file = files[req.params.access_token]
+    const file = storage.retrieveFile(req.params.access_token)
 
     // Guard against invalid access token
     if (!file) {
@@ -122,7 +124,7 @@ app.post('/v1/files/:access_token/challenge', (req, res) => {
     }
 
     // Guard against invalid challenge
-    if (req.body.challenge !== file.file_name_hash) {
+    if (req.body.challenge !== file.fileNameHash) {
         return res.status(403).json({
             status: 'error',
             data: {
@@ -141,9 +143,9 @@ app.post('/v1/files/:access_token/challenge', (req, res) => {
     })
 })
 
-app.delete('/v1/files/:access_token', (req, res) => {
+app.delete('/v1/files/:access_token', async (req, res) => {
     // Retrieve file
-    const file = files[req.params.access_token]
+    const file = storage.retrieveFile(req.params.access_token)
 
     // Guard against invalid access token
     if (!file) {
@@ -166,7 +168,7 @@ app.delete('/v1/files/:access_token', (req, res) => {
     }
 
     // Delete file
-    delete files[req.params.access_token]
+    await storage.deleteFile(req.params.access_token, r2)
 
     // Send response
     res.json({

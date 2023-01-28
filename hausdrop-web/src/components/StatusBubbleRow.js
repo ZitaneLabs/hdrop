@@ -21,5 +21,14 @@ export default styled(StatusBubbleRow)`
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 5rem;
+    transition: gap .25s ease;
+    gap: 2rem;
+
+    @media screen and (min-width: 700px) {
+        gap: 3rem;
+    }
+
+    @media screen and (min-width: 1200px) {
+        gap: 4rem;
+    }
 `

@@ -110,7 +110,7 @@ PasswordField.propTypes = {
 
 export default styled(PasswordField)`
     min-width: 300px;
-    width: 100%;
+    width: 90%;
     max-width: 750px;
     display: flex;
     flex-direction: column;
@@ -128,15 +128,27 @@ export default styled(PasswordField)`
         outline: none;
         padding: 0 1rem;
         width: 100%;
-        height: 5rem;
+        height: 3rem;
         background: hsl(0,0%,90%);
-        border-radius: 1rem;
+        border-radius: .5rem;
         opacity: 0;
-        font-size: 2rem;
+        font-size: 1.5rem;
         transition: all .33s ease-in-out;
         opacity: 1;
         pointer-events: all;
         transform: scale(1);
+
+        @media screen and (min-width: 700px) {
+            height: 4rem;
+            font-size: 1.75rem;
+            border-radius: .75rem;
+        }
+
+        @media screen and (min-width: 1200px) {
+            height: 5rem;
+            font-size: 2rem;
+            border-radius: .75rem;
+        }
 
         &[data-gauge-visible='true'] {
             border-bottom-left-radius: 0;
@@ -172,6 +184,12 @@ export default styled(PasswordField)`
             position: absolute;
             opacity: 1;
             transition: all .25s ease-in-out;
+            text-align: center;
+            margin-top: 2rem;
+
+            @media screen and (min-width: 700px) {
+                margin: 0;
+            }
     
             &[data-hidden='true'] {
                 opacity: 0;

@@ -122,8 +122,8 @@ export default styled(FileDropZone)`
         align-items: center;
 
         & .dropTarget {
-            width: 25vmin;
-            height: 25vmin;
+            width: 10rem;
+            height: 10rem;
             background: hsl(0,0%,60%);
             border-radius: 25vmin;
             transition: all .2s ease-in-out;
@@ -132,6 +132,16 @@ export default styled(FileDropZone)`
             display: flex;
             justify-content: center;
             align-items: center;
+
+            @media screen and (min-width: 700px) {
+                width: 12.5rem;
+                height: 12.5rem;
+            }
+
+            @media screen and (min-width: 1200px) {
+                width: 15rem;
+                height: 15rem;
+            }
 
             & .innerDropTarget {
                 opacity: 0;

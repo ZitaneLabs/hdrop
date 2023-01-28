@@ -38,7 +38,8 @@ export default styled(View)`
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: 100%;
+    height: 100vh;
+    height: -webkit-fill-available;
 
     & > header {
         margin-top: 4rem;
@@ -55,7 +56,6 @@ export default styled(View)`
     }
 
     & > footer {
-        bottom: 0;
         width: 100%;
         height: 4rem;
         position: relative;

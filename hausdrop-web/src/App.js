@@ -36,7 +36,7 @@ const App = ({ className }) => {
 export default styled(App)`
   margin: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;

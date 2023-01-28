@@ -53,12 +53,21 @@ export default styled(StatusBubble)`
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 2rem;
-    max-width: 5rem;
+    gap: 1rem;
+    max-width: 4rem;
+
+    @media screen and (min-width: 700px) {
+        max-width: 5rem;
+        gap: 2rem;
+    }
+
+    @media screen and (min-width: 1200px) {
+        max-width: 6rem;
+    }
 
     & > .inner {
-        width: 6rem;
-        height: 6rem;
+        width: 4rem;
+        height: 4rem;
         border-radius: 3rem;
         display: flex;
         justify-content: center;
@@ -67,6 +76,16 @@ export default styled(StatusBubble)`
         background-color: hsl(0, 0%,40%);
         overflow: hidden;
 
+        @media screen and (min-width: 700px) {
+            width: 5rem;
+            height: 5rem;
+        }
+
+        @media screen and (min-width: 1200px) {
+            width: 6rem;
+            height: 6rem;;
+        }
+
         & > .symbol {
             position: absolute;
             display: flex;
@@ -74,6 +93,19 @@ export default styled(StatusBubble)`
             align-items: center;
             color: hsl(0,0%,90%);
             z-index: 1000;
+
+            width: 24px;
+            height: 24px;
+
+            @media screen and (min-width: 700px) {
+                width: 32px;
+                height: 32px;
+            }
+
+            @media screen and (min-width: 1200px) {
+                width: 48px;
+                height: 48px;
+            }
 
             &[data-loading="true"] {
                 animation: pulse 1s infinite;
@@ -88,9 +120,17 @@ export default styled(StatusBubble)`
 
         & .spinner {
             position: absolute;
-            transform: scale(2.5);
+            transform: scale(1.75);
             opacity: 0.33;
             transition: all .2s ease;
+
+            @media screen and (min-width: 700px) {
+                transform: scale(2.2);
+            }
+
+            @media screen and (min-width: 1200px) {
+                transform: scale(2.7);
+            }
 
             &[data-loading="false"] {
                 opacity: 0;
@@ -126,6 +166,16 @@ export default styled(StatusBubble)`
     & > .text {
         opacity: 0;
         transition: all .25s ease;
+
+        font-size: 0.75rem;
+
+        @media screen and (min-width: 700px) {
+            font-size: 0.9rem;
+        }
+
+        @media screen and (min-width: 1200px) {
+            font-size: 1rem;
+        }
 
         &[data-loading="true"] {
             opacity: 1;

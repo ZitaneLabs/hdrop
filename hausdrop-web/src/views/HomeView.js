@@ -73,7 +73,6 @@ HomeView.propTypes = {
 export default styled(HomeView)`
     width: 100%;
     padding: 1rem;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: center;

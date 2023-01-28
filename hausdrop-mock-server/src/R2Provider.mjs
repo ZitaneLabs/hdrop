@@ -26,6 +26,7 @@ export default class R2Provider {
             accessKeyId: process.env.R2_ACCESS_KEY_ID,
             secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
             bucketName: process.env.R2_BUCKET_NAME,
+            publicUrl: process.env.R2_PUBLIC_URL,
         }
 
         // Build S3 endpoint
@@ -40,6 +41,17 @@ export default class R2Provider {
                 secretAccessKey: this.creds.secretAccessKey,
             },
         })
+    }
+
+    /**
+     * Build a URL for the given UUID.
+     * 
+     * @param {string} uuid
+     * @returns {string} URL
+     */
+    buildUrl(uuid) {
+        const sanitizedPublicUrl = this.creds.publicUrl.replace(/\/+$/, '')
+        return `${sanitizedPublicUrl}/${uuid}`
     }
 
     async uploadFile(uuid, content) {

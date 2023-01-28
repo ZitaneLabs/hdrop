@@ -82,12 +82,25 @@
 #### `GET /v1/files/{access_token}`
 > Retrieve a file.
 
-##### Response
+##### Response (File Data)
 ```json
 {
     "status": "success",
     "data": {
         "file_data": "SGVsbG8sIHdvcmxkIQ==",
+        "file_url": null,
+        "file_name_data": "bHVsdWx1LnR4dA==",
+    }
+}
+```
+
+##### Response (File URL)
+```json
+{
+    "status": "success",
+    "data": {
+        "file_data": null,
+        "file_url": "https://example.com/file",
         "file_name_data": "bHVsdWx1LnR4dA==",
     }
 }

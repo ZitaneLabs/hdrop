@@ -18,18 +18,78 @@ if (process.env.DEBUG) {
     PERSIST_TIMEOUT = 1000 * 30 // 30 seconds
 }
 
+export class ExportFileData {
+    /**
+     * @type {'local' | 'remote'}
+     */
+    type
+
+    /**
+     * @type {string | null}
+     */
+    _fileData
+
+    /**
+     * @type {string | null}
+     */
+    _fileUrl
+
+    /**
+     * @param {'local' | 'remote'} type
+     * @param {string | null} fileData
+     * @param {string | null} fileUrl
+     */
+    constructor(type, fileData, fileUrl) {
+        this.type = type
+        this._fileData = fileData
+        this._fileUrl = fileUrl
+    }
+
+    /**
+     * Get base64 file data.
+     * 
+     * @returns {string | null}
+     */
+    fileData() {
+        return this._fileData
+    }
+
+    /**
+     * Get remote file URL.
+     * 
+     * @returns {string | null}
+     */
+    fileUrl() {
+        return this._fileUrl
+    }
+
+    /**
+     * @param {string} fileData
+     */
+    static fromLocal(fileData) {
+        return new ExportFileData('local', fileData, null)
+    }
+
+    /**
+     * @param {string} fileUrl
+     */
+    static fromRemote(fileUrl) {
+        return new ExportFileData('remote', null, fileUrl)
+    }
+}
+
 export default class StoredFile {
     /**
      * Cache statistics.
      * 
      * @type {{
-     * hits: number,
-     * misses: number,
+     * memory: number,
+     * remote: number,
      * }}
      */
     static cacheStatistics = {
-        hits: 0,
-        misses: 0,
+        memory: 0,
+        remote: 0,
     }
 
     /** @type {R2Provider} */
@@ -59,8 +119,8 @@ export default class StoredFile {
     /** @type {string} */
     iv
 
-    /** @type {boolean} */
-    persisted
+    /** @type {string} */
+    bucketUrl
 
     /** @type {number} */
     lastTimeoutId
@@ -96,21 +156,18 @@ export default class StoredFile {
         this.iv = iv
 
         // Mark as not persisted
-        this.persisted = false
+        this.bucketUrl = null
 
-        // No timeout scheduled
-        this.lastTimeoutId = null
-
-        // Schedule for persistence
-        this.smartPersist()
+        // Schedule persist
+        setImmediate(() => this.persist())
     }
 
     /**
      * Persist file contents to remote storage.
      */
-    async forcePersist() {
+    async persist() {
         // Guard against persisting twice
-        if (this.persisted) {
+        if (this.isPersisted()) {
 
             // Check if fileData is still in memory
             if (this._fileData !== null) {
@@ -126,28 +183,24 @@ export default class StoredFile {
         }
 
         // Persist to remote storage
-        console.log(`[StoredFile/persist] Persisting ${this.accessToken} to remote`)
+        console.log(`[StoredFile/persist ${this.accessToken}] Persisting to remote`)
         await this.provider.uploadFile(this.uuid, this._fileData)
-        console.log(`[StoredFile/persist] Successfully persisted ${this.accessToken}`)
+        console.log(`[StoredFile/persist ${this.accessToken}] Successfully persisted`)
 
         // Mark fileData as GC-able
         this._fileData = null
 
         // Mark as persisted
-        this.persisted = true
+        this.bucketUrl = this.provider.buildUrl(this.uuid)
     }
 
     /**
-     * Persist file contents to remote storage after a delay.
+     * Check if file contents are persisted to remote storage.
+     * 
+     * @returns {boolean}
      */
-    smartPersist() {
-        // Clear previous timeout
-        if (this.lastTimeoutId !== null) {
-            clearTimeout(this.lastTimeoutId)
-        }
-
-        // Schedule for persistence
-        this.lastTimeoutId = setTimeout(() => this.forcePersist(), PERSIST_TIMEOUT)
+    isPersisted() {
+        return this.bucketUrl !== null
     }
 
     /**
@@ -155,7 +208,7 @@ export default class StoredFile {
      */
     async cleanup() {
         // Mark as not persisted
-        this.persisted = false
+        this.bucketUrl = null
 
         // Delete from remote storage
         await this.provider.deleteFile(this.uuid)
@@ -165,44 +218,35 @@ export default class StoredFile {
     }
 
     /**
-     * Retrieve file contents from remote storage.
+     * Get file data.
+     * 
+     * @returns {Promise<ExportFileData>}
      */
-    async fileData() {
-        // Persisted and cold
-        if (this._fileData === null && this.persisted) {
+    async exportFileData() {
+        // Persisted
+        if (this.isPersisted()) {
             // Update cache statistics
-            StoredFile.cacheStatistics.misses += 1
+            StoredFile.cacheStatistics.remote += 1
 
-            // Retrieve from remote storage
-            console.log(`[StoredFile/cache] Retrieving ${this.accessToken} from remote`)
-            const data = await this.provider.downloadFile(this.uuid)
-
-            // Store in memory
-            this._fileData = data
-
-            // Schedule for persistence
-            this.smartPersist()
-
-            // Return data
-            return data
+            // Serve from remote storage
+            return ExportFileData.fromRemote(this.bucketUrl)
         }
 
-        // Persisted and still hot or not persisted
+        // In-Memory
         else {
             // Update cache statistics
-            StoredFile.cacheStatistics.hits += 1
+            StoredFile.cacheStatistics.memory += 1
 
-            // Schedule for persistence
-            this.smartPersist()
+            // Schedule persist
+            setImmediate(() => this.persist())
 
             // Serve from memory
-            return this._fileData
+            return ExportFileData.fromLocal(this._fileData)
         }
     }
 
     static printCacheStatistics() {
-        const { hits, misses } = this.cacheStatistics
-        const hitRatio = (hits / (hits + misses)).toFixed(2)
-        console.log(`[StoredFile/cache] { hit: ${hits}; miss: ${misses}; ratio: ${hitRatio} }`)
+        const { memory, remote } = this.cacheStatistics
+        console.log(`[StoredFile/cache] { memory: ${memory}; remote: ${remote}; }`)
     }
 }

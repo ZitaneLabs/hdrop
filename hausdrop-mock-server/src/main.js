@@ -66,11 +66,15 @@ app.get('/v1/files/:access_token', async (req, res) => {
         })
     }
 
+    // Export file data
+    const fileData = await file.exportFileData();
+
     // Build response data
     const data = {
         status: 'success',
         data: {
-            file_data: await file.fileData(r2),
+            file_data: fileData.fileData(),
+            file_url: fileData.fileUrl(),
             file_name_data: file.fileNameData,
             iv: file.iv,
             salt: file.salt,

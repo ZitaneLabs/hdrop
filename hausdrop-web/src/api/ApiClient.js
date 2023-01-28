@@ -6,14 +6,14 @@ import { EncryptedFileInfo } from "../util"
  * 
  * @type {string}
  */
-const HOMEPAGE = 'http://localhost:3000'
+const HOMEPAGE = process.env.REACT_APP_BASE_URL
 
 /**
  * Base URL of the API
  * 
  * @type {string}
  */
-const API_BASE = 'http://localhost:8080'
+const API_BASE = process.env.REACT_APP_API_ENDPOINT
 
 /**
  * A function that does nothing.

@@ -63,8 +63,7 @@ export default class S3Provider {
                 CORSRules: [
                     {
                         AllowedOrigins: ['*'],
-                        AllowedHeaders: ['*'],
-                        AllowedMethods: ['GET', 'OPTIONS'],
+                        AllowedMethods: ['GET'],
                     }
                 ]
             }

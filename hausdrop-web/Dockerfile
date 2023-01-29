@@ -11,6 +11,11 @@ COPY package.json ./
 COPY yarn.lock ./
 RUN yarn --frozen-lockfile
 
+ARG REACT_APP_BASE_URL
+ARG REACT_APP_API_ENDPOINT
+ENV REACT_APP_BASE_URL=${REACT_APP_BASE_URL}
+ENV REACT_APP_API_ENDPOINT=${REACT_APP_API_ENDPOINT}
+
 COPY public ./public
 COPY src ./src
 RUN yarn build

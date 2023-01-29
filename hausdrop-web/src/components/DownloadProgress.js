@@ -108,9 +108,9 @@ const DownloadProgress = ({ className }) => {
             // Check if file is provided as URL
             if (data.file_url !== null) {
                 // Download file
-                ApiClient.directDownloadFile(data.file_url).then(rawFileContents => {
+                ApiClient.directDownloadFile(data.file_url).then(fileContents => {
                     // Set file data in original data
-                    data.file_data = rawFileContents
+                    data.file_data = fileContents
                     setDownloadedFileData(data)
                 }).catch(({ reason }) => {
                     console.log(reason)

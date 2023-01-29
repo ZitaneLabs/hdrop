@@ -212,14 +212,14 @@ class ApiClient {
      * @param {string} url URL
      * @param {(progress: number) => void} onProgressChange
      * 
-     * @returns {Promise<Uint8Array>}
+     * @returns {Promise<string>}
      */
     static async directDownloadFile(url, onProgressChange = NoopHandler) {
         /**
          * @type {AxiosRequestConfig}
          */
         const config = {
-            responseType: 'arraybuffer',
+            responseType: 'text',
             headers: {
                 'Accept': 'application/octet-stream',
             },
@@ -232,7 +232,7 @@ class ApiClient {
         const resp = await axios.get(url, config)
 
         // Convert to Uint8Array
-        return new Uint8Array(resp.data)
+        return resp.data
     }
 
     /**

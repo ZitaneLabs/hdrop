@@ -1,12 +1,14 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 
-export default class R2Provider {
+export default class S3Provider {
     /**
      * @type {{
-     * accountId: string,
+     * endpoint: string,
+     * region: string,
      * accessKeyId: string,
      * secretAccessKey: string,
      * bucketName: string,
+     * publicUrl: string,
      * }}
      */
     creds
@@ -17,29 +19,29 @@ export default class R2Provider {
     client
 
     /**
-     * Construct a new `R2Provider` instance.
+     * Construct a new `S3Provider` instance.
      */
     constructor() {
         // Retrieve credentials from environment
         this.creds = {
-            accountId: process.env.R2_ACCOUNT_ID,
-            accessKeyId: process.env.R2_ACCESS_KEY_ID,
-            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-            bucketName: process.env.R2_BUCKET_NAME,
-            publicUrl: process.env.R2_PUBLIC_URL,
+            endpoint: process.env.S3_ENDPOINT,
+            region: process.env.S3_REGION,
+            accessKeyId: process.env.S3_ACCESS_KEY_ID,
+            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+            bucketName: process.env.S3_BUCKET_NAME,
+            publicUrl: process.env.S3_PUBLIC_URL,
         }
-
-        // Build S3 endpoint
-        const endpoint = `https://${this.creds.accountId}.r2.cloudflarestorage.com`
 
         // Construct S3 client
         this.client = new S3Client({
-            endpoint,
-            region: 'auto',
+            endpoint: this.creds.endpoint,
+            region: this.creds.region,
             credentials: {
                 accessKeyId: this.creds.accessKeyId,
                 secretAccessKey: this.creds.secretAccessKey,
             },
+            // Workaround for docker-compose setup
+            forcePathStyle: true,
         })
     }
 

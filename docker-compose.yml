@@ -1,0 +1,61 @@
+# This is for local development only.
+# DO NOT deploy this on a production server!
+
+version: '3'
+services:
+  web:
+    build:
+      context: ./hausdrop-web
+      dockerfile: Dockerfile.development
+    ports:
+      - "3000:3000"
+    networks:
+      - hdrop
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_BASE_URL=http://localhost:3000
+      - REACT_APP_API_ENDPOINT=http://localhost:8080
+    volumes:
+      - ./hausdrop-web:/app
+      - /app/node_modules
+  api:
+    build:
+      context: ./hausdrop-mock-server
+      dockerfile: Dockerfile.development
+    ports:
+      - "8080:8080"
+    networks:
+      - hdrop
+      - localstack
+    environment:
+      - S3_ACCESS_KEY_ID=dev
+      - S3_SECRET_ACCESS_KEY=dev
+      - S3_REGION=eu-west-1
+      - S3_ENDPOINT=http://localstack:4566
+      - S3_BUCKET_NAME=hdrop
+      - S3_PUBLIC_URL=http://localhost:4566/hdrop
+      - CORS_ORIGIN=*
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+      - "4567:4567"
+    networks:
+      - hdrop
+      - localstack
+    environment:
+      - DEBUG=1
+      - SERVICES=s3
+      - AWS_ACCESS_KEY_ID=dev
+      - AWS_SECRET_ACCESS_KEY=dev
+      - AWS_DEFAULT_REGION=eu-west-1
+      - SKIP_SSL_CERT_DOWNLOAD=1
+      - EDGE_BIND_HOST=0.0.0.0
+      - EXTRA_CORS_ALLOWED_ORIGINS=*
+    volumes:
+      - ./aws:/etc/localstack/init/ready.d
+    healthcheck:
+      test: ["CMD", "awslocal", "s3api", "wait", "bucket-exists", "--bucket", "hdrop"]
+networks:
+  hdrop:
+  localstack:

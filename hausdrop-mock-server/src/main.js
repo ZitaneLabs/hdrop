@@ -3,23 +3,31 @@ import bodyParser from 'body-parser'
 import cors from 'cors'
 import * as dotenv from 'dotenv'
 
-import R2Provider from './R2Provider.mjs'
+import S3Provider from './S3Provider.mjs'
 import FileStorage from './FileStorage.mjs'
 import StoredFile from './StoredFile.mjs'
 
 // Load environment variables
 dotenv.config()
 
+// Parse env variables
+const PORT = parseInt(process.env.PORT) || 8080
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'
+
 // Create R2 provider
-const r2 = new R2Provider()
+const r2 = new S3Provider()
 
 // Create file storage
 const storage = new FileStorage()
 
 // Create express app
 const app = express()
-app.use(bodyParser.json({ limit: '10gb' }))
-app.use(cors())
+app.use(bodyParser.json({ limit: '1gb' }))
+app.use(cors({ origin: CORS_ORIGIN }))
+
+app.get('/status', (_req, res) => {
+    res.send('OK')
+})
 
 app.post('/proxy', (req, res) => {
     console.log(req.body)
@@ -180,4 +188,4 @@ app.delete('/v1/files/:access_token', async (req, res) => {
     })
 })
 
-app.listen(8080)
+app.listen(PORT)

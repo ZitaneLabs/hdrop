@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 
-import R2Provider from './R2Provider.mjs'
+import S3Provider from './S3Provider.mjs'
 import TokenGenerator from './TokenGenerator.mjs'
 
 /**
@@ -92,7 +92,7 @@ export default class StoredFile {
         remote: 0,
     }
 
-    /** @type {R2Provider} */
+    /** @type {S3Provider} */
     provider
 
     /** @type {string} */
@@ -128,7 +128,7 @@ export default class StoredFile {
     /**
      * Construct a new `StoredFile` instance.
      * 
-     * @param {R2Provider} provider
+     * @param {S3Provider} provider
      * @param {{
      * fileData: string,
      * fileNameData: string,

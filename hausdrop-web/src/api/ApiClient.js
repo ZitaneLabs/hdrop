@@ -220,6 +220,9 @@ class ApiClient {
          */
         const config = {
             responseType: 'arraybuffer',
+            headers: {
+                'Accept': 'application/octet-stream',
+            },
             onUploadProgress: progressEvent => {
                 onProgressChange(progressEvent.loaded / progressEvent.total)
             }

@@ -16,6 +16,7 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'
 
 // Create R2 provider
 const r2 = new S3Provider()
+await r2.setupCors()
 
 // Create file storage
 const storage = new FileStorage()

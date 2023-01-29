@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, PutBucketCorsCommand, S3Client } from '@aws-sdk/client-s3'
 
 export default class S3Provider {
     /**
@@ -54,6 +54,22 @@ export default class S3Provider {
     buildUrl(uuid) {
         const sanitizedPublicUrl = this.creds.publicUrl.replace(/\/+$/, '')
         return `${sanitizedPublicUrl}/${uuid}`
+    }
+
+    async setupCors() {
+        const command = new PutBucketCorsCommand({
+            Bucket: this.creds.bucketName,
+            CORSConfiguration: {
+                CORSRules: [
+                    {
+                        AllowedOrigins: ['*'],
+                        AllowedHeaders: ['*'],
+                        AllowedMethods: ['GET', 'OPTIONS'],
+                    }
+                ]
+            }
+        })
+        await this.client.send(command)
     }
 
     async uploadFile(uuid, content) {

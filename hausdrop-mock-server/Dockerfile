@@ -7,12 +7,12 @@ FROM node:19-alpine
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 
-COPY hausdrop-mock-server/package.json ./
-COPY hausdrop-mock-server/yarn.lock ./
-COPY hausdrop-mock-server/.env ./
+COPY package.json ./
+COPY yarn.lock ./
 RUN yarn --frozen-lockfile
+RUN npm i -g pm2
 
-COPY hausdrop-mock-server/ ./
+COPY . ./
 
 EXPOSE 80
-RUN yarn start
+CMD ["pm2", "start", "src/main.js", "--name", "api", "--attach"]

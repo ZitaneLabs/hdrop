@@ -33,7 +33,12 @@ app.use(cors({ origin: CORS_ORIGIN }))
 // Custom error handler
 app.use((err, _req, res, _next) => {
     console.error(err.stack)
-    res.status(500).send('Server error')
+    res.status(500).json({
+        status: 'error',
+        data: {
+            reason: 'Internal server error'
+        }
+    })
 })
 
 app.get('/status', (_req, res) => {

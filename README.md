@@ -18,6 +18,7 @@ Run `docker-compose up` to start the stack.
 | Web        | localhost | 3000 |
 | API        | localhost | 8080 |
 | LocalStack | localhost | 4566 |
+| Postgres   | localhost | 5432 |
 
 The frontend has hot reloading enabled and will react to changes.
 
@@ -54,25 +55,27 @@ Deploying to other providers should be similarly simple. Just be sure to configu
 ### Backend
 
 **Prerequisites**<br>
-The backend stores files in an S3-compatible object store.
 
-Examples of compatible providers include:
-- Amazon S3
-- Cloudflare R2
-- Backblaze B2
+- Postgres database
+- S3-compatible object store<br>
+  Examples of compatible providers include:
+  - Amazon S3
+  - Cloudflare R2
+  - Backblaze B2
 
 **Environment Variables**<br>
 No matter where you deploy, you'll need to configure the following environment variables:
 
-| Name                   | Example Value                 | Description          |
-| ---------------------- | ----------------------------- | -------------------- |
-| `S3_REGION`            | `example-region-1`            | S3 region            |
-| `S3_ENDPOINT`          | `https://foo.s3.example.org`  | S3 endpoint          |
-| `S3_ACCESS_KEY_ID`     | `AKIAIOSFODNN7EXAMPLE`        | S3 Access Key ID     |
-| `S3_SECRET_ACCESS_KEY` | `bPxRfiCYEXAMPLEKEY`          | S3 Secret Access Key |
-| `S3_PUBLIC_URL`        | `https://storage.example.org` | S3 Public Bucket URL |
-| `S3_BUCKET_NAME`       | `hdrop`                       | S3 Bucket Name       |
-| `CORS_ORIGIN`          | `*`                           | Allowed CORS Origin  |
+| Name                   | Example Value                  | Description                |
+| ---------------------- | ------------------------------ | -------------------------- |
+| `DATABASE_URL`         | `postgres://user:pass@host/db` | Postgres Connection String |
+| `S3_REGION`            | `example-region-1`             | S3 region                  |
+| `S3_ENDPOINT`          | `https://foo.s3.example.org`   | S3 endpoint                |
+| `S3_ACCESS_KEY_ID`     | `AKIAIOSFODNN7EXAMPLE`         | S3 Access Key ID           |
+| `S3_SECRET_ACCESS_KEY` | `bPxRfiCYEXAMPLEKEY`           | S3 Secret Access Key       |
+| `S3_PUBLIC_URL`        | `https://storage.example.org`  | S3 Public Bucket URL       |
+| `S3_BUCKET_NAME`       | `hdrop`                        | S3 Bucket Name             |
+| `CORS_ORIGIN`          | `*`                            | Allowed CORS Origin        |
 
 #### Docker (Recommended)
 We provide a preconfigured `Dockerfile` with pm2.

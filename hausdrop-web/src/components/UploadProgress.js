@@ -73,15 +73,17 @@ const UploadProgress = ({ className }) => {
     }
 
     const uploadFile = async () => {
-        ApiClient.uploadFile(encryptedFileInfo, progress => {
-            setUploadProgress(progress)
-        }).then(data => {
+        try {
+            const data = await ApiClient.uploadFile(encryptedFileInfo, progress => {
+                setUploadProgress(progress)
+            })
             setAccessToken(data.access_token)
             setUpdateToken(data.update_token)
-        }).catch(({ reason }) => {
-            console.log(reason)
-            setErrorMessage(reason)
-        })
+        } catch (err) {
+            console.log(err.message)
+            setErrorMessage(err.message)
+            return false
+        }
     }
 
     const stateMachine = {
@@ -120,7 +122,9 @@ const UploadProgress = ({ className }) => {
     
             const { action, transition, minTime } = state
             try {
-                await doTimedStep(action, minTime)
+                if (await doTimedStep(action, minTime) === false) {
+                    return
+                }
                 if (transition) {
                     setStepSymbol(transition)
                 }

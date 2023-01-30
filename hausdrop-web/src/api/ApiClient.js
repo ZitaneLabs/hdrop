@@ -31,14 +31,41 @@ class ApiClient {
      * @param {AxiosResponse<ApiResponse>} resp
      */
     static processResponse(resp) {
-        const json = resp.data
-        switch (json.status) {
+        const data = resp.data
+        switch (data.status) {
             case "success":
-                return json.data
+                return data.data
             case "error":
-                throw new Error(json.data.reason)
+                throw new Error(data.data.reason)
             default:
+                console.log(`Invalid status: "${data.status}"`)
                 throw new Error("Unknown response status")
+        }
+    }
+
+    /**
+     * Wrap a request in a try-catch block.
+     * 
+     * @param {Promise<Record<string, any>>} fn
+     * @param {{
+     * skipValidation?: boolean,
+     * }} _config
+     */
+    static async wrapRequest(request, _config = {}) {
+        const config = {
+            skipValidation: false,
+            ..._config,
+        }
+        try {
+            const resp = await request
+            if (config.skipValidation) return resp.data
+            else return this.processResponse(resp)
+        } catch (err) {
+            if ('response' in err && 'data' in err.response) {
+                throw new Error(err.response.data.reason)
+            } else {
+                throw err
+            }
         }
     }
 
@@ -84,10 +111,7 @@ class ApiClient {
 
         // Send request
         const endpoint = ApiClient.buildEndpoint(`/v1/files`)
-        const resp = await axios.post(endpoint, data, config)
-
-        // Process response
-        return ApiClient.processResponse(resp)
+        return await this.wrapRequest(axios.post(endpoint, data, config))
     }
 
     /**
@@ -116,10 +140,7 @@ class ApiClient {
 
         // Send request
         const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}/expiry`, { updateToken })
-        const resp = await axios.post(endpoint, data, config)
-
-        // Process response
-        return ApiClient.processResponse(resp)
+        return await this.wrapRequest(axios.post(endpoint, data, config))
     }
 
     /**
@@ -142,10 +163,7 @@ class ApiClient {
 
         // Send request
         const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}/challenge`)
-        const resp = await axios.get(endpoint, config)
-
-        // Process response
-        return ApiClient.processResponse(resp)
+        return await this.wrapRequest(axios.get(endpoint, config))
     }
 
     /**
@@ -174,10 +192,7 @@ class ApiClient {
 
         // Send request
         const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}/challenge`)
-        const resp = await axios.post(endpoint, data, config)
-
-        // Process response
-        return ApiClient.processResponse(resp)
+        return await this.wrapRequest(axios.post(endpoint, data, config))
     }
 
     /**
@@ -200,10 +215,7 @@ class ApiClient {
 
         // Send request
         const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}`)
-        const resp = await axios.get(endpoint, config)
-
-        // Process response
-        return ApiClient.processResponse(resp)
+        return await this.wrapRequest(axios.get(endpoint, config))
     }
 
     /**
@@ -221,7 +233,7 @@ class ApiClient {
         const config = {
             responseType: 'text',
             headers: {
-                'Accept': 'application/octet-stream',
+                'Accept': 'application/octet-stream, */*',
             },
             onUploadProgress: progressEvent => {
                 onProgressChange(progressEvent.loaded / progressEvent.total)
@@ -229,10 +241,9 @@ class ApiClient {
         }
 
         // Download file
-        const resp = await axios.get(url, config)
-
-        // Convert to Uint8Array
-        return resp.data
+        return await this.wrapRequest(axios.get(url, config), {
+            skipValidation: true
+        })
     }
 
     /**
@@ -255,10 +266,7 @@ class ApiClient {
 
         // Send request
         const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}`, { updateToken })
-        const resp = await axios.delete(endpoint, config)
-
-        // Process response
-        return ApiClient.processResponse(resp)
+        return await this.wrapRequest(axios.delete(endpoint, config))
     }
 
     static generateLink(accessToken) {

@@ -101,29 +101,27 @@ const DownloadProgress = ({ className }) => {
     }
 
     const downloadFile = async () => {
-        ApiClient.getFile(accessToken, progress => {
-            setDownloadProgress(progress)
-        }).then(data => {
+        try {
+            const data = await ApiClient.getFile(accessToken, progress => {
+                setDownloadProgress(progress)
+            })
 
             // Check if file is provided as URL
             if (data.file_url !== null) {
+
                 // Download file
-                ApiClient.directDownloadFile(data.file_url).then(fileContents => {
-                    // Set file data in original data
-                    data.file_data = fileContents
-                    setDownloadedFileData(data)
-                }).catch(({ reason }) => {
-                    console.log(reason)
-                    setErrorMessage(reason)
-                })
-                return
-            } else {
-                setDownloadedFileData(data)
+                const fileContents = await ApiClient.directDownloadFile(data.file_url)
+
+                // Set file data in original data
+                data.file_data = fileContents
             }
-        }).catch(({ reason }) => {
-            console.log(reason)
-            setErrorMessage(reason)
-        })
+
+            setDownloadedFileData(data)
+        } catch (err) {
+            console.log(err.message)
+            setErrorMessage(err.message)
+            return false
+        }
     }
 
     const decryptFile = async () => {

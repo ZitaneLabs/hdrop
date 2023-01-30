@@ -28,11 +28,7 @@ const ShareFile = ({ className }) => {
                 </a>
             </div>
             <CopyToClipboard label="Link" value={link} />
-            <div
-                className="password"
-                onMouseEnter={() => setShowPassword(true)}
-                onMouseLeave={() => setShowPassword(false)}
-                onClick={() => setShowPassword(x => !x)}>
+            <div className="password" onMouseEnter={() => setShowPassword(true)} onMouseLeave={() => setShowPassword(false)}>
                 <div className="password__label">Password</div>
                 <div className="password__value">{passwordText}</div>
             </div>

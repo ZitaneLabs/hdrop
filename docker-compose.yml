@@ -5,7 +5,7 @@ version: '3'
 services:
   web:
     build:
-      context: ./hausdrop-web
+      context: ./hdrop-web
       dockerfile: Dockerfile.development
     ports:
       - "3000:3000"
@@ -16,13 +16,13 @@ services:
       - REACT_APP_BASE_URL=http://localhost:3000
       - REACT_APP_API_ENDPOINT=http://localhost:8080
     volumes:
-      - ./hausdrop-web:/app
+      - ./hdrop-web:/app
       - /app/node_modules
     depends_on:
       - api
   api:
     build:
-      context: ./hausdrop-mock-server
+      context: ./hdrop-server-js
       dockerfile: Dockerfile
     ports:
       - "8080:80"

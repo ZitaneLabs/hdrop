@@ -1,5 +1,5 @@
 {
-  "name": "hdrop-mock-server",
+  "name": "hdrop-server-js",
   "version": "1.0.0",
   "main": "src/main.js",
   "repository": "https://github.com/splittydev/hausdrop",

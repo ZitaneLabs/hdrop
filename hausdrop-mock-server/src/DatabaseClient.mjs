@@ -1,6 +1,6 @@
 
 import Prisma from '@prisma/client'
-const { PrismaClient, File } = Prisma
+const { PrismaClient } = Prisma
 
 import StoredFile from './StoredFile.mjs'
 
@@ -19,7 +19,7 @@ export default class DatabaseClient {
      * Create a new file in the database.
      * 
      * @param {StoredFile} storedFile
-     * @returns {Promise<File>}
+     * @returns {Promise<Prisma.File>}
      */
     async createFile(storedFile) {
         const createdAt = new Date()
@@ -120,7 +120,7 @@ export default class DatabaseClient {
      * Find a file by its access token.
      * 
      * @param {string} accessToken
-     * @returns {Promise<File | null>}
+     * @returns {Promise<Prisma.File | null>}
      */
     async getFile(accessToken) {
         return await this.client.file.findUnique({
@@ -134,12 +134,27 @@ export default class DatabaseClient {
      * Delete a file by its access token.
      * 
      * @param {string} accessToken
-     * @returns {Promise<File>}
+     * @returns {Promise<Prisma.File>}
      */
     async deleteFile(accessToken) {
         return await this.client.file.delete({
             where: {
                 accessToken
+            }
+        })
+    }
+
+    /**
+     * Get all expired files.
+     * 
+     * @returns {Promise<Prisma.File[]>}
+     */
+    async getExpiredFiles() {
+        return await this.client.file.findMany({
+            where: {
+                expiresAt: {
+                    lte: new Date()
+                }
             }
         })
     }

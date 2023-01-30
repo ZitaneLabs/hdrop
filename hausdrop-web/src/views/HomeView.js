@@ -19,12 +19,7 @@ const HomeView = ({ className }) => {
     const password = useRecoilValue(passwordState)
     const encryptedFileInfo = useRecoilValue(encryptedFileInfoState)
     const accessToken = useRecoilValue(accessTokenState)
-    const [expirySeconds, setExpirySeconds] = useState(null)
     const fileUploadDone = useRecoilValue(fileFullyUploadedState)
-
-    const handleExpirationSubmit = expirySeconds => {
-        setExpirySeconds(expirySeconds)
-    }
 
     return (
         <View>
@@ -53,8 +48,6 @@ const HomeView = ({ className }) => {
                 {fileUploadDone && (
                     <div className="container">
                         <ExpirationPicker
-                            onExpirationSubmit={handleExpirationSubmit}
-                            active={expirySeconds}
                             defaultValue={24 * 60 * 60}
                         />
 

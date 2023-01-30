@@ -41,6 +41,11 @@ app.use((err, _req, res, _next) => {
     })
 })
 
+// Start expiration watchdog
+setInterval(() => {
+    storage.purgeExpiredFiles()
+}, 60 * 1000)
+
 app.get('/status', (_req, res) => {
     res.send('OK')
 })
@@ -67,6 +72,30 @@ app.post('/v1/files', async (req, res) => {
             access_token: file.accessToken,
             update_token: file.updateToken,
         }
+    })
+})
+
+app.post('/v1/files/:access_token/expiry', async (req, res) => {
+    // Retrieve file
+    const file = await storage.retrieveFile(req.params.access_token)
+
+    // Guard against invalid access token
+    if (file === null) {
+        return res.status(404).json({
+            status: 'error',
+            data: {
+                reason: 'File not found'
+            }
+        })
+    }
+
+    // Update file expiry
+    await dbClient.setFileExpiry(req.params.access_token, req.body.expiry)
+
+    // Send response
+    res.json({
+        status: 'success',
+        data: {}
     })
 })
 

@@ -1,5 +1,8 @@
 import { useEffect } from 'react'
+import { useRecoilState, useRecoilValue } from 'recoil'
 import styled from 'styled-components'
+import ApiClient from '../api/ApiClient'
+import { accessTokenState, expirySecondsState, updateTokenState } from '../state'
 
 const ExpirationIncrements = [
     { label: '15m', seconds: 15 * 60, },
@@ -13,21 +16,23 @@ const ExpirationIncrements = [
  * 
  * @param {{
  * className: string,
- * onExpirationSubmit: (expirationSeconds: number) => void,
- * active?: number,
- * hidden: boolean
+ * defaultValue: number,
  * }} props
  */
-const ExpirationPicker = ({ className, onExpirationSubmit, active = null, defaultValue = null, hidden = false }) => {
-    useEffect(() => {
-        if (hidden) return
-        if (defaultValue) {
-            onExpirationSubmit(defaultValue)
-        }
-    }, [hidden, defaultValue])
+const ExpirationPicker = ({ className, defaultValue }) => {
+    const accessToken = useRecoilValue(accessTokenState)
+    const updateToken = useRecoilValue(updateTokenState)
+    const [expirySeconds, setExpirySeconds] = useRecoilState(expirySecondsState)
+
+    const activeIncrement = expirySeconds === null ? defaultValue : expirySeconds
+
+    const handleSubmit = async seconds => {
+        await ApiClient.updateFileExpiration(accessToken, updateToken, seconds)
+        setExpirySeconds(seconds)
+    }
 
     return (
-        <div className={className} data-hidden={hidden}>
+        <div className={className}>
             <div className="title">
                 Expiration Time
             </div>
@@ -36,8 +41,8 @@ const ExpirationPicker = ({ className, onExpirationSubmit, active = null, defaul
                     <div
                         key={seconds}
                         className="expiry"
-                        data-active={active === seconds}
-                        onClick={() => onExpirationSubmit(seconds)}>
+                        data-active={seconds === activeIncrement}
+                        onClick={() => handleSubmit(seconds)}>
                         <span>{label}</span>
                         <div className="bottom-indicator" />
                     </div>
@@ -119,11 +124,5 @@ export default styled(ExpirationPicker)`
                 background: hsl(0,0%,50%);
             }
         }
-    }
-
-    &[data-hidden='true'] {
-        opacity: 0;
-        pointer-events: none;
-        transform: scale(0);
     }
 `

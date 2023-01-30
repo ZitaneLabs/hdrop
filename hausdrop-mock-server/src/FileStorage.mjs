@@ -104,8 +104,9 @@ export default class FileStorage {
      * Delete a file
      * 
      * @param {string} accessToken
+     * @param {string} reason
      */
-    async deleteFile(accessToken) {
+    async deleteFile(accessToken, reason = null) {
         // Delete from database
         const file = await this.dbClient.deleteFile(accessToken)
         
@@ -116,5 +117,18 @@ export default class FileStorage {
 
         // Delete from cache
         this.cache.evict(accessToken)
+
+        // Log deletion
+        console.log(`[FileStorage/delete ${accessToken}] Deleted file ("${reason ?? "User request"}")`)
+    }
+
+    /**
+     * Purge expired files
+     */
+    async purgeExpiredFiles() {
+        const expiredFiles = await this.dbClient.getExpiredFiles()
+        for (const file of expiredFiles) {
+            await this.deleteFile(file.accessToken, 'Expired')
+        }
     }
 }

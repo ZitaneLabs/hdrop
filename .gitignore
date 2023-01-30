@@ -1,6 +1,7 @@
 # Secrets
 .env
 .env.production
+.notes/
 
 # macOS
 .DS_Store

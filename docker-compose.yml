@@ -18,16 +18,19 @@ services:
     volumes:
       - ./hausdrop-web:/app
       - /app/node_modules
+    depends_on:
+      - api
   api:
     build:
       context: ./hausdrop-mock-server
-      dockerfile: Dockerfile.development
+      dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8080:80"
     networks:
       - hdrop
-      - localstack
+      - backend
     environment:
+      - PORT=80
       - S3_ACCESS_KEY_ID=dev
       - S3_SECRET_ACCESS_KEY=dev
       - S3_REGION=eu-west-1
@@ -35,6 +38,13 @@ services:
       - S3_BUCKET_NAME=hdrop
       - S3_PUBLIC_URL=http://localhost:4566/hdrop
       - CORS_ORIGIN=*
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/hdrop
+    platform: linux/x86_64
+    depends_on:
+      - postgres
+      - localstack
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
   localstack:
     image: localstack/localstack:latest
     ports:
@@ -42,7 +52,7 @@ services:
       - "4567:4567"
     networks:
       - hdrop
-      - localstack
+      - backend
     environment:
       - DEBUG=1
       - SERVICES=s3
@@ -56,6 +66,16 @@ services:
       - ./aws:/etc/localstack/init/ready.d
     healthcheck:
       test: ["CMD", "awslocal", "s3api", "wait", "bucket-exists", "--bucket", "hdrop"]
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=hdrop
 networks:
   hdrop:
-  localstack:
+  backend:

@@ -1,5 +1,4 @@
-import { useRecoilValue } from 'recoil'
-import { Home } from 'react-feather'
+import { useRecoilState, useRecoilValue } from 'recoil'
 import styled from 'styled-components'
 
 import { fileFullyDownloadedState, passwordState } from '../state'
@@ -8,29 +7,43 @@ import DownloadProgress from '../components/DownloadProgress'
 import ViewFile from '../components/ViewFile'
 import Logo from '../components/Logo'
 import View from './View'
+import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 const FileDetailView = ({ className }) => {
-    const password = useRecoilValue(passwordState)
+    const [isLoading, setIsLoading] = useState(true)
+    const [password, setPassword] = useRecoilState(passwordState)
     const isFileDownloaded = useRecoilValue(fileFullyDownloadedState)
+    const { hash } = useLocation()
+
+    useEffect(() => {
+        if (hash && hash.length > 0) {
+            console.log(hash.slice(1))
+            setPassword(hash.slice(1))
+        }
+        setIsLoading(false)
+    }, [])
 
     return (
         <View>
-            <div className={className}>
-                {/* Stage 1: Enter password */}
-                {password === null && (
-                    <PasswordField />
-                )}
+            {!isLoading && (
+                <div className={className}>
+                    {/* Stage 1: Enter password */}
+                    {password === null && (
+                        <PasswordField />
+                    )}
 
-                {/* Stage 2: Download and decrypt file */}
-                {password !== null && !isFileDownloaded && (
-                    <DownloadProgress />
-                )}
+                    {/* Stage 2: Download and decrypt file */}
+                    {password !== null && !isFileDownloaded && (
+                        <DownloadProgress />
+                    )}
 
-                {/* Stage 3: Show file */}
-                {isFileDownloaded && (
-                    <ViewFile />
-                )}
-            </div>
+                    {/* Stage 3: Show file */}
+                    {isFileDownloaded && (
+                        <ViewFile />
+                    )}
+                </div>
+            )}
         </View>
     )
 }

@@ -269,8 +269,15 @@ class ApiClient {
         return await this.wrapRequest(axios.delete(endpoint, config))
     }
 
-    static generateLink(accessToken) {
-        return `${HOMEPAGE}/${accessToken}`
+    /**
+     * Generate a link to a file.
+     * 
+     * @param {string} accessToken Access token
+     * @param {string | null} password Password
+     */
+    static generateLink(accessToken, password = null) {
+        const suffix = password !== null ? `#${password}` : ''
+        return `${HOMEPAGE}/${accessToken}${suffix}`
     }
 }
 

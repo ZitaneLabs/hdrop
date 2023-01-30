@@ -1,7 +1,7 @@
 class PasswordUtil {
     static generateSecurePassword() {
         const wordCount = 4
-        return Array(wordCount).fill().map(() => PasswordUtil.generateSecureWord()).join(' ')
+        return Array(wordCount).fill().map(() => PasswordUtil.generateSecureWord()).join('')
     }
 
     static generateSecureWord() {

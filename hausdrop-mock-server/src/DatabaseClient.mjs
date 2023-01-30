@@ -5,6 +5,14 @@ const { PrismaClient, File } = Prisma
 import StoredFile from './StoredFile.mjs'
 
 export default class DatabaseClient {
+    /**
+     * Default expiration time in milliseconds.
+     * 
+     * @default 86400000 // 24 hours
+     * @type {number}
+     */
+    static DEFAULT_EXPIRATION_MS = 24 * 60 * 60 * 1000
+
     client = new PrismaClient()
 
     /**
@@ -14,6 +22,8 @@ export default class DatabaseClient {
      * @returns {Promise<File>}
      */
     async createFile(storedFile) {
+        const createdAt = new Date()
+        const expiresAt = new Date(createdAt.getTime() + DatabaseClient.DEFAULT_EXPIRATION_MS)
         return await this.client.file.create({
             data: {
                 uuid: storedFile.uuid,
@@ -23,8 +33,8 @@ export default class DatabaseClient {
                 fileNameHash: storedFile.fileNameHash,
                 salt: storedFile.salt,
                 iv: storedFile.iv,
-                createdAt: new Date(),
-                expiresAt: new Date()
+                createdAt,
+                expiresAt,
             }
         })
     }

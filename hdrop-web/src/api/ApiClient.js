@@ -70,6 +70,22 @@ class ApiClient {
     }
 
     /**
+     * Check if the server is online.
+     */
+    static async isServerOnline() {
+        /** @type {AxiosRequestConfig} */
+        const config = {
+            responseType: 'text'
+        }
+        try {
+            const res = await this.wrapRequest(axios.get(`${API_BASE}/status`, config), { skipValidation: true })
+            return res === 'OK'
+        } catch (_err) {
+            return false
+        }
+    }
+
+    /**
      * Build an API endpoint.
      * 
      * @param {string} path Path

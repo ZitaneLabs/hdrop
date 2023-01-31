@@ -10,8 +10,7 @@ const SecurityView = ({ className }) => {
                     <div className="divider" />
                     <h2>TL;DR</h2>
                     <p>
-                        hdrop is designed to be highly secure.<br/>
-                        We don't store any identifiable data.
+                        hdrop is designed to be highly secure.
                     </p>
                     <h2>How we protect your data</h2>
                     <p>

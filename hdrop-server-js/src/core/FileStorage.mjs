@@ -1,9 +1,6 @@
 import Prisma from '@prisma/client'
 
-import StoredFile from "./StoredFile.mjs"
-import DatabaseClient from "./DatabaseClient.mjs"
-import S3Provider from "./providers/S3Provider.mjs"
-import FileDataCache from "./FileDataCache.mjs"
+import { DatabaseClient, FileDataCache, S3Provider, StoredFile } from '../core.js'
 
 /**
  * File storage coordinator.

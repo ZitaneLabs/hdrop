@@ -2,7 +2,7 @@
 import Prisma from '@prisma/client'
 const { PrismaClient } = Prisma
 
-import StoredFile from './StoredFile.mjs'
+import { StoredFile } from '../core.js'
 
 export default class DatabaseClient {
     /**

@@ -19,6 +19,7 @@ RUN npx prisma generate
 
 # Copy source code
 COPY src ./src
+COPY tsconfig.json ./
 
 # Copy entrypoint script
 COPY infra/entrypoint.sh ./

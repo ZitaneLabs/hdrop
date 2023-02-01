@@ -1,6 +1,6 @@
 {
   "name": "hdrop-server-js",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "src/main.js",
   "repository": "https://github.com/splittydev/hausdrop",
   "author": "Marco Quinten",

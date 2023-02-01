@@ -2,42 +2,30 @@ import Prisma from '@prisma/client'
 
 import { DatabaseClient, FileDataCache, S3Provider, StoredFile } from '../core.js'
 
+type FileWithData = Prisma.File & Partial<{ fileData: string }>
+
 /**
  * File storage coordinator.
  * 
  * Handles database, remote storage and caching.
  */
 export default class FileStorage {
-    /** @type {DatabaseClient} */
-    dbClient
+    dbClient: DatabaseClient
+    storageProvider: S3Provider
+    cache: FileDataCache = new FileDataCache()
 
-    /** @type {S3Provider} */
-    storageProvider
-
-    /** @type {FileDataCache} */
-    cache = new FileDataCache()
-
-    /**
-     * @param {DatabaseClient} dbClient
-     * @param {S3Provider} storageProvider
-     */
-    constructor(dbClient, storageProvider) {
+    constructor(dbClient: DatabaseClient, storageProvider: S3Provider) {
         this.dbClient = dbClient
         this.storageProvider = storageProvider
     }
 
-    /**
-     * Store a file
-     * 
-     * @param {StoredFile} storedFile
-     */
-    async storeFile(storedFile) {
+    async storeFile(storedFile: StoredFile) {
 
         // Store file in database
         const file = await this.dbClient.createFile(storedFile)
 
         // Store file data in cache
-        this.cache.commit(file.accessToken, file.fileData)
+        this.cache.commit(file.accessToken, storedFile.fileData)
 
         // Persist file to remote storage
         this.tryPersistFile(storedFile)
@@ -45,12 +33,7 @@ export default class FileStorage {
         return file
     }
 
-    /**
-     * Persist a file to remote storage
-     * 
-     * @param {StoredFile} file
-     */
-    tryPersistFile(file) {
+    tryPersistFile(file: StoredFile) {
         this.storageProvider.uploadFile(file.uuid, file.fileData)
             .then(() => {
 
@@ -63,7 +46,7 @@ export default class FileStorage {
                 // Evice file from cache
                 this.cache.evict(file.accessToken)
             })
-            .catch(err => {
+            .catch((err: any) => {
                 // Log error
                 console.log(`[FileStorage/persist ${file.accessToken}] `, err)
                 console.log(`[FileStorage/persist ${file.accessToken}] Trying again in 1s`)
@@ -75,12 +58,9 @@ export default class FileStorage {
 
     /**
      * Retrieve a file
-     * 
-     * @param {string} accessToken
-     * @returns {Promise<Prisma.File | null>}
      */
-    async retrieveFile(accessToken) {
-        const file = await this.dbClient.getFile(accessToken)
+    async retrieveFile(accessToken: string): Promise<FileWithData | null> {
+        const file = await this.dbClient.getFile(accessToken) as FileWithData
         
         if (file === null) {
             throw new Error('File not found')
@@ -89,6 +69,10 @@ export default class FileStorage {
         // Check if file is only stored in cache
         if (file.dataUrl === null) {
             const fileData = this.cache.get(accessToken)
+
+            if (fileData === null) {
+                throw new Error('File data is not available')
+            }
 
             // Patch file object
             file.fileData = fileData
@@ -99,11 +83,8 @@ export default class FileStorage {
 
     /**
      * Delete a file
-     * 
-     * @param {string} accessToken
-     * @param {string} reason
      */
-    async deleteFile(accessToken, reason = null) {
+    async deleteFile(accessToken: string, reason: string | null = null) {
         // Delete from database
         const file = await this.dbClient.deleteFile(accessToken)
         

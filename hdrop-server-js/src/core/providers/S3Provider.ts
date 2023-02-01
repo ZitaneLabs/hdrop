@@ -1,22 +1,20 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, PutBucketCorsCommand, S3Client } from '@aws-sdk/client-s3'
+import { Readable } from 'stream'
 
 export default class S3Provider {
-    /**
-     * @type {{
-     * endpoint: string,
-     * region: string,
-     * accessKeyId: string,
-     * secretAccessKey: string,
-     * bucketName: string,
-     * publicUrl: string,
-     * }}
-     */
-    creds
+    creds: {
+        endpoint: string
+        region: string
+        accessKeyId: string
+        secretAccessKey: string
+        bucketName: string
+        publicUrl: string
+    }
 
     /**
      * @type {S3Client}
      */
-    client
+    client: S3Client
 
     /**
      * Construct a new `S3Provider` instance.
@@ -27,9 +25,9 @@ export default class S3Provider {
             endpoint: process.env.S3_ENDPOINT,
             region: process.env.S3_REGION,
             accessKeyId: process.env.S3_ACCESS_KEY_ID,
-            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-            bucketName: process.env.S3_BUCKET_NAME,
-            publicUrl: process.env.S3_PUBLIC_URL,
+            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY as string,
+            bucketName: process.env.S3_BUCKET_NAME as string,
+            publicUrl: process.env.S3_PUBLIC_URL as string,
         }
 
         // Construct S3 client
@@ -47,11 +45,8 @@ export default class S3Provider {
 
     /**
      * Build a URL for the given UUID.
-     * 
-     * @param {string} uuid
-     * @returns {string} URL
      */
-    buildUrl(uuid) {
+    buildUrl(uuid: string): string {
         const sanitizedPublicUrl = this.creds.publicUrl.replace(/\/+$/, '')
         return `${sanitizedPublicUrl}/${uuid}`
     }
@@ -71,7 +66,7 @@ export default class S3Provider {
         await this.client.send(command)
     }
 
-    async uploadFile(uuid, content) {
+    async uploadFile(uuid: string, content: string) {
         const command = new PutObjectCommand({
             Bucket: this.creds.bucketName,
             Key: uuid,
@@ -80,16 +75,16 @@ export default class S3Provider {
         await this.client.send(command)
     }
 
-    async downloadFile(uuid) {
+    async downloadFile(uuid: string): Promise<string> {
         const command = new GetObjectCommand({
             Bucket: this.creds.bucketName,
             Key: uuid,
         })
         const response = await this.client.send(command)
-        return await this.streamToString(response.Body)
+        return await this.streamToString(response.Body as Readable)
     }
 
-    async deleteFile(uuid) {
+    async deleteFile(uuid: string) {
         const command = new DeleteObjectCommand({
             Bucket: this.creds.bucketName,
             Key: uuid,
@@ -97,9 +92,9 @@ export default class S3Provider {
         await this.client.send(command)
     }
 
-    streamToString(readableStream) {
+    streamToString(readableStream: Readable): Promise<string> {
         return new Promise((resolve, reject) => {
-            const chunks = []
+            const chunks: Uint8Array[] = []
             readableStream.on('data', (data) => {
                 chunks.push(data)
             })

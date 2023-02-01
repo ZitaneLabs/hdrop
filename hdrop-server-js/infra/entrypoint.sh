@@ -3,5 +3,8 @@
 # Migrate database
 npx prisma migrate deploy
 
+# Build server
+yarn build
+
 # Start server
-pm2 start src/main.js --name api --attach
+pm2-runtime start dist/main.js

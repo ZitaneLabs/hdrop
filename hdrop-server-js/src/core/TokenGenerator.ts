@@ -2,26 +2,11 @@ import { v4 as uuidv4 } from 'uuid'
 import { createHash } from 'crypto'
 
 export default class TokenGenerator {
-    /**
-     * @type {string[]}
-     */
-    static accessTokens = []
+    static accessTokens: string[] = []
+    static accessTokenLength: number = 5
+    static updateTokenLength: number = 8
 
-    /**
-     * Access token length
-     * 
-     * @type {number}
-     */
-    static accessTokenLength = 5
-
-    /**
-     * Update token length
-     * 
-     * @type {number}
-     */
-    static updateTokenLength = 8
-
-    static generateToken(length) {
+    static generateToken(length: number) {
         const uuid = uuidv4()
         const sha256 = createHash('sha256').update(uuid).digest('hex')
         const token = sha256.substring(0, length)
@@ -30,10 +15,8 @@ export default class TokenGenerator {
     
     /**
      * Generate a unique access token
-     * 
-     * @returns {string}
      */
-    static generateAccessToken() {
+    static generateAccessToken(): string {
         let token = this.generateToken(this.accessTokenLength)
         let collisions = 0
 
@@ -54,10 +37,8 @@ export default class TokenGenerator {
     
     /**
      * Generate an update token
-     * 
-     * @returns {string}
      */
-    static generateUpdateToken() {
+    static generateUpdateToken(): string {
         return this.generateToken(this.updateTokenLength)
     }
 }

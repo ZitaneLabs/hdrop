@@ -1,5 +1,4 @@
-import DatabaseClient from "./DatabaseClient.mjs";
-import FileStorage from "./FileStorage.mjs";
+import { DatabaseClient, FileStorage } from '../core.js'
 
 export default class AppContext {
     dbClient: DatabaseClient

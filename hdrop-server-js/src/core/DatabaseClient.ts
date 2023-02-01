@@ -1,6 +1,5 @@
 
-import Prisma from '@prisma/client'
-const { PrismaClient } = Prisma
+import Prisma, { PrismaClient } from '@prisma/client'
 
 import { StoredFile } from '../core.js'
 
@@ -9,19 +8,15 @@ export default class DatabaseClient {
      * Default expiration time in milliseconds.
      * 
      * @default 86400000 // 24 hours
-     * @type {number}
      */
-    static DEFAULT_EXPIRATION_MS = 24 * 60 * 60 * 1000
+    static DEFAULT_EXPIRATION_MS: number = 24 * 60 * 60 * 1000
 
-    client = new PrismaClient()
+    client: PrismaClient = new PrismaClient()
 
     /**
      * Create a new file in the database.
-     * 
-     * @param {StoredFile} storedFile
-     * @returns {Promise<Prisma.File>}
      */
-    async createFile(storedFile) {
+    async createFile(storedFile: StoredFile): Promise<Prisma.File> {
         const createdAt = new Date()
         const expiresAt = new Date(createdAt.getTime() + DatabaseClient.DEFAULT_EXPIRATION_MS)
         return await this.client.file.create({
@@ -41,11 +36,8 @@ export default class DatabaseClient {
 
     /**
      * Get the creation date of a file.
-     * 
-     * @param {string} accessToken
-     * @returns {Promise<Date | null>}
      */
-    async getFileCreationDate(accessToken) {
+    async getFileCreationDate(accessToken: string): Promise<Date | null> {
         const file = await this.client.file.findUnique({
             where: {
                 accessToken
@@ -60,11 +52,8 @@ export default class DatabaseClient {
 
     /**
      * Get the expiry date of a file.
-     * 
-     * @param {string} accessToken
-     * @returns {Promise<Date | null>}
      */
-    async getFileExpiry(accessToken) {
+    async getFileExpiry(accessToken: string): Promise<Date | null> {
         const file = await this.client.file.findUnique({
             where: {
                 accessToken
@@ -79,11 +68,8 @@ export default class DatabaseClient {
 
     /**
      * Set the expiry date of a file.
-     * 
-     * @param {string} accessToken
-     * @param {number} expirySeconds
      */
-    async setFileExpiry(accessToken, expirySeconds) {
+    async setFileExpiry(accessToken: string, expirySeconds: number) {
         const creationDate = await this.getFileCreationDate(accessToken)
         if (creationDate === null) {
             throw new Error('File not found')
@@ -101,11 +87,8 @@ export default class DatabaseClient {
 
     /**
      * Set the data URL of a file.
-     * 
-     * @param {string} accessToken
-     * @param {string} url
      */
-    async setFileUrl(accessToken, url) {
+    async setFileUrl(accessToken: string, url: string) {
         await this.client.file.update({
             where: {
                 accessToken,
@@ -118,11 +101,8 @@ export default class DatabaseClient {
 
     /**
      * Find a file by its access token.
-     * 
-     * @param {string} accessToken
-     * @returns {Promise<Prisma.File | null>}
      */
-    async getFile(accessToken) {
+    async getFile(accessToken: string): Promise<Prisma.File | null> {
         return await this.client.file.findUnique({
             where: {
                 accessToken
@@ -132,11 +112,8 @@ export default class DatabaseClient {
 
     /**
      * Delete a file by its access token.
-     * 
-     * @param {string} accessToken
-     * @returns {Promise<Prisma.File>}
      */
-    async deleteFile(accessToken) {
+    async deleteFile(accessToken: string): Promise<Prisma.File> {
         return await this.client.file.delete({
             where: {
                 accessToken
@@ -146,10 +123,8 @@ export default class DatabaseClient {
 
     /**
      * Get all expired files.
-     * 
-     * @returns {Promise<Prisma.File[]>}
      */
-    async getExpiredFiles() {
+    async getExpiredFiles(): Promise<Prisma.File[]> {
         return await this.client.file.findMany({
             where: {
                 expiresAt: {

@@ -1,35 +1,24 @@
 export default class FileDataCache {
-    /**
-     * @type {Map<string, string>}
-     */
-    cache = new Map()
+    cache: Map<string, string> = new Map()
 
     /**
      * Commit the specified file to the cache.
-     * 
-     * @param {string} accessToken
-     * @param {string} fileData
      */
-    commit(accessToken, fileData) {
+    commit(accessToken: string, fileData: string) {
         this.cache.set(accessToken, fileData)
     }
 
     /**
      * Get the specified file from the cache.
-     * 
-     * @param {string} accessToken
-     * @returns {string | null}
      */
-    get(accessToken) {
+    get(accessToken: string): string | null {
         return this.cache.get(accessToken) || null
     }
 
     /**
      * Evict the specified file from the cache.
-     * 
-     * @param {string} accessToken
      */
-    evict(accessToken) {
+    evict(accessToken: string) {
         this.cache.delete(accessToken)
     }
 }

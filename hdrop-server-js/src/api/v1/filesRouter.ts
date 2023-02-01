@@ -1,56 +1,11 @@
-import express from 'express'
-import bodyParser from 'body-parser'
-import cors from 'cors'
-import * as dotenv from 'dotenv'
+import { Request, Response, Router } from 'express'
 
-import { S3Provider } from './providers/index.mjs'
-import FileStorage from './FileStorage.mjs'
-import StoredFile, { ExportFileData } from './StoredFile.mjs'
-import DatabaseClient from './DatabaseClient.mjs'
+import { authenticate } from '../../middleware.js'
+import { StoredFile, ExportFileData } from '../../core.js'
 
-// Load environment variables
-dotenv.config()
+const router = Router()
 
-// Parse env variables
-const PORT = parseInt(process.env.PORT) || 8080
-const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'
-
-// Create storage provider
-const storageProvider = new S3Provider()
-await storageProvider.setupCors()
-
-// Open database connection
-const dbClient = new DatabaseClient()
-
-// Create file storage
-const storage = new FileStorage(dbClient, storageProvider)
-
-// Create express app
-const app = express()
-app.use(bodyParser.json({ limit: '1gb' }))
-app.use(cors({ origin: CORS_ORIGIN }))
-
-// Custom error handler
-app.use((err, _req, res, _next) => {
-    console.error(err.stack)
-    res.status(500).json({
-        status: 'error',
-        data: {
-            reason: 'Internal server error'
-        }
-    })
-})
-
-// Start expiration watchdog
-setInterval(() => {
-    storage.purgeExpiredFiles()
-}, 60 * 1000)
-
-app.get('/status', (_req, res) => {
-    res.send('OK')
-})
-
-app.post('/v1/files', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
     // Create stored file
     const fileBody = new StoredFile(
         {
@@ -63,7 +18,7 @@ app.post('/v1/files', async (req, res) => {
     )
 
     // Store file
-    const file = await storage.storeFile(fileBody)
+    const file = await req.context.storage.storeFile(fileBody)
 
     // Send response
     res.json({
@@ -75,9 +30,11 @@ app.post('/v1/files', async (req, res) => {
     })
 })
 
-app.post('/v1/files/:access_token/expiry', async (req, res) => {
+router.post('/:accessToken/expiry', authenticate, async (req: Request, res: Response) => {
+    const { accessToken } = req.params
+
     // Retrieve file
-    const file = await storage.retrieveFile(req.params.access_token)
+    const file = await req.context.storage.retrieveFile(accessToken)
 
     // Guard against invalid access token
     if (file === null) {
@@ -90,7 +47,7 @@ app.post('/v1/files/:access_token/expiry', async (req, res) => {
     }
 
     // Update file expiry
-    await dbClient.setFileExpiry(req.params.access_token, req.body.expiry)
+    await req.context.dbClient.setFileExpiry(accessToken, req.body.expiry)
 
     // Send response
     res.json({
@@ -99,9 +56,11 @@ app.post('/v1/files/:access_token/expiry', async (req, res) => {
     })
 })
 
-app.get('/v1/files/:access_token', async (req, res) => {
+router.get('/:accessToken', async (req: Request, res: Response) => {
+    const { accessToken } = req.params
+
     // Retrieve file
-    const file = await storage.retrieveFile(req.params.access_token)
+    const file = await req.context.storage.retrieveFile(accessToken)
 
     // Guard against invalid access token
     if (file === null) {
@@ -132,9 +91,11 @@ app.get('/v1/files/:access_token', async (req, res) => {
     res.json(data)
 })
 
-app.get('/v1/files/:access_token/challenge', async (req, res) => {
+router.get('/:accessToken/challenge', async (req: Request, res: Response) => {
+    const { accessToken } = req.params
+
     // Retrieve file
-    const file = await storage.retrieveFile(req.params.access_token)
+    const file = await req.context.storage.retrieveFile(accessToken)
 
     // Guard against invalid access token
     if (file === null) {
@@ -157,9 +118,11 @@ app.get('/v1/files/:access_token/challenge', async (req, res) => {
     })
 })
 
-app.post('/v1/files/:access_token/challenge', async (req, res) => {
+router.post('/:accessToken/challenge', async (req: Request, res: Response) => {
+    const { accessToken } = req.params
+
     // Retrieve file
-    const file = await storage.retrieveFile(req.params.access_token)
+    const file = await req.context.storage.retrieveFile(accessToken)
 
     // Guard against invalid access token
     if (file === null) {
@@ -191,9 +154,12 @@ app.post('/v1/files/:access_token/challenge', async (req, res) => {
     })
 })
 
-app.delete('/v1/files/:access_token', async (req, res) => {
+router.delete('/:accessToken', authenticate, async (req: Request, res: Response) => {
+    const { accessToken } = req.params
+    const { update_token: updateToken } = req.query as { update_token: string }
+
     // Retrieve file
-    const file = await storage.retrieveFile(req.params.access_token)
+    const file = await req.context.storage.retrieveFile(accessToken)
 
     // Guard against invalid access token
     if (file === null) {
@@ -206,7 +172,7 @@ app.delete('/v1/files/:access_token', async (req, res) => {
     }
 
     // Guard against invalid update token
-    if (req.query('update_token') !== file.updateToken) {
+    if (updateToken !== file.updateToken) {
         return res.status(403).json({
             status: 'error',
             data: {
@@ -216,7 +182,7 @@ app.delete('/v1/files/:access_token', async (req, res) => {
     }
 
     // Delete file
-    await storage.deleteFile(req.params.access_token)
+    await req.context.storage.deleteFile(accessToken)
 
     // Send response
     res.json({
@@ -224,4 +190,4 @@ app.delete('/v1/files/:access_token', async (req, res) => {
     })
 })
 
-app.listen(PORT)
+export default router

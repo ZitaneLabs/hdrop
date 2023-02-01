@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import Prisma from '@prisma/client'
 
-import TokenGenerator from './TokenGenerator.mjs'
+import { TokenGenerator } from '../core.js'
 
 export class ExportFileData {
     /**
@@ -49,7 +49,7 @@ export class ExportFileData {
     }
 
     /**
-     * @param {Prisma.File & { fileData: string | undefined }} file
+     * @param {Prisma.File & Partial<{ fileData: string }>} file
      */
     static fromFile(file) {
         if (file.dataUrl !== null) {

@@ -38,7 +38,7 @@ export default styled(View)`
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: 100vh;
+    height: 100%;
     height: -webkit-fill-available;
     max-height: 100vh;
     max-height: -webkit-fill-available;
@@ -54,6 +54,8 @@ export default styled(View)`
 
     & > main {
         width: 100%;
+        height: 100%;
+        height: -webkit-fill-available;
         flex-grow: 1;
         display: flex;
         flex-direction: column;

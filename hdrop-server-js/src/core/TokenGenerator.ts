@@ -22,7 +22,7 @@ export default class TokenGenerator {
         let token = this.generateToken(targetLength)
         let collisions = 0
 
-        while (dbClient.accessTokenExists(token)) {
+        while (await dbClient.accessTokenExists(token)) {
             collisions += 1
 
             // Increase token length if there are too many collisions

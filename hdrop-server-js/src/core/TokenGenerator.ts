@@ -21,7 +21,7 @@ export default class TokenGenerator {
         let targetLength = this.accessTokenMinLength
         let token = this.generateToken(targetLength)
         let collisions = 0
-
+        
         while (await dbClient.accessTokenExists(token)) {
             collisions += 1
 

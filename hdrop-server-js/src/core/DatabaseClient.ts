@@ -133,4 +133,15 @@ export default class DatabaseClient {
             }
         })
     }
+
+    async accessTokenExists(accessToken: string): Promise<boolean> {
+        const file = await this.client.file.findUnique({
+            select: {},
+            where: {
+                accessToken
+            },
+        })
+
+        return file !== null
+    }
 }

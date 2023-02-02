@@ -60,7 +60,11 @@ export default styled(View)`
         align-items: center;
         justify-content: center;
         overflow: auto;
-        margin: 1rem 0;
+        margin: 0.25rem 0;
+
+        @media screen and (min-width: 700px) {
+            margin: 1rem 0;
+        }
     }
 
     & > footer {
@@ -71,8 +75,10 @@ export default styled(View)`
 
         & > .links {
             width: 100%;
-            height: 100%;
-            position: absolute;
+            height: 4rem;
+            position: fixed;
+            bottom: -.5rem;
+            z-index: 1000;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -80,7 +86,6 @@ export default styled(View)`
             color: hsl(0,0%,90%);
             gap: 1rem;
             text-transform: uppercase;
-            margin-top: .33rem;
 
             a {
                 color: inherit;
@@ -96,13 +101,15 @@ export default styled(View)`
 
         & > .wave-container {
             width: 100%;
-            height: 100%;
-            position: relative;
+            height: 4rem;
+            position: fixed;
+            bottom: 0;
 
             & > * {
+                bottom: 0;
                 position: absolute;
                 width: 100%;
-                height: 100%;
+                height: 4rem;
             }
         }
     }

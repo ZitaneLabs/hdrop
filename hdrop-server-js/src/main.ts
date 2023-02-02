@@ -1,6 +1,7 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import cors from 'cors'
+import winston from 'winston'
 import * as dotenv from 'dotenv'
 
 import { AppContext, DatabaseClient, FileStorage, S3Provider } from './core.js'
@@ -14,6 +15,20 @@ dotenv.config()
 const PORT = parseInt(process.env.PORT) || 8080
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'
 
+// Create logger
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.json()
+    ),
+    transports: [
+        new winston.transports.Console({
+            format: winston.format.simple()
+        })
+    ]
+})
+
 async function main() {
     // Create storage provider
     const storageProvider = new S3Provider()
@@ -26,7 +41,7 @@ async function main() {
     const storage = new FileStorage(dbClient, storageProvider)
 
     // Create context
-    const context = new AppContext(dbClient, storage)
+    const context = new AppContext(dbClient, storage, logger)
 
     // Start expiration watchdog
     setInterval(() => {
@@ -44,11 +59,11 @@ async function main() {
     app.use('/v1', v1Router)
 
     app.listen(PORT, () => {
-        console.log(`⚡️ Server is running at http://localhost:${PORT}`)
+        logger.info(`Server is running at http://localhost:${PORT}`)
     })
 }
 
 main().catch(err => {
-    console.error(err)
+    logger.error(err)
     process.exit(1)
 })

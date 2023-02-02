@@ -72,6 +72,16 @@ export default styled(ViewFile)`
             background: hsl(0, 0%, 12.5%);
             border-bottom: 1px solid hsl(0, 0%, 17.5%);
             padding: 1rem 2rem;
+            font-size: .8rem;
+            max-width: 90%;
+
+            @media screen and (min-width: 700px) {
+                font-size: .9rem;
+            }
+
+            @media screen and (min-width: 1200px) {
+                font-size: 1rem;
+            }
         }
 
         &__preview {
@@ -86,14 +96,15 @@ export default styled(ViewFile)`
             
             img {
                 object-fit: contain;
-                max-width: 33vw;
-                max-height: 33vh;
+                width: 100%;
+                height: 100%;
                 border-radius: .25rem;
             }
 
             video {
-                width: 33vw;
-                height: 33vh;
+                width: 100%;
+                height: 100%;
+                border-radius: .25rem;
             }
         }
     }
@@ -103,6 +114,10 @@ export default styled(ViewFile)`
         padding: 1rem 2rem;
         border-radius: .25rem;
         cursor: pointer;
+        width: 75%;
+        text-align: center;
+        box-shadow: 0 .25rem .5rem hsla(0, 0%, 0%, 0.25), 0 1rem 2rem hsla(0, 0%, 0%, 0.1);
+        border-bottom: 2px solid hsl(0, 0%, 20%);
 
         &:hover {
             background: hsl(0, 0%, 12.5%);

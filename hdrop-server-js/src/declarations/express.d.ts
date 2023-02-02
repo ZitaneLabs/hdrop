@@ -1,6 +1,4 @@
-import AppContext from "../AppContext.js"
-import DatabaseClient from "./DatabaseClient.mjs"
-import FileStorage from "./FileStorage.mjs"
+import { AppContext, DatabaseClient, FileStorage } from '../core.js'
 
 declare global {
     namespace Express {

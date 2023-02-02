@@ -1,9 +1,10 @@
 import { v4 as uuidv4 } from 'uuid'
 import { createHash } from 'crypto'
+import DatabaseClient from './DatabaseClient.js'
 
 export default class TokenGenerator {
     static accessTokens: string[] = []
-    static accessTokenLength: number = 5
+    static accessTokenMinLength: number = 5
     static updateTokenLength: number = 8
 
     static generateToken(length: number) {
@@ -16,23 +17,31 @@ export default class TokenGenerator {
     /**
      * Generate a unique access token
      */
-    static generateAccessToken(): string {
-        let token = this.generateToken(this.accessTokenLength)
+    static async generateAccessToken(dbClient: DatabaseClient): Promise<string> {
+        let targetLength = this.accessTokenMinLength
+        let token = this.generateToken(targetLength)
         let collisions = 0
 
-        while (this.accessTokens.includes(token)) {
+        while (dbClient.accessTokenExists(token)) {
             collisions += 1
 
             // Increase token length if there are too many collisions
-            if (collisions > 50) {
-                this.accessTokenLength += 1
+            if (collisions > 10) {
+                targetLength += 1
             }
 
             // Generate new token
-            token = this.generateToken(this.accessTokenLength)
+            token = this.generateToken(targetLength)
         }
 
         return token
+    }
+
+    /**
+     * Generate a fallback access token
+     */
+    static generateFallbackAccessToken(): string {
+        return this.generateToken(15)
     }
     
     /**

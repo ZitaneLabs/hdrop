@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import Prisma from '@prisma/client'
 
-import { TokenGenerator } from '../core.js'
+import { DatabaseClient, TokenGenerator } from '../core.js'
 
 type FileStorageLocationType = 'local' | 'remote'
 
@@ -73,8 +73,8 @@ export default class StoredFile {
         // Generate UUID
         this.uuid = uuidv4()
 
-        // Generate tokens
-        this.accessToken = TokenGenerator.generateAccessToken()
+        // Generate update token
+        this.accessToken = TokenGenerator.generateFallbackAccessToken()
         this.updateToken = TokenGenerator.generateUpdateToken()
 
         // Store data
@@ -83,5 +83,9 @@ export default class StoredFile {
         this.fileNameHash = fileNameHash
         this.salt = salt
         this.iv = iv
+    }
+
+    async generateAccessToken(dbClient: DatabaseClient) {
+        this.accessToken = await TokenGenerator.generateAccessToken(dbClient)
     }
 }

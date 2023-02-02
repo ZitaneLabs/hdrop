@@ -17,6 +17,9 @@ router.post('/', async (req: Request, res: Response) => {
         }
     )
 
+    // Generate access token
+    await fileBody.generateAccessToken(req.context.dbClient)
+
     // Store file
     const file = await req.context.storage.storeFile(fileBody)
 

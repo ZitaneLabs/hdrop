@@ -174,7 +174,7 @@ class ApiClient {
          * @type {AxiosRequestConfig}
          */
         const config = {
-            onUploadProgress: progressEvent => {
+            onDownloadProgress: progressEvent => {
                 onProgressChange(progressEvent.loaded / progressEvent.total)
             }
         }
@@ -198,7 +198,7 @@ class ApiClient {
          * @type {AxiosRequestConfig}
          */
         const config = {
-            onUploadProgress: progressEvent => {
+            onDownloadProgress: progressEvent => {
                 onProgressChange(progressEvent.loaded / progressEvent.total)
             }
         }
@@ -226,7 +226,7 @@ class ApiClient {
          * @type {AxiosRequestConfig}
          */
         const config = {
-            onUploadProgress: progressEvent => {
+            onDownloadProgress: progressEvent => {
                 onProgressChange(progressEvent.loaded / progressEvent.total)
             }
         }
@@ -253,7 +253,8 @@ class ApiClient {
             headers: {
                 'Accept': 'application/octet-stream, */*',
             },
-            onUploadProgress: progressEvent => {
+            onDownloadProgress: progressEvent => {
+                console.log(progressEvent)
                 onProgressChange(progressEvent.loaded / progressEvent.total)
             }
         }
@@ -282,7 +283,7 @@ class ApiClient {
             headers: {
                 'Accept': 'application/octet-stream, */*',
             },
-            onUploadProgress: progressEvent => {
+            onDownloadProgress: progressEvent => {
                 onProgressChange(progressEvent.loaded / progressEvent.total)
             }
         }
@@ -298,18 +299,13 @@ class ApiClient {
      * 
      * @param {string} accessToken Access token
      * @param {string} updateToken Update token
-     * @param {(progress: number) => void} onProgressChange
      * @returns {Promise<void>}
      */
-    static async deleteFile(accessToken, updateToken, onProgressChange = NoopHandler) {
+    static async deleteFile(accessToken, updateToken) {
         /**
          * @type {AxiosRequestConfig}
          */
-        const config = {
-            onUploadProgress: progressEvent => {
-                onProgressChange(progressEvent.loaded / progressEvent.total)
-            }
-        }
+        const config = {}
 
         // Send request
         const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}`, { updateToken })

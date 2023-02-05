@@ -8,19 +8,19 @@ type FileStorageLocationType = 'local' | 'remote'
 export class ExportFileData {
     type: FileStorageLocationType
     
-    _fileData: string | null
+    _fileData: Buffer | null
     _fileUrl: string | null
 
-    constructor(type: FileStorageLocationType, fileData: string | null, fileUrl: string | null) {
+    constructor(type: FileStorageLocationType, fileData: Buffer | null, fileUrl: string | null) {
         this.type = type
         this._fileData = fileData
         this._fileUrl = fileUrl
     }
 
     /**
-     * Get base64 file data.
+     * Get raw file data.
      */
-    fileData(): string | null {
+    fileData(): Buffer | null {
         return this._fileData
     }
 
@@ -31,17 +31,17 @@ export class ExportFileData {
         return this._fileUrl
     }
 
-    static fromFile(file: Prisma.File & Partial<{ fileData: string }>) {
+    static fromFile(file: Prisma.File & Partial<{ fileData: Buffer }>) {
         if (file.dataUrl !== null) {
             return this.fromRemote(file.dataUrl)
         }
-        if (typeof file.fileData === 'string') {
+        if (file.fileData instanceof Buffer) {
             return this.fromLocal(file.fileData)
         }
         throw new Error('File data is not available')
     }
 
-    static fromLocal(fileData: string) {
+    static fromLocal(fileData: Buffer) {
         return new ExportFileData('local', fileData, null)
     }
 
@@ -54,7 +54,7 @@ export default class StoredFile {
     uuid: string
     accessToken: string
     updateToken: string
-    fileData: string
+    fileData: Buffer
     fileNameData: string
     fileNameHash: string
     salt: string
@@ -64,7 +64,7 @@ export default class StoredFile {
      * Construct a new `StoredFile` instance.
      */
     constructor({ fileData, fileNameData, fileNameHash, salt, iv }: {
-            fileData: string
+            fileData: Buffer
             fileNameData: string
             fileNameHash: string
             salt: string

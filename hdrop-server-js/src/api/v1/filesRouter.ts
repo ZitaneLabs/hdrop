@@ -1,15 +1,28 @@
 import { Request, Response, Router } from 'express'
+import multer from 'multer'
 
 import { authenticate } from '../../middleware.js'
 import { StoredFile, ExportFileData } from '../../core.js'
 
+const upload = multer({ storage: multer.memoryStorage() })
 const router = Router()
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', upload.single('file_data'), async (req: Request, res: Response) => {
+    const fileData = req.file
+
+    if (fileData === undefined) {
+        return res.status(400).json({
+            status: 'error',
+            data: {
+                reason: 'No file data provided'
+            }
+        })
+    }
+
     // Create stored file
     const fileBody = new StoredFile(
         {
-            fileData: req.body.file_data,
+            fileData: fileData.buffer,
             fileNameData: req.body.file_name_data,
             fileNameHash: req.body.file_name_hash,
             salt: req.body.salt,
@@ -59,6 +72,43 @@ router.post('/:accessToken/expiry', authenticate, async (req: Request, res: Resp
     })
 })
 
+router.get('/:accessToken/raw', async (req: Request, res: Response) => {
+    const { accessToken } = req.params
+
+    // Retrieve file
+    const file = await req.context.storage.retrieveFile(accessToken)
+
+    // Guard against invalid access token
+    if (file === null) {
+        return res.status(404).json({
+            status: 'error',
+            data: {
+                reason: 'File not found'
+            }
+        })
+    }
+
+    // Retrieve raw file data
+    const fileData = req.context.storage.retrieveRawFileData(accessToken)
+
+    // Guard against expired or cache-evicted file
+    if (!fileData) {
+        return res.status(404).json({
+            status: 'error',
+            data: {
+                reason: 'Raw file data is not available anymore'
+            }
+        })
+    }
+
+    // Export raw file data
+    res
+        .status(200)
+        .setHeader('Content-Type', 'application/octet-stream')
+        .setHeader('Content-Length', fileData.length)
+        .end(fileData)
+})
+
 router.get('/:accessToken', async (req: Request, res: Response) => {
     const { accessToken } = req.params
 
@@ -82,7 +132,6 @@ router.get('/:accessToken', async (req: Request, res: Response) => {
     const data = {
         status: 'success',
         data: {
-            file_data: fileData.fileData(),
             file_url: fileData.fileUrl(),
             file_name_data: file.fileNameData,
             iv: file.iv,

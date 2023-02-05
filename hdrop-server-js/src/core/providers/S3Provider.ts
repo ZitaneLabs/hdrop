@@ -66,22 +66,13 @@ export default class S3Provider {
         await this.client.send(command)
     }
 
-    async uploadFile(uuid: string, content: string) {
+    async uploadFile(uuid: string, content: Buffer) {
         const command = new PutObjectCommand({
             Bucket: this.creds.bucketName,
             Key: uuid,
             Body: content,
         })
         await this.client.send(command)
-    }
-
-    async downloadFile(uuid: string): Promise<string> {
-        const command = new GetObjectCommand({
-            Bucket: this.creds.bucketName,
-            Key: uuid,
-        })
-        const response = await this.client.send(command)
-        return await this.streamToString(response.Body as Readable)
     }
 
     async deleteFile(uuid: string) {

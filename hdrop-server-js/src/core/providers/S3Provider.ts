@@ -1,5 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, PutBucketCorsCommand, S3Client } from '@aws-sdk/client-s3'
-import { Readable } from 'stream'
+import { DeleteObjectCommand, PutObjectCommand, PutBucketCorsCommand, S3Client } from '@aws-sdk/client-s3'
 
 export default class S3Provider {
     creds: {
@@ -81,18 +80,5 @@ export default class S3Provider {
             Key: uuid,
         })
         await this.client.send(command)
-    }
-
-    streamToString(readableStream: Readable): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const chunks: Uint8Array[] = []
-            readableStream.on('data', (data) => {
-                chunks.push(data)
-            })
-            readableStream.on('end', () => {
-                resolve(Buffer.concat(chunks).toString('utf8'))
-            })
-            readableStream.on('error', reject)
-        })
     }
 }

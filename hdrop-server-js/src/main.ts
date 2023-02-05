@@ -50,7 +50,7 @@ async function main() {
 
     // Create express app
     const app = express()
-    app.use(bodyParser.json({ limit: '1gb' }))
+    app.use(bodyParser.json({ limit: '256mb' }))
     app.use(cors({ origin: CORS_ORIGIN }))
     app.use(injectContext(context))
     app.use(handleErrors)

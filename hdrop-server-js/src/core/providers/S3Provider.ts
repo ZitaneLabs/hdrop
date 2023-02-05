@@ -1,5 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, PutBucketCorsCommand, S3Client } from '@aws-sdk/client-s3'
-import { Readable } from 'stream'
+import { DeleteObjectCommand, PutObjectCommand, PutBucketCorsCommand, S3Client } from '@aws-sdk/client-s3'
 
 export default class S3Provider {
     creds: {
@@ -66,7 +65,7 @@ export default class S3Provider {
         await this.client.send(command)
     }
 
-    async uploadFile(uuid: string, content: string) {
+    async uploadFile(uuid: string, content: Buffer) {
         const command = new PutObjectCommand({
             Bucket: this.creds.bucketName,
             Key: uuid,
@@ -75,33 +74,11 @@ export default class S3Provider {
         await this.client.send(command)
     }
 
-    async downloadFile(uuid: string): Promise<string> {
-        const command = new GetObjectCommand({
-            Bucket: this.creds.bucketName,
-            Key: uuid,
-        })
-        const response = await this.client.send(command)
-        return await this.streamToString(response.Body as Readable)
-    }
-
     async deleteFile(uuid: string) {
         const command = new DeleteObjectCommand({
             Bucket: this.creds.bucketName,
             Key: uuid,
         })
         await this.client.send(command)
-    }
-
-    streamToString(readableStream: Readable): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const chunks: Uint8Array[] = []
-            readableStream.on('data', (data) => {
-                chunks.push(data)
-            })
-            readableStream.on('end', () => {
-                resolve(Buffer.concat(chunks).toString('utf8'))
-            })
-            readableStream.on('error', reject)
-        })
     }
 }

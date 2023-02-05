@@ -3,7 +3,7 @@ import { atom, RecoilState } from 'recoil'
 import { EncryptedFileInfo, DecryptedFileInfo } from '../util'
 
 /**
- * @type {RecoilState<Uint8Array | null>}
+ * @type {RecoilState<ArrayBuffer | null>}
  */
 export const fileDataState = atom({
     key: 'fileData',
@@ -47,14 +47,6 @@ export const expirySecondsState = atom({
  */
 export const encryptedFileInfoState = atom({
     key: 'encryptedFileInfo',
-    default: null,
-})
-
-/**
- * @type {RecoilState<EncryptedFileInfo | null>}
- */
-export const downloadedFileInfoState = atom({
-    key: 'downloadedFileInfo',
     default: null,
 })
 

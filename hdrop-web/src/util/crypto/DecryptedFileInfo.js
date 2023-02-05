@@ -2,7 +2,7 @@ export default class DecryptedFileInfo {
     /**
      * Construct a new `DecryptedFileInfo`.
      * 
-     * @param {Uint8Array} fileData
+     * @param {ArrayBuffer} fileData
      * @param {string} fileName
      */
     constructor(fileData, fileName) {
@@ -11,7 +11,7 @@ export default class DecryptedFileInfo {
     }
 
     /**
-     * @returns {Uint8Array}
+     * @returns {ArrayBuffer}
      */
     data() {
         return this.fileData

@@ -1,27 +1,7 @@
 import styled from 'styled-components'
 import { Droplet } from 'react-feather'
-import { useEffect, useState } from 'react'
-import ApiClient from '../api/ApiClient'
 
 const Logo = ({ className }) => {
-    const [apiOnline, setApiOnline] = useState(true)
-
-    const checkApiStatus = () => {
-        ApiClient.isServerOnline()
-            .then(x => setApiOnline(x))
-            .catch(() => setApiOnline(false))
-    }
-
-    useEffect(() => {
-        checkApiStatus()
-        const intervalId = setInterval(() => {
-            checkApiStatus()
-        }, 5000)
-        return (() => {
-            clearInterval(intervalId)
-        })
-    })
-
     const handleClick = () => {
         window.location.href = '/'
     }
@@ -32,11 +12,6 @@ const Logo = ({ className }) => {
                 <span><Droplet size={32} /></span>
                 <span>hdrop</span>
             </div>
-            {!apiOnline && (
-                <div className="status" data-online={apiOnline}>
-                    {apiOnline ? 'Online' : 'Server offline'}
-                </div>
-            )}
         </div>
     )
 }

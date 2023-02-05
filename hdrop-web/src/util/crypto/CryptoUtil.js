@@ -85,7 +85,7 @@ export default class CryptoUtil {
     /**
      * Encrypts a file using AES-GCM.
      * 
-     * @param {Uint8Array} data 
+     * @param {BufferSource} data 
      * @param {DerivedKeyInfo} derivedKeyInfo 
      * @returns {Promise<ArrayBuffer>}
      */
@@ -105,7 +105,7 @@ export default class CryptoUtil {
     /**
      * Decrypts a file using AES-GCM.
      * 
-     * @param {Uint8Array} data 
+     * @param {BufferSource} data 
      * @param {DerivedKeyInfo} derivedKeyInfo 
      * @returns {Promise<ArrayBuffer>}
      */
@@ -138,7 +138,7 @@ export default class CryptoUtil {
      * 
      * @param {Uint8Array} data
      * @param {DerivedKeyInfo} derivedKeyInfo  
-     * @returns {Promise<ArrayBuffer>}
+     * @returns {Promise<string>}
      */
     static async decryptString(data, derivedKeyInfo) {
         const textDecoder = new TextDecoder()
@@ -147,26 +147,26 @@ export default class CryptoUtil {
     }
 
     /**
-     * @param {Uint8Array} fileData
+     * @param {ArrayBuffer} fileData
      * @param {string} fileName
      * @param {DerivedKeyInfo} derivedKeyInfo
      * @returns {Promise<EncryptedFileInfo>}
      */
     static async encryptFile(fileData, fileName, derivedKeyInfo) {
-        const fileDataEncrypted = new Uint8Array(await CryptoUtil.encryptData(fileData, derivedKeyInfo))
+        const fileDataEncrypted = await CryptoUtil.encryptData(fileData, derivedKeyInfo)
         const fileNameEncrypted = new Uint8Array(await CryptoUtil.encryptString(fileName, derivedKeyInfo))
         const fileNameHash = await CryptoUtil.hashStringHex(fileName)
         return new EncryptedFileInfo(fileDataEncrypted, fileNameEncrypted, fileNameHash, derivedKeyInfo)
     }
 
     /**
-     * @param {Uint8Array} encryptedFileData
+     * @param {ArrayBuffer} encryptedFileData
      * @param {string} fileName
      * @param {DerivedKeyInfo} derivedKeyInfo
      * @returns {Promise<DecryptedFileInfo>}
      */
     static async decryptFile(encryptedFileData, fileName, derivedKeyInfo) {
-        const fileData = new Uint8Array(await CryptoUtil.decryptData(encryptedFileData, derivedKeyInfo))
+        const fileData = await CryptoUtil.decryptData(encryptedFileData, derivedKeyInfo)
         return new DecryptedFileInfo(fileData, fileName)
     }
 }

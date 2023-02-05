@@ -14,8 +14,14 @@ body {
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-html {
+html, body {
+  height: 100vh;
+  height: -moz-available;
   height: -webkit-fill-available;
+}
+
+div#root {
+  height: 100%;
 }
 
 body * {

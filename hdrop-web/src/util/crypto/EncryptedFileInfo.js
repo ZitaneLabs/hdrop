@@ -10,7 +10,7 @@ import {CryptoUtil, Base64Util} from '..'
 export default class EncryptedFileInfo {
     /**
      * 
-     * @param {Uint8Array} file_data 
+     * @param {ArrayBuffer} file_data 
      * @param {Uint8Array} file_name_data 
      * @param {string} file_name_hash
      * @param {DerivedKeyInfo} derived_key_info 
@@ -26,11 +26,11 @@ export default class EncryptedFileInfo {
      * Construct an EncryptedFileInfo from previously encrypted file data.
      * 
      * @param {{
-     * file_data: string,
+     * file_data: ArrayBuffer,
      * file_name_data: string,
      * iv: string,
      * salt: string,
-     * }} data Base64 Data
+     * }} data
      * @param {string} password Password
      */
     static async fromEncryptedFileData(data, password) {
@@ -39,7 +39,7 @@ export default class EncryptedFileInfo {
         const derivedKeyInfo = await CryptoUtil.recoverKeyFromPassword(password, salt, iv)
 
         return new EncryptedFileInfo(
-            Base64Util.decode(data.file_data),
+            data.file_data,
             Base64Util.decode(data.file_name_data),
             null,
             derivedKeyInfo,
@@ -49,10 +49,10 @@ export default class EncryptedFileInfo {
     /**
      * Returns the file data as a base64 string.
      * 
-     * @returns {string}
+     * @returns {ArrayBuffer}
      */
-    fileDataBase64() {
-        return Base64Util.encode(this.file_data)
+    fileData() {
+        return this.file_data
     }
 
     /**

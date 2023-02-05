@@ -1,8 +1,6 @@
-import Prisma from '@prisma/client'
+import Prisma, { File } from '@prisma/client'
 
 import { DatabaseClient, FileDataCache, S3Provider, StoredFile } from '../core.js'
-
-type FileWithData = Prisma.File & Partial<{ fileData: string }>
 
 /**
  * File storage coordinator.
@@ -43,8 +41,8 @@ export default class FileStorage {
             })
             .then(() => {
 
-                // Evice file from cache
-                this.cache.evict(file.accessToken)
+                // Evict file from cache in 5 minutes
+                this.cache.evictAfter(file.accessToken, 1000 * 60 * 5)
             })
             .catch((err: any) => {
                 // Log error
@@ -59,26 +57,21 @@ export default class FileStorage {
     /**
      * Retrieve a file
      */
-    async retrieveFile(accessToken: string): Promise<FileWithData | null> {
-        const file = await this.dbClient.getFile(accessToken) as FileWithData
+    async retrieveFile(accessToken: string): Promise<File | null> {
+        const file = await this.dbClient.getFile(accessToken)
         
         if (file === null) {
             throw new Error('File not found')
         }
 
-        // Check if file is only stored in cache
-        if (file.dataUrl === null) {
-            const fileData = this.cache.get(accessToken)
-
-            if (fileData === null) {
-                throw new Error('File data is not available')
-            }
-
-            // Patch file object
-            file.fileData = fileData
-        }
-
         return file
+    }
+
+    /**
+     * Retrieve raw file data
+     */
+    retrieveRawFileData(accessToken: string): Buffer | null {
+        return this.cache.get(accessToken)
     }
 
     /**
@@ -94,7 +87,7 @@ export default class FileStorage {
         }
 
         // Delete from cache
-        this.cache.evict(accessToken)
+        this.cache.evictImmediately(accessToken)
 
         // Log deletion
         console.log(`[FileStorage/delete ${accessToken}] Deleted file ("${reason ?? "User request"}")`)

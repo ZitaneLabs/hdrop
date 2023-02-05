@@ -62,7 +62,7 @@ class ApiClient {
             else return this.processResponse(resp)
         } catch (err) {
             if ('response' in err && 'data' in err.response) {
-                throw new Error(err.response.data.reason)
+                throw new Error(err.response.data.data.reason)
             } else {
                 throw err
             }
@@ -113,21 +113,23 @@ class ApiClient {
         const config = {
             onUploadProgress: progressEvent => {
                 onProgressChange(progressEvent.loaded / progressEvent.total)
+            },
+            headers: {
+                'Content-Type': 'multipart/form-data'
             }
         }
 
-        // Prepare request data
-        const data = {
-            file_data: fileInfo.fileDataBase64(),
-            file_name_data: fileInfo.fileNameDataBase64(),
-            file_name_hash: fileInfo.challenge(),
-            iv: fileInfo.ivBase64(),
-            salt: fileInfo.saltBase64(),
-        }
+        // Build form data
+        const formData = new FormData()
+        formData.set('file_data', new Blob([fileInfo.fileData()]))
+        formData.set('file_name_data', fileInfo.fileNameDataBase64())
+        formData.set('file_name_hash', fileInfo.challenge())
+        formData.set('iv', fileInfo.ivBase64())
+        formData.set('salt', fileInfo.saltBase64())
 
         // Send request
         const endpoint = ApiClient.buildEndpoint(`/v1/files`)
-        return await this.wrapRequest(axios.post(endpoint, data, config))
+        return await this.wrapRequest(axios.post(endpoint, formData, config))
     }
 
     /**
@@ -212,14 +214,14 @@ class ApiClient {
     }
 
     /**
-     * Get a file from the server.
+     * Get file info from the server.
      * 
-     * @typedef {{ file_data: string | null, file_url: string | null, file_name_data: string, iv: string, salt: string }} GetFileResponse
+     * @typedef {{ file_url: string | null, file_name_data: string, iv: string, salt: string }} GetFileResponse
      * @param {string} accessToken Access token
      * @param {(progress: number) => void} onProgressChange
      * @returns {Promise<GetFileResponse>} Response data
      */
-    static async getFile(accessToken, onProgressChange = NoopHandler) {
+    static async getFileInfo(accessToken, onProgressChange = NoopHandler) {
         /**
          * @type {AxiosRequestConfig}
          */
@@ -235,19 +237,48 @@ class ApiClient {
     }
 
     /**
+     * Download a file from the server.
+     * 
+     * @param {string} accessToken Access token
+     * @param {(progress: number) => void} onProgressChange
+     * 
+     * @returns {Promise<ArrayBuffer>}
+     */
+    static async directDownloadFile(accessToken, onProgressChange = NoopHandler) {
+        /**
+         * @type {AxiosRequestConfig}
+         */
+        const config = {
+            responseType: 'arraybuffer',
+            headers: {
+                'Accept': 'application/octet-stream, */*',
+            },
+            onUploadProgress: progressEvent => {
+                onProgressChange(progressEvent.loaded / progressEvent.total)
+            }
+        }
+
+        // Download file
+        const endpoint = ApiClient.buildEndpoint(`/v1/files/${accessToken}/raw`)
+        return await this.wrapRequest(axios.get(endpoint, config), {
+            skipValidation: true
+        })
+    }
+
+    /**
      * Download a file from an URL.
      * 
      * @param {string} url URL
      * @param {(progress: number) => void} onProgressChange
      * 
-     * @returns {Promise<string>}
+     * @returns {Promise<ArrayBuffer>}
      */
-    static async directDownloadFile(url, onProgressChange = NoopHandler) {
+    static async directDownloadFileFromUrl(url, onProgressChange = NoopHandler) {
         /**
          * @type {AxiosRequestConfig}
          */
         const config = {
-            responseType: 'text',
+            responseType: 'arraybuffer',
             headers: {
                 'Accept': 'application/octet-stream, */*',
             },

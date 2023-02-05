@@ -61,9 +61,8 @@ const FileDropZone = ({ className, hidden = false }) => {
      */
     const processFile = async file => {
         const fileBuffer = await file.arrayBuffer()
-        const fileData = new Uint8Array(fileBuffer)
 
-        setFileDataState(fileData)
+        setFileDataState(fileBuffer)
         setFileNameState(file.name)
     }
 

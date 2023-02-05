@@ -8,7 +8,6 @@ import { Base64Util, CryptoUtil, EncryptedFileInfo } from '../util'
 import {
     passwordState,
     fileFullyDownloadedState,
-    downloadedFileInfoState,
     decryptedFileInfoState
 } from '../state'
 
@@ -59,12 +58,12 @@ const DownloadProgress = ({ className }) => {
     const password = useRecoilValue(passwordState)
     const setFileFullyDownloaded = useSetRecoilState(fileFullyDownloadedState)
 
-    const [downloadedFileData, setDownloadedFileData] = useRecoilState(downloadedFileInfoState)
-    const [decryptedFileInfo, setDecryptedFileInfo] = useRecoilState(decryptedFileInfoState)
+    const [downloadedFileData, setDownloadedFileData] = useState(null)
+    const setDecryptedFileInfo = useSetRecoilState(decryptedFileInfoState)
 
     const solveChallenge = async () => {
         // Request challenge data
-        const challengeResponse = await ApiClient.getChallenge(accessToken);
+        const challengeResponse = await ApiClient.getChallenge(accessToken)
 
         // Decode challenge data
         const challengeData = Base64Util.decode(challengeResponse.challenge)
@@ -102,17 +101,25 @@ const DownloadProgress = ({ className }) => {
 
     const downloadFile = async () => {
         try {
-            const data = await ApiClient.getFile(accessToken, progress => {
-                setDownloadProgress(progress)
-            })
+            const data = await ApiClient.getFileInfo(accessToken)
 
             // Check if file is provided as URL
             if (data.file_url !== null) {
 
                 // Download file
-                const fileContents = await ApiClient.directDownloadFile(data.file_url)
+                const fileContents = await ApiClient.directDownloadFileFromUrl(data.file_url, progress => {
+                    setDownloadProgress(progress)
+                })
 
                 // Set file data in original data
+                data.file_data = fileContents
+            } else {
+                // Download file
+
+                const fileContents = await ApiClient.directDownloadFile(accessToken, progress => {
+                    setDownloadProgress(progress)
+                })
+
                 data.file_data = fileContents
             }
 

@@ -11,7 +11,6 @@ import UploadProgress from '../components/UploadProgress'
 
 import { accessTokenState, encryptedFileInfoState, fileDataState, fileFullyUploadedState, passwordState } from '../state'
 import ShareFile from '../components/ShareFile'
-import Logo from '../components/Logo'
 import View from './View'
 
 const HomeView = ({ className }) => {

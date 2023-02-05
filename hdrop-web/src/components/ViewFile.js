@@ -54,7 +54,6 @@ export default styled(ViewFile)`
     overflow: hidden;
     gap: 2rem;
     height: 100%;
-    height: -webkit-fill-available;
 
     opacity: 0;
     animation: appear .25s ease forwards;

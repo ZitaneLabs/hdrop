@@ -2,9 +2,15 @@ import { Request, Response, Router } from 'express'
 import multer from 'multer'
 
 import { authenticate } from '../../middleware.js'
-import { StoredFile, ExportFileData } from '../../core.js'
+import { StoredFile } from '../../core.js'
+import { Readable } from 'stream'
 
-const upload = multer({ storage: multer.memoryStorage() })
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 256 * 1024 * 1024, // 256 MB
+    }
+})
 const router = Router()
 
 router.post('/', upload.single('file_data'), async (req: Request, res: Response) => {
@@ -101,12 +107,13 @@ router.get('/:accessToken/raw', async (req: Request, res: Response) => {
         })
     }
 
-    // Export raw file data
-    res
-        .status(200)
-        .setHeader('Content-Type', 'application/octet-stream')
-        .setHeader('Content-Length', fileData.length)
-        .end(fileData)
+    // Stream file data to client
+    res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': fileData.byteLength,
+    })
+    const stream = Readable.from(fileData)
+    stream.pipe(res)
 })
 
 router.get('/:accessToken', async (req: Request, res: Response) => {
@@ -125,14 +132,11 @@ router.get('/:accessToken', async (req: Request, res: Response) => {
         })
     }
 
-    // Export file data
-    const fileData = ExportFileData.fromFile(file)
-
     // Build response data
     const data = {
         status: 'success',
         data: {
-            file_url: fileData.fileUrl(),
+            file_url: file.dataUrl,
             file_name_data: file.fileNameData,
             iv: file.iv,
             salt: file.salt,

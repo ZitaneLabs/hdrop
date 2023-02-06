@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useRecoilValue } from 'recoil'
 import styled from 'styled-components'
 import { decryptedFileInfoState } from '../state'
+import { PrismAsync as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneDark as PrismDarkTheme } from 'react-syntax-highlighter/dist/cjs/styles/prism'
 
 const ViewFile = ({ className }) => {
     const decryptedFile = useRecoilValue(decryptedFileInfoState)
@@ -14,15 +16,16 @@ const ViewFile = ({ className }) => {
     const isVideo = decryptedFile.isVideo()
     const isImage = decryptedFile.isImage()
     const isAudio = decryptedFile.isAudio()
+    const isText = decryptedFile.isText()
 
-    const hasPreview = isVideo || isImage || isAudio
+    const hasPreview = isVideo || isImage || isAudio || isText
 
     return (
         <div className={className}>
             <div className="file">
                 <div className="file__name">{decryptedFile.name()}</div>
                 {hasPreview && objectUrl !== null && (
-                    <div className="file__preview">
+                    <div className={["file__preview", isAudio ? 'file__preview--100p' : ''].join(' ')}>
                         {isVideo && (
                             <video src={objectUrl} controls />
                         )}
@@ -31,6 +34,17 @@ const ViewFile = ({ className }) => {
                         )}
                         {isImage && (
                             <img src={objectUrl} alt={decryptedFile.name()} />
+                        )}
+                        {isText && (
+                            <div className="text">
+                                <SyntaxHighlighter
+                                    language={decryptedFile.guessProgrammingLanguage()}
+                                    showLineNumbers
+                                    wrapLines
+                                    style={PrismDarkTheme}>
+                                    {decryptedFile.text()}
+                                </SyntaxHighlighter>
+                            </div>
                         )}
                     </div>
                 )}
@@ -51,7 +65,6 @@ export default styled(ViewFile)`
     justify-content: center;
     color: hsl(0, 0%, 90%);
     pointer-events: all;
-    overflow: hidden;
     gap: 2rem;
     height: 100%;
 
@@ -65,21 +78,24 @@ export default styled(ViewFile)`
         justify-content: flex-start;
         background: hsl(0, 0%, 15%);
         border-radius: .5rem;
-        overflow: auto;
+        overflow: hidden;
         box-shadow: 0 .25rem .5rem hsla(0, 0%, 0%, 0.25), 0 1rem 2rem hsla(0, 0%, 0%, 0.1);
-        border-bottom: 2px solid hsl(0, 0%, 20%);
-        gap: 2rem;
+        /* border-bottom: 2px solid hsl(0, 0%, 20%); */
         height: 100%;
 
         &__name {
+            display: flex;
+            justify-content: center;
+            align-items: center;
             color: hsl(0,0%,90%);
             background: hsl(0, 0%, 12.5%);
             border-bottom: 1px solid hsl(0, 0%, 17.5%);
             padding: 1rem 2rem;
             font-size: .8rem;
-            max-width: 90%;
+            width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
+            text-align: center;
 
             @media screen and (min-width: 700px) {
                 font-size: .9rem;
@@ -95,17 +111,36 @@ export default styled(ViewFile)`
             overflow: hidden;
             flex-shrink: 1;
 
+            &--100p {
+                width: 100%;
+            }
+
             img {
                 object-fit: scale-down;
-                border-radius: .25rem;
-                width: 100%;
+                max-width: 100%;
                 max-height: 100%;
+            }
+
+            audio {
+                width: 100%;
             }
 
             video {
                 max-width: 100%;
                 max-height: 100%;
-                border-radius: .25rem;
+            }
+
+            div.text {
+                max-width: 100vw;
+                max-height: 100%;
+                overflow: auto;
+
+                pre {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    user-select: all;
+                    pointer-events: all;
+                }
             }
         }
     }

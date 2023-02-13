@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import styled from 'styled-components'
 
 /**
@@ -12,7 +12,7 @@ import styled from 'styled-components'
  * children: React.ReactNode
  * }} props
  */
-const CopyToClipboardWrapper = ({ className, label, value, offset = 0, children }) => {
+const CopyToClipboardWrapper = ({ className, label, value, children }) => {
     const timeouts = useRef([])
     const [messageShown, setMessageShown] = useState(false)
     const [lastMouseX, setLastMouseX] = useState(0)
@@ -66,6 +66,7 @@ export default styled(CopyToClipboardWrapper)`
     > .inner {
         display: flex;
         cursor: pointer;
+        width: 100%;
     }
 
     > .copy__success {

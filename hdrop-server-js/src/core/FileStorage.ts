@@ -58,13 +58,7 @@ export default class FileStorage {
      * Retrieve a file
      */
     async retrieveFile(accessToken: string): Promise<File | null> {
-        const file = await this.dbClient.getFile(accessToken)
-        
-        if (file === null) {
-            throw new Error('File not found')
-        }
-
-        return file
+        return await this.dbClient.getFile(accessToken)
     }
 
     /**

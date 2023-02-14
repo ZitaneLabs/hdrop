@@ -79,6 +79,7 @@ const UploadProgress = ({ className }) => {
             })
             setAccessToken(data.access_token)
             setUpdateToken(data.update_token)
+            console.log(data)
         } catch (err) {
             console.log(err.message)
             setErrorMessage(err.message)

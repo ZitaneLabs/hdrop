@@ -1,17 +1,16 @@
 import { useMemo, useState } from 'react'
 import { useRecoilValue } from 'recoil'
 import styled from 'styled-components'
-import { ArrowRight, Copy } from 'react-feather'
+import { ArrowRight, Copy, Trash2 } from 'react-feather'
 
 import ApiClient from '../api/ApiClient'
-import { accessTokenState, passwordState } from '../state'
+import { accessTokenState, passwordState, updateTokenState } from '../state'
 import CopyToClipboardWrapper from './CopyToClipboardWrapper'
 
 const ShareFile = ({ className }) => {
     const accessToken = useRecoilValue(accessTokenState)
+    const updateToken = useRecoilValue(updateTokenState)
     const password = useRecoilValue(passwordState)
-    
-    const [showPassword, setShowPassword] = useState(false)
 
     /**
      * @param {{
@@ -28,9 +27,11 @@ const ShareFile = ({ className }) => {
 
     const linkDisplayText = ApiClient.generateLink(accessToken, null).replace(/https?:\/{2}/, '')
 
-    const passwordText = useMemo(() => {
-        return showPassword ? password : '*'.repeat(password?.length)
-    }, [password, showPassword])
+    const deleteFile = () => {
+        ApiClient.deleteFile(accessToken, updateToken).then(() => {
+            window.location.reload()
+        })
+    }
 
     return (
         <div className={className}>
@@ -50,18 +51,9 @@ const ShareFile = ({ className }) => {
                         </a>
                     )}
                 </div>
-
-                <div className="copyWrapper">
-                    <CopyToClipboardWrapper label="Link with Password" value={getLink({ includePassword: true })} offset={2.75}>
-                        <div className="button">
-                            Copy Link with Password
-                            <Copy size={14} />
-                        </div>
-                    </CopyToClipboardWrapper>
-                </div>
             </div>
 
-            <CopyToClipboardWrapper label="Password" value={password} offset={-0.5}>
+            {/* <CopyToClipboardWrapper label="Password" value={password} offset={-0.5}>
                 <div className="password" onMouseEnter={() => setShowPassword(true)} onMouseLeave={() => setShowPassword(false)}>
                     <div className="password__label">Password</div>
                     <div className="password__value">
@@ -69,7 +61,28 @@ const ShareFile = ({ className }) => {
                         <Copy size={14} />
                     </div>
                 </div>
-            </CopyToClipboardWrapper>
+            </CopyToClipboardWrapper> */}
+
+            <div className="bottomBar">
+                {/* Copy password */}
+                <CopyToClipboardWrapper label="Password" value={password} offset={-0.5}>
+                    <div className="button">
+                        Password
+                        <Copy size={14} />
+                    </div>
+                </CopyToClipboardWrapper>
+                {/* Copy link with password */}
+                <CopyToClipboardWrapper label="Link with Password" value={getLink({ includePassword: true })} offset={-0.5}>
+                    <div className="button">
+                        Link with Password
+                        <Copy size={14} />
+                    </div>
+                </CopyToClipboardWrapper>
+                <a className="button button--destructive" onClick={() => deleteFile()}>
+                    Delete
+                    <Trash2 size={14} />
+                </a>
+            </div>
         </div>
     )
 }
@@ -82,13 +95,50 @@ export default styled(ShareFile)`
     color: hsl(0, 0%, 90%);
     pointer-events: all;
     gap: 2rem;
+    width: 100%;
+
+    & .button {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        background: hsl(0, 0%, 25%);
+        border-radius: 0.33rem;
+        padding: .33rem .5rem;
+        font-size: .9rem;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all .1s ease;
+
+        &:hover {
+            background-color: hsl(0, 0%, 30%);
+        }
+
+        &--destructive {
+            background-color: hsl(0, 55%, 30%);
+            color: hsl(0, 0%, 90%);
+
+            &:hover {
+                background-color: hsl(0, 65%, 35%);
+            }
+        }
+    }
+
+    & > .bottomBar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        width: 100%;
+        min-width: 100%;
+        background: hsl(0, 0%, 15%);
+        padding: 1rem;
+    }
 
     & > .inner {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: .5rem;
-        width: 100%;
 
         & .link {
             display: flex;
@@ -96,7 +146,7 @@ export default styled(ShareFile)`
             gap: 1rem;
             background: hsl(0, 0%, 10%);
             border-radius: 0.5rem;
-            padding: .5rem .5rem;
+            padding: .75rem 1rem;
             overflow: hidden;
 
             a {
@@ -126,23 +176,6 @@ export default styled(ShareFile)`
             justify-content: center;
             align-items: center;
             gap: .5rem;
-
-            & .button {
-                display: flex;
-                align-items: center;
-                gap: .5rem;
-                background: hsl(0, 0%, 25%);
-                border-radius: 0.33rem;
-                padding: .33rem .5rem;
-                font-size: .9rem;
-                overflow: hidden;
-                cursor: pointer;
-                transition: all .1s ease;
-
-                &:hover {
-                    background-color: hsl(0, 0%, 30%);
-                }
-            }
         }
     }
 

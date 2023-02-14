@@ -212,7 +212,6 @@ router.post('/:accessToken/challenge', async (req: Request, res: Response) => {
 
 router.delete('/:accessToken', authenticate, async (req: Request, res: Response) => {
     const { accessToken } = req.params
-    const { update_token: updateToken } = req.query as { update_token: string }
 
     // Retrieve file
     const file = await req.context.storage.retrieveFile(accessToken)
@@ -223,16 +222,6 @@ router.delete('/:accessToken', authenticate, async (req: Request, res: Response)
             status: 'error',
             data: {
                 reason: 'File not found'
-            }
-        })
-    }
-
-    // Guard against invalid update token
-    if (updateToken !== file.updateToken) {
-        return res.status(403).json({
-            status: 'error',
-            data: {
-                reason: 'Invalid update token'
             }
         })
     }

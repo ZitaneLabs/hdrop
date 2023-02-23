@@ -42,7 +42,7 @@ spec:
       value: ${hdrop-db-staging.DATABASE_URL}
     git:
       branch: feat/deploy-on-do
-      repo_clone_url: https://github.com/splittydev/hdrop.git
+      repo_clone_url: https://github.com/splittydev/hausdrop.git
     health_check:
       http_path: /status
     http_port: 80

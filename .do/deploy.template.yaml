@@ -1,0 +1,53 @@
+spec:
+  alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
+  databases:
+  - name: hdrop
+    engine: PG
+  name: hdrop-api
+  region: fra
+  services:
+  - dockerfile_path: hdrop-server-js/Dockerfile
+    envs:
+    - key: PORT
+      scope: RUN_TIME
+      value: "80"
+    - key: S3_REGION
+      scope: RUN_TIME
+      value: auto
+    - key: S3_ENDPOINT
+      scope: RUN_TIME
+      type: SECRET
+      value: EV[1:bxyeXV6KNN5IZ/OP3Y9D073UqEmJ4tPC:Fu6XGIUknEUBroZcc0S0NISkJbV+lZwJVlp1CcEva43SXCGWNutltzw4jELCQIaRCpqvoCZEtlED4ra4kLND45c4o5DCsju+yYMsgshGvZk+]
+    - key: S3_ACCESS_KEY_ID
+      scope: RUN_TIME
+      type: SECRET
+      value: AKIAIOSFODNN7EXAMPLE
+    - key: S3_SECRET_ACCESS_KEY
+      scope: RUN_TIME
+      type: SECRET
+      value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    - key: S3_BUCKET_NAME
+      scope: RUN_TIME
+      value: hdrop
+    - key: S3_PUBLIC_URL
+      scope: RUN_TIME
+      value: https://storage.example.com
+    - key: CORS_ORIGIN
+      scope: RUN_TIME
+      value: '*'
+    - key: DATABASE_URL
+      scope: RUN_TIME
+      value: ${hdrop-db-staging.DATABASE_URL}
+    git:
+      branch: feat/deploy-on-do
+      repo_clone_url: https://github.com/splittydev/hdrop.git
+    health_check:
+      http_path: /status
+    http_port: 80
+    instance_count: 1
+    name: hdrop-api
+    routes:
+    - path: /
+    source_dir: hdrop-server-js

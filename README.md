@@ -1,6 +1,8 @@
 # hdrop
 > Simple, self-hosted encrypted file transfer.
 
+[![Deploy to DO](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/splittydev/hdrop/tree/feat/deploy-on-do&refcode=59e83ac2e72c)
+
 ## Docs
 
 | Name                   | Link                              |

@@ -3,7 +3,7 @@ spec:
   - rule: DEPLOYMENT_FAILED
   - rule: DOMAIN_FAILED
   databases:
-  - name: hdrop
+  - name: hdrop-db
     engine: PG
   name: hdrop-api
   region: fra
@@ -39,10 +39,11 @@ spec:
       value: '*'
     - key: DATABASE_URL
       scope: RUN_TIME
-      value: ${hdrop-db-staging.DATABASE_URL}
-    git:
+      value: ${hdrop-db.DATABASE_URL}
+    github:
       branch: deploy-on-do
-      repo_clone_url: https://github.com/splittydev/hausdrop.git
+      deploy_on_push: true
+      repo: SplittyDev/hausdrop
     health_check:
       http_path: /status
     http_port: 80

@@ -8,7 +8,7 @@ use warp::{
     multipart::{FormData, Part},
     Filter, Rejection, Reply,
 };
-
+/*
 /*
 Switch to mpart-async later for multipart upload
 */
@@ -84,3 +84,4 @@ fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallibl
 
     Ok(warp::reply::with_status(message, code))
 }
+*/

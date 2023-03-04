@@ -6,12 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4.23"
-tokio = { version = "1", features = ["full"] }
-serde =  { version = "1.0.152", features = ["derive"] }
 warp = "0.3"
+axum = "0.6.18"
+
+serde =  { version = "1.0.152", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+chrono = "0.4.23"
 pretty_env_logger = "0.4.0"
 uuid = { version = "0.8", features = ["v4"] }
 futures = { version = "=0.3.25", default-features = false }
 bytes = "0.5.6"
-rusqlite = { version = "0.28.0", features = ["bundled"] }
+thiserror = "1.0.38"
+diesel = { version = "2.0.3", features = ["postgres", "extras"] }
+dotenvy = "0.15"
+rust-s3 = "0.28"
+diesel_migrations = "2.0.0"

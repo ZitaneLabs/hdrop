@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRecoilValue } from 'recoil'
+import { Copy } from 'react-feather'
 import styled from 'styled-components'
 import { decryptedFileInfoState } from '../state'
 import { PrismAsync as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -17,13 +18,23 @@ const ViewFile = ({ className }) => {
     const isImage = decryptedFile.isImage()
     const isAudio = decryptedFile.isAudio()
     const isText = decryptedFile.isText()
-
     const hasPreview = isVideo || isImage || isAudio || isText
+
+    const copyText = async () => {
+        await navigator.clipboard.writeText(decryptedFile.text())
+    }
 
     return (
         <div className={className}>
             <div className="file">
-                <div className="file__name">{decryptedFile.name()}</div>
+                <div className="file__name">
+                    {decryptedFile.name()}
+                    {isText && (
+                        <div className="copy__text" onClick={() => copyText()}>
+                            <Copy size={20} />
+                        </div>
+                    )}
+                </div>
                 {hasPreview && objectUrl !== null && (
                     <div className={["file__preview", isAudio ? 'file__preview--100p' : ''].join(' ')}>
                         {isVideo && (
@@ -84,6 +95,7 @@ export default styled(ViewFile)`
         height: 100%;
 
         &__name {
+            position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -96,6 +108,22 @@ export default styled(ViewFile)`
             overflow: hidden;
             text-overflow: ellipsis;
             text-align: center;
+
+            .copy__text {
+                position: absolute;
+                right: .25rem;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 28px;
+                height: 28px;
+                border-radius: .33rem;
+                cursor: pointer;
+
+                &:hover {
+                    background: hsl(0,0%,25%);
+                }
+            }
 
             @media screen and (min-width: 700px) {
                 font-size: .9rem;
@@ -131,6 +159,7 @@ export default styled(ViewFile)`
             }
 
             div.text {
+                position: relative;
                 max-width: 100vw;
                 max-height: 100%;
                 overflow: auto;

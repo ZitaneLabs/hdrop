@@ -1,6 +1,18 @@
-import Prisma, { File } from '@prisma/client'
+import { File } from '@prisma/client'
+import { Counter } from 'prom-client'
 
 import { DatabaseClient, FileDataCache, S3Provider, StoredFile } from '../core.js'
+
+class Metrics {
+    totalFilesStored = new Counter({
+        name: 'hdrop_storage_stored_files_total',
+        help: 'Total number of files stored',
+    })
+    totalBytesStored = new Counter({
+        name: 'hdrop_storage_stored_bytes_total',
+        help: 'Total number of bytes stored',
+    })
+}
 
 /**
  * File storage coordinator.
@@ -11,6 +23,7 @@ export default class FileStorage {
     dbClient: DatabaseClient
     storageProvider: S3Provider
     cache: FileDataCache = new FileDataCache()
+    metrics = new Metrics()
 
     constructor(dbClient: DatabaseClient, storageProvider: S3Provider) {
         this.dbClient = dbClient
@@ -27,6 +40,10 @@ export default class FileStorage {
 
         // Persist file to remote storage
         this.tryPersistFile(storedFile)
+
+        // Increment total files stored metric
+        this.metrics.totalFilesStored.inc()
+        this.metrics.totalBytesStored.inc(storedFile.fileData.byteLength)
 
         return file
     }

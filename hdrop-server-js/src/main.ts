@@ -3,6 +3,8 @@ import bodyParser from 'body-parser'
 import cors from 'cors'
 import winston from 'winston'
 import * as dotenv from 'dotenv'
+import PrometheusClient from 'prom-client'
+import promBundle from 'express-prom-bundle'
 
 import { AppContext, DatabaseClient, FileStorage, S3Provider } from './core.js'
 import { handleErrors, injectContext } from './middleware.js'
@@ -14,6 +16,9 @@ dotenv.config()
 // Parse env variables
 const PORT = parseInt(process.env.PORT) || 8080
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'
+
+// Set up prometheus
+PrometheusClient.collectDefaultMetrics()
 
 // Create logger
 const logger = winston.createLogger({
@@ -43,6 +48,12 @@ async function main() {
     // Create context
     const context = new AppContext(dbClient, storage, logger)
 
+    // Create express metrics middleware
+    const metricsMiddleware = promBundle({
+        includeUp: true,
+        includeMethod: true,
+    })
+
     // Start expiration watchdog
     setInterval(() => {
         storage.purgeExpiredFiles()
@@ -53,6 +64,7 @@ async function main() {
     app.use(bodyParser.json({ limit: '256mb' }))
     app.use(cors({ origin: CORS_ORIGIN }))
     app.use(injectContext(context))
+    app.use(metricsMiddleware)
     app.use(handleErrors)
 
     app.use('/status', statusRouter)

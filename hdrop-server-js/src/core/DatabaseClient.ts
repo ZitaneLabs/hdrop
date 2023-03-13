@@ -1,9 +1,19 @@
 
 import Prisma, { PrismaClient } from '@prisma/client'
+import { Gauge } from 'prom-client'
 
 import { StoredFile } from '../core.js'
 
+class Metrics {
+    fileCount = new Gauge({
+        name: 'hdrop_db_file_count',
+        help: 'Number of files stored in the database',
+    })
+}
+
 export default class DatabaseClient {
+    metrics = new Metrics()
+
     /**
      * Default expiration time in milliseconds.
      * 
@@ -19,7 +29,7 @@ export default class DatabaseClient {
     async createFile(storedFile: StoredFile): Promise<Prisma.File> {
         const createdAt = new Date()
         const expiresAt = new Date(createdAt.getTime() + DatabaseClient.DEFAULT_EXPIRATION_MS)
-        return await this.client.file.create({
+        const file = await this.client.file.create({
             data: {
                 uuid: storedFile.uuid,
                 accessToken: storedFile.accessToken,
@@ -32,6 +42,8 @@ export default class DatabaseClient {
                 expiresAt,
             }
         })
+        this.metrics.fileCount.inc()
+        return file
     }
 
     /**
@@ -114,11 +126,13 @@ export default class DatabaseClient {
      * Delete a file by its access token.
      */
     async deleteFile(accessToken: string): Promise<Prisma.File> {
-        return await this.client.file.delete({
+        const file = await this.client.file.delete({
             where: {
                 accessToken
             }
         })
+        this.metrics.fileCount.dec()
+        return file
     }
 
     /**
@@ -142,5 +156,16 @@ export default class DatabaseClient {
         })
 
         return count !== 0
+    }
+
+    async validateTokens(accessToken: string, updateToken: string): Promise<boolean> {
+        const count = await this.client.file.count({
+            where: {
+                accessToken,
+                updateToken,
+            }
+        })
+
+        return count === 1
     }
 }

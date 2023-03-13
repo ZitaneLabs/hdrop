@@ -1,6 +1,18 @@
-import Prisma, { File } from '@prisma/client'
+import { File } from '@prisma/client'
+import { Counter } from 'prom-client'
 
 import { DatabaseClient, FileDataCache, S3Provider, StoredFile } from '../core.js'
+
+class Metrics {
+    totalFilesStored = new Counter({
+        name: 'hdrop_storage_stored_files_total',
+        help: 'Total number of files stored',
+    })
+    totalBytesStored = new Counter({
+        name: 'hdrop_storage_stored_bytes_total',
+        help: 'Total number of bytes stored',
+    })
+}
 
 /**
  * File storage coordinator.
@@ -11,6 +23,7 @@ export default class FileStorage {
     dbClient: DatabaseClient
     storageProvider: S3Provider
     cache: FileDataCache = new FileDataCache()
+    metrics = new Metrics()
 
     constructor(dbClient: DatabaseClient, storageProvider: S3Provider) {
         this.dbClient = dbClient
@@ -28,6 +41,10 @@ export default class FileStorage {
         // Persist file to remote storage
         this.tryPersistFile(storedFile)
 
+        // Increment total files stored metric
+        this.metrics.totalFilesStored.inc()
+        this.metrics.totalBytesStored.inc(storedFile.fileData.byteLength)
+
         return file
     }
 
@@ -41,8 +58,8 @@ export default class FileStorage {
             })
             .then(() => {
 
-                // Evict file from cache in 5 minutes
-                this.cache.evictAfter(file.accessToken, 1000 * 60 * 5)
+                // Evict file from cache
+                this.cache.evict(file.accessToken)
             })
             .catch((err: any) => {
                 // Log error
@@ -81,7 +98,7 @@ export default class FileStorage {
         }
 
         // Delete from cache
-        this.cache.evictImmediately(accessToken)
+        this.cache.evict(accessToken)
 
         // Log deletion
         console.log(`[FileStorage/delete ${accessToken}] Deleted file ("${reason ?? "User request"}")`)

@@ -1,11 +1,29 @@
+import { Gauge, Histogram } from 'prom-client'
+
+class Metrics {
+    cachedFileCount = new Gauge({
+        name: 'hdrop_cached_file_count',
+        help: 'Number of files stored in the cache',
+    })
+    cachedFileBytes = new Gauge({
+        name: 'hdrop_cached_file_bytes',
+        help: 'Number of bytes stored in the cache',
+    })
+}
+
 export default class FileDataCache {
     cache: Map<string, Buffer> = new Map()
+    metrics = new Metrics()
 
     /**
      * Commit the specified file to the cache.
      */
     commit(accessToken: string, fileData: Buffer) {
         this.cache.set(accessToken, fileData)
+
+        // Update metrics
+        this.metrics.cachedFileCount.inc()
+        this.metrics.cachedFileBytes.inc(fileData.byteLength)
     }
 
     /**
@@ -16,18 +34,17 @@ export default class FileDataCache {
     }
 
     /**
-     * Evict the specified file from the cache immediately.
+     * Evict the specified file from the cache.
      */
-    evictImmediately(accessToken: string) {
-        this.cache.delete(accessToken)
-    }
+    evict(accessToken: string) {
+        if (!this.cache.has(accessToken)) return;
+        const fileData = this.cache.get(accessToken)!
 
-    /**
-     * Evict the specified file from the cache after the specified timeout.
-     * 
-     * @param timeout Timeout in milliseconds
-     */
-    evictAfter(accessToken: string, timeout: number) {
-        setTimeout(() => this.evictImmediately(accessToken), timeout)
+        // Update metrics
+        this.metrics.cachedFileCount.dec()
+        this.metrics.cachedFileBytes.dec(fileData.byteLength)
+
+        // Evict file from cache
+        this.cache.delete(accessToken)
     }
 }

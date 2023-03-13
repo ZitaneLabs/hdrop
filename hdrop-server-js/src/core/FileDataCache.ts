@@ -16,18 +16,14 @@ export default class FileDataCache {
     }
 
     /**
-     * Evict the specified file from the cache immediately.
+     * Evict the specified file from the cache.
      */
-    evictImmediately(accessToken: string) {
-        this.cache.delete(accessToken)
-    }
+    evict(accessToken: string) {
+        if (!this.cache.has(accessToken)) return;
+        const fileData = this.cache.get(accessToken)!
 
-    /**
-     * Evict the specified file from the cache after the specified timeout.
-     * 
-     * @param timeout Timeout in milliseconds
-     */
-    evictAfter(accessToken: string, timeout: number) {
-        setTimeout(() => this.evictImmediately(accessToken), timeout)
+
+        // Evict file from cache
+        this.cache.delete(accessToken)
     }
 }

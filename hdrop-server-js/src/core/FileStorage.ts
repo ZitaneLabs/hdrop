@@ -41,8 +41,8 @@ export default class FileStorage {
             })
             .then(() => {
 
-                // Evict file from cache in 5 minutes
-                this.cache.evictAfter(file.accessToken, 1000 * 60 * 5)
+                // Evict file from cache
+                this.cache.evict(file.accessToken)
             })
             .catch((err: any) => {
                 // Log error
@@ -81,7 +81,7 @@ export default class FileStorage {
         }
 
         // Delete from cache
-        this.cache.evictImmediately(accessToken)
+        this.cache.evict(accessToken)
 
         // Log deletion
         console.log(`[FileStorage/delete ${accessToken}] Deleted file ("${reason ?? "User request"}")`)

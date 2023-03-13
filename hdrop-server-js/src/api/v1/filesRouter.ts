@@ -1,14 +1,14 @@
 import { Request, Response, Router } from 'express'
 import multer from 'multer'
 
-import { authenticate } from '../../middleware.js'
+import { authenticated } from '../../middleware.js'
 import { StoredFile } from '../../core.js'
 import { Readable } from 'stream'
 
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 256 * 1024 * 1024, // 256 MB
+        fileSize: 256 * 1024 * 1024, // 256 MiB
     }
 })
 const router = Router()
@@ -52,7 +52,7 @@ router.post('/', upload.single('file_data'), async (req: Request, res: Response)
     })
 })
 
-router.post('/:accessToken/expiry', authenticate, async (req: Request, res: Response) => {
+router.post('/:accessToken/expiry', authenticated, async (req: Request, res: Response) => {
     const { accessToken } = req.params
 
     // Retrieve file
@@ -210,7 +210,7 @@ router.post('/:accessToken/challenge', async (req: Request, res: Response) => {
     })
 })
 
-router.delete('/:accessToken', authenticate, async (req: Request, res: Response) => {
+router.delete('/:accessToken', authenticated, async (req: Request, res: Response) => {
     const { accessToken } = req.params
 
     // Retrieve file

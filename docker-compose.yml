@@ -76,6 +76,14 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=hdrop
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    networks:
+      - backend
+    volumes:
+      - ./prometheus:/etc/prometheus
 networks:
   hdrop:
   backend:

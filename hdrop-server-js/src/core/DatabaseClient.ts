@@ -143,4 +143,15 @@ export default class DatabaseClient {
 
         return count !== 0
     }
+
+    async validateTokens(accessToken: string, updateToken: string): Promise<boolean> {
+        const count = await this.client.file.count({
+            where: {
+                accessToken,
+                updateToken,
+            }
+        })
+
+        return count === 1
+    }
 }

@@ -27,7 +27,7 @@ hdrop exclusively uses `WebCrypto` APIs for all cryptographic operations.
 #### Client
 
 1. Upload data to the server:
-   - Base64-encoded encrypted file contents
+   - Encrypted file contents
    - Base64-encoded encrypted file name
    - Base64-encoded salt
    - Base64-encoded IV

@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FileDrop } from 'react-file-drop'
 import { Upload } from 'react-feather'
 import { useSetRecoilState } from 'recoil'
@@ -21,6 +21,39 @@ const FileDropZone = ({ className, hidden = false }) => {
 
     const setFileDataState = useSetRecoilState(fileDataState)
     const setFileNameState = useSetRecoilState(fileNameState)
+
+    const handlePaste = e => {
+        const { clipboardData } = e
+
+        // Find files in clipboard
+        const viableItems = Array.from(clipboardData.items)
+            .filter(item => item.kind === 'file')
+
+        // Validate file count
+        if (viableItems.length === 0) {
+            setErrorMessage('No file present in clipboard.')
+            return
+        } else if (viableItems.length > 1) {
+            setErrorMessage('Too many files present in clipboard.')
+            return
+        }
+
+        // Get clipboard item as file
+        const file = viableItems[0].getAsFile()
+
+        // Invoke callback
+        processFile(file)
+
+        // Clear error messages
+        setErrorMessage(null)
+    }
+
+    useEffect(() => {
+        document.addEventListener('paste', handlePaste)
+        return () => {
+            document.removeEventListener('paste', handlePaste)
+        }
+    }, [])
 
     /**
      * 

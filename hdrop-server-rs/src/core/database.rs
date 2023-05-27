@@ -3,9 +3,8 @@ use diesel::prelude::*;
 // docker-compose up postgres
 
 use crate::core::models::*;
+use ::uuid::Uuid;
 use diesel::pg::PgConnection;
-use diesel::prelude::*;
-use diesel::sql_types::Uuid;
 use dotenvy::dotenv;
 use std::env;
 
@@ -31,7 +30,8 @@ pub fn get_file(conn: &mut PgConnection, id_uuid: Uuid) -> QueryResult<File> {
 */
 
 use crate::schema::files;
-pub fn insert_file(conn: &mut PgConnection, file: File) -> File {
+pub fn insert_file(conn: &mut PgConnection, file: InsertFile) -> InsertFile {
+    //let data = serde_json::to_value(file).unwrap();
     diesel::insert_into(files::table)
         .values(&file)
         .get_result(conn)
@@ -43,37 +43,44 @@ pub fn insert_file(conn: &mut PgConnection, file: File) -> File {
     //unimplemented!("");
 }
 
-pub fn update_file(conn: &mut PgConnection, file: File) {
+pub fn update_file(conn: &mut PgConnection, file: InsertFile) {
     diesel::update(files.filter(uuid.eq(&file.uuid)))
         .set(&file)
         .execute(conn)
         .expect("update failed");
 }
 
-pub fn update_file_expiry(conn: &mut PgConnection, file: File) {
+pub fn update_file_expiry(conn: &mut PgConnection, file: InsertFile) {
     diesel::update(files.filter(uuid.eq(&file.uuid)))
         .set(expiresAt.eq(&file.expiresAt))
         .execute(conn)
         .expect("update failed");
 }
 
-pub fn delete_file(conn: &mut PgConnection, file: File) -> File {
+pub fn delete_file(conn: &mut PgConnection, file: InsertFile) -> File {
     diesel::delete(files.filter(uuid.eq(&file.uuid)))
         .get_result(conn)
         .expect("Error deleting files row")
 }
 
-pub fn get_file(conn: &mut PgConnection, s_uuid: Uuid) -> Option<File> {
-    files.filter(uuid.eq(&s_uuid)).first(conn).optional().ok()?
+pub fn get_file(conn: &mut PgConnection, s_uuid: &Uuid) -> Option<File> {
+    use crate::schema::files::dsl::*;
+    files.filter(uuid.eq(s_uuid)).first(conn).ok()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{
+        delete_file, establish_connection, get_file, get_table, insert_file, update_file,
+        update_file_expiry,
+    };
     use crate::core::models::File;
+    use crate::core::InsertFile;
 
     use chrono::{Duration, Utc};
-    use diesel::{pg::Pg, sql_query, ConnectionError};
+    use diesel::expression::is_aggregate::No;
+    use diesel::prelude::*;
+    use diesel::{pg::Pg, sql_query};
     //use diesel::sqlite::SqliteConnection;
 
     use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -113,16 +120,16 @@ mod tests {
             .expect("Error creating db public");
 
         run_migrations(&mut conn).expect("error running migrations");
-    }
 
-    fn compare(file: File) {
-
+        sql_query("ALTER SEQUENCE files_id_seq RESTART WITH 1")
+            .execute(&mut conn)
+            .expect("Error resetting id sequence");
     }
 
     #[test]
     fn test_connection() {
         //let conn = establish_connection();
-        let conn = super::establish_connection();
+        _ = super::establish_connection();
     }
 
     #[test]
@@ -131,9 +138,9 @@ mod tests {
 
         let mut conn = super::establish_connection();
 
-        let file = File {
-            id: 1,
-            uuid: "123e4567-e89b-12d3-a456-426614174000".to_string(),
+        let file = InsertFile {
+            id: None,
+            uuid: uuid::Uuid::new_v4(),
             accessToken: "AccessToken".to_string(),
             updateToken: "UpdateToken".to_string(),
             dataUrl: Some("url".to_string()),
@@ -153,9 +160,9 @@ mod tests {
         initialize();
         let mut conn = super::establish_connection();
 
-        let mut file = File {
-            id: 1,
-            uuid: "123e4567-e89b-12d3-a456-426614174000".to_string(),
+        let file = InsertFile {
+            id: None,
+            uuid: uuid::Uuid::new_v4(),
             accessToken: "AccessToken".to_string(),
             updateToken: "UpdateToken".to_string(),
             dataUrl: Some("url".to_string()),
@@ -167,14 +174,14 @@ mod tests {
             expiresAt: Utc::now().naive_utc() + Duration::days(1),
         };
 
-        insert_file(&mut conn, file.clone());
+        let file = insert_file(&mut conn, file);
 
-        let new_file = File {
+        let new_file = InsertFile {
             expiresAt: Utc::now().naive_utc() + Duration::days(2),
             ..file
         };
 
-        update_file_expiry(&mut conn, new_file.clone());
+        update_file_expiry(&mut conn, new_file);
         //delete_file(&mut conn, file);
     }
 
@@ -184,9 +191,9 @@ mod tests {
 
         let mut conn = super::establish_connection();
 
-        let file = File {
-            id: 1,
-            uuid: "123e4567-e89b-12d3-a456-426614174000".to_string(),
+        let file = InsertFile {
+            id: None,
+            uuid: uuid::Uuid::new_v4(),
             accessToken: "AccessToken".to_string(),
             updateToken: "UpdateToken".to_string(),
             dataUrl: Some("url".to_string()),
@@ -198,7 +205,7 @@ mod tests {
             expiresAt: Utc::now().naive_utc(),
         };
 
-        insert_file(&mut conn, file.clone());
-        delete_file(&mut conn, file.clone());
+        let file = insert_file(&mut conn, file);
+        delete_file(&mut conn, file);
     }
 }

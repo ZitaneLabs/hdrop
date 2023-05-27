@@ -3,7 +3,7 @@
 diesel::table! {
     files (uuid) {
         id -> Int4,
-        uuid -> Text,
+        uuid -> Uuid,
         accessToken -> Text,
         updateToken -> Text,
         dataUrl -> Nullable<Text>,

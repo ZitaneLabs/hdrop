@@ -1,3 +1,5 @@
+/// This is not used anymore
+
 use chrono::prelude::*;
 use sqlx::{Connection, PgConnection, Postgres, Result};
 use std::env;

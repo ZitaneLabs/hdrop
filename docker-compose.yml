@@ -50,7 +50,7 @@ services:
   api_rust:
     profiles: ["api-rs"]
     build:
-      context: ./hdrop-server-rs
+      context: ./hdrop-server
       dockerfile: Dockerfile
     ports:
       - "8080:80"

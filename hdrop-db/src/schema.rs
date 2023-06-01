@@ -3,7 +3,7 @@
 diesel::table! {
     files (uuid) {
         id -> Int4,
-        uuid -> Text,
+        uuid -> Uuid,
         accessToken -> Text,
         updateToken -> Text,
         dataUrl -> Nullable<Text>,
@@ -25,7 +25,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(
-    files,
-    statistics,
-);
+diesel::allow_tables_to_appear_in_same_query!(files, statistics,);

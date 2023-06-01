@@ -5,16 +5,18 @@ use crate::core::{S3Provider, StorageProvider};
 use hdrop_db::{Database, InsertFile};
 pub(crate) use crate::error::{Error, Result};
 //use crate::schema::files::dataUrl;
-use axum::{Router, body::Bytes, Json, extract::{Path, Extension, Multipart, Query, State}, routing::{delete, get, post}};
+use axum::{
+    body::Bytes,
+    extract::{Extension, Multipart, Path, Query, State},
+    routing::{delete, get, post},
+    Json, Router,
+};
 use chrono::Utc;
 use dotenvy;
 use serde::{Deserialize, Serialize};
 use std::{env, sync::Arc};
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use hex_literal::hex;
-use sha3::{Digest, Sha3_256};
-
 #[derive(Clone)]
 struct StateInfos<T: StorageProvider> {
     pub provider: T,
@@ -241,17 +243,17 @@ async fn uploadFile(
     // Upload to StorageProvider & update DB (S3 etc.)
     let s3provider = &stateInfo.provider;
     let uuid = Uuid::new_v4();
-    let access_token = create_access_token();
-    let update_token = create_update_token();
 
     // DB update
-    let db = Database::new();
+    let mut db = Database::new().unwrap();
+    let access_token = db.generate_access_token();
+    let update_token = Database::generate_update_token();
     let time = Utc::now();
     let mut file = InsertFile {
         id: None,
         uuid: uuid,
-        accessToken: access_token,
-        updateToken: update_token,
+        accessToken: access_token.clone(),
+        updateToken: update_token.clone(),
         dataUrl: None,
         fileNameData: data.file_name_data,
         fileNameHash: data.file_name_hash,
@@ -260,16 +262,19 @@ async fn uploadFile(
         createdAt: time,
         expiresAt: time + chrono::Duration::seconds(86400),
     };
+    
+    // Inser Partial File into DB
+    db.insert_file(&file);
 
     // S3
-    let Ok(dataurl) = s3provider.uploadFile(uuid.to_string().clone(), &data.file_data).await 
-    else {
+    let Ok(dataurl) = s3provider.uploadFile(uuid.to_string().clone(), &data.file_data).await else {
         return Json(Response::new(ResponseData::Error(ErrorData {
-            reason: "S3 upload penis".to_string(),
+            reason: "S3 upload failed".to_string(),
         })));
     };
-    // Update FileUrl here
+    // DB Update FileUrl here
     file.dataUrl = Some(dataurl); // ToDo: change to dataUrl
+    db.update_file(&file);
 
     // Test, remove later
     let response_data = s3provider
@@ -281,28 +286,10 @@ async fn uploadFile(
 
     Json(Response::new(ResponseData::Success(
         UploadFileResponseData {
-            access_token: "arsch".to_string(),
-            update_token: "arsch".to_string(),
+            access_token: access_token,
+            update_token: update_token,
         },
     )))
-}
-
-fn create_update_token() -> String {
-    /*
-    const uuid = uuidv4()
-    const sha256 = createHash('sha256').update(uuid).digest('hex')
-    const token = sha256.substring(0, length)
-    return token
-    */
-    let uuid = Uuid::new_v4();
-    let hasher = Sha3_256::new();
-    hasher.update(b"123");
-    let result = hasher.finalize();
-    "".to_string()
-}
-
-fn create_access_token() -> String {
-    "".to_string()
 }
 
 async fn updateFileExpiry(

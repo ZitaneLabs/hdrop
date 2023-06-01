@@ -1,0 +1,30 @@
+[package]
+name = "hdrop-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = {version = "0.6.18", features = ["multipart"]}
+
+serde =  { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7.4", features = ["io"] }
+chrono = {version = "0.4", features = ["serde"] }
+pretty_env_logger = "0.4.0"
+uuid = { version = ">=0.7.0, <2.0.0", features = ["v4", "serde"] }
+futures = { version = "=0.3.25", default-features = false }
+bytes = "0.5.6"
+thiserror = "1.0"
+dotenvy = "0.15"
+rust-s3 = "0.33"
+serde_json = "1.0.96"
+async-trait = "0.1.68"
+anyhow = "1.0.71"
+regex = "1.8.3"
+sha3 = "0.10.8"
+hex-literal = "0.4.1"
+hdrop-db = {path = "../hdrop-db"}
+#aws-creds = "0.35.0"
+#aws-region = "0.25.3"

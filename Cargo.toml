@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "hdrop-db",
+    "hdrop-server"
+]

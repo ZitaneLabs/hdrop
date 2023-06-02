@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS "files" (
             "id" SERIAL NOT NULL,
-            "uuid" TEXT NOT NULL,
+            "uuid" UUID NOT NULL,
             "accessToken" TEXT NOT NULL,
             "updateToken" TEXT NOT NULL,
             "dataUrl" TEXT,

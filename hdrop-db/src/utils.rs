@@ -34,7 +34,6 @@ impl TokenGenerator {
         hasher.update(uuid);
         let result = hasher.finalize();
         let result = format!("{:x}", result);
-        result.chars().take(length).collect::<String>();
-        result
+        result.chars().take(length).collect::<String>()
     }
 }

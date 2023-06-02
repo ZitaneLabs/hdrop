@@ -4,38 +4,35 @@ use diesel::prelude::*;
 
 use crate::schema::files;
 use crate::schema::files::dsl::*;
-use crate::{models::*, utils};
+use crate::{models::*, utils, error::Result};
 use ::uuid::Uuid;
-use anyhow::Result;
 use diesel::pg::PgConnection;
 use dotenvy::dotenv;
 use std::env;
 use utils::{TokenGenerator, UPDATE_TOKEN_LENGTH};
+use parking_lot::RwLock;
 
 pub struct Database {
-    connection: PgConnection,
+    connection: RwLock<PgConnection>,
     generator: TokenGenerator,
 }
 
 impl Database {
-    pub fn new() -> Result<Database> {
-        dotenv().ok();
-
-        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-        let pgconn = PgConnection::establish(&database_url)
-            .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+    pub fn try_from_env() -> Result<Database> {
+        let database_url = env::var("DATABASE_URL")?; // expect DATABASE_URL must be set
+        let pgconn = PgConnection::establish(&database_url)?; // .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
         let generator = TokenGenerator::default();
         Ok(Database {
-            connection: pgconn,
+            connection: RwLock::new(pgconn),
             generator,
         })
     }
 
     pub fn insert_file(&mut self, file: &InsertFile) -> InsertFile {
         //let data = serde_json::to_value(file).unwrap();
-        diesel::insert_into(files::table)
+        diesel::insert_into(files)
             .values(file)
-            .get_result(&mut self.connection)
+            .get_result(&mut *self.connection.write())
             .expect("Error saving new file")
         /*
         ToDo: thiserror, return Result types
@@ -47,7 +44,7 @@ impl Database {
     pub fn update_file(&mut self, file: &InsertFile) {
         diesel::update(files.filter(uuid.eq(&file.uuid)))
             .set(file)
-            .execute(&mut self.connection)
+            .execute(&mut *self.connection.write())
             .expect("update failed");
     }
 
@@ -59,7 +56,7 @@ impl Database {
     pub fn update_file_expiry(&mut self, file: &InsertFile) {
         diesel::update(files.filter(uuid.eq(&file.uuid)))
             .set(expiresAt.eq(file.expiresAt))
-            .execute(&mut self.connection)
+            .execute(&mut *self.connection.write())
             .expect("update failed");
     }
 
@@ -67,13 +64,13 @@ impl Database {
         use crate::schema::files::dsl::*;
         files
             .filter(uuid.eq(s_uuid))
-            .first(&mut self.connection)
+            .first(&mut *self.connection.write())
             .ok()
     }
 
     pub fn delete_file(&mut self, file: &InsertFile) -> File {
         diesel::delete(files.filter(uuid.eq(&file.uuid)))
-            .get_result(&mut self.connection)
+            .get_result(&mut *self.connection.write())
             .expect("Error deleting files row")
     }
 
@@ -81,7 +78,7 @@ impl Database {
         use crate::schema::files::dsl::*;
         files
             .filter(accessToken.eq(access_token))
-            .first::<File>(&mut self.connection)
+            .first::<File>(&mut *self.connection.write())
             .is_ok()
     }
 
@@ -143,28 +140,28 @@ mod tests {
 
     // Run before each tests
     fn initialize() -> Database {
-        let mut db = Database::new().unwrap();
+        let mut db = Database::try_from_env().unwrap();
 
         sql_query("DROP SCHEMA IF EXISTS public CASCADE")
-            .execute(&mut db.connection)
+            .execute(&mut *db.connection.write())
             .expect("Error dropping db public");
 
         sql_query("CREATE SCHEMA public")
-            .execute(&mut db.connection)
+            .execute(&mut *db.connection.write())
             .expect("Error creating db public");
 
         sql_query("GRANT ALL ON SCHEMA public TO postgres")
-            .execute(&mut db.connection)
+            .execute(&mut *db.connection.write())
             .expect("Error creating db public");
 
         sql_query("GRANT ALL ON SCHEMA public TO public")
-            .execute(&mut db.connection)
+            .execute(&mut *db.connection.write())
             .expect("Error creating db public");
 
-        run_migrations(&mut db.connection).expect("error running migrations");
+        run_migrations(&mut *db.connection.write()).expect("error running migrations");
 
         sql_query("ALTER SEQUENCE files_id_seq RESTART WITH 1")
-            .execute(&mut db.connection)
+            .execute(&mut *db.connection.write())
             .expect("Error resetting id sequence");
 
         db
@@ -173,7 +170,7 @@ mod tests {
     #[test]
     fn test_connection() {
         //let conn = establish_connection();
-        let _ = Database::new().unwrap();
+        let _ = Database::try_from_env().unwrap();
     }
 
     #[test]

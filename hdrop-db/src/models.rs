@@ -24,7 +24,9 @@ pub struct File {
     pub expiresAt: DateTime<Utc>,
 }
 
-#[derive(Default, Queryable, Debug, Insertable, Identifiable, AsChangeset)]
+#[derive(
+    Default, Serialize, Deserialize, Queryable, Debug, Insertable, Identifiable, AsChangeset,
+)]
 #[diesel(primary_key(uuid))]
 #[diesel(table_name = crate::schema::files)]
 #[diesel(check_for_backend(diesel::pg::Pg))]

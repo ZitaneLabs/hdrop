@@ -15,7 +15,7 @@ pub struct S3Provider {
 }
 
 impl S3Provider {
-    pub fn new() -> Result<Self> {
+    pub fn try_from_env() -> Result<Self> {
         let region_custom = Region::Custom {
             region: env::var("S3_REGION").unwrap(),
             endpoint: env::var("S3_ENDPOINT").unwrap(),
@@ -33,39 +33,39 @@ impl S3Provider {
             region_custom,
             // Credentials are collected from environment, config, profile or instance metadata
             credentials,
-        )?;
+        )?
+        .with_path_style();
+
         // -- Done
-        let regex = Regex::new(&r"\/+$").unwrap();
-        let public_url = env::var("S3_PUBLIC_URL").unwrap();
-        let sanitizedPublicUrl = format!("{}", regex.replace(&public_url, ""));
-        Ok(S3Provider {
-            bucket: bucket,
-            public_url: public_url,
-        })
+        let regex = Regex::new(r"/+$").unwrap();
+        let public_url = regex
+            .replace(&env::var("S3_PUBLIC_URL").unwrap(), "")
+            .to_string();
+        Ok(S3Provider { bucket, public_url })
     }
 }
 
 #[async_trait]
 impl StorageProvider for S3Provider {
-    async fn uploadFile(&self, ident: String, content: &[u8]) -> Result<String> {
-        let s3_path = ident.as_str();
+    async fn store_file(&self, ident: String, content: &[u8]) -> Result<String> {
+        let s3_path = format!("/{ident}");
 
-        let response_data = self.bucket.put_object(s3_path, content).await?;
+        let _response_data = self.bucket.put_object(&s3_path, content).await?;
         //let response_data = bucket.get_object(s3_path).await?;
         //assert_eq!(test, response_data.as_slice());
-        let url = format!("{}/{}", self.public_url, s3_path);
-        Ok(url)
+
+        Ok(format!("{s3_host}/{s3_path}", s3_host = self.public_url))
     }
 
-    async fn deleteFile(&self, ident: String) -> Result<()> {
+    async fn delete_file(&self, ident: String) -> Result<()> {
         let s3_path = ident.as_str();
 
-        let response_data = self.bucket.delete_object(s3_path).await?;
+        let _response_data = self.bucket.delete_object(s3_path).await?;
 
         Ok(())
     }
 
-    async fn getFile(&self, ident: String) -> Result<Fetchtype> {
+    async fn get_file(&self, ident: String) -> Result<Fetchtype> {
         let url = format!("{}/{}", self.public_url, ident);
 
         Ok(Fetchtype::FileUrl(url))

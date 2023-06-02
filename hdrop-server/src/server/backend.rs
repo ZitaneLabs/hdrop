@@ -1,35 +1,25 @@
-use crate::core::{S3Provider, StorageProvider};
-//use crate::schema::files::dataUrl;
 use axum::{
-    extract::Extension,
     http::HeaderValue,
     routing::{delete, get, post},
     Router,
 };
 use hdrop_db::Database;
-
 use std::{env, net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::sync::RwLock;
 use tower_http::cors::{Any, CorsLayer};
-use crate::error::{Error, Result};
+
 use super::routes::{
     access_file, delete_file, get_challenge, get_raw_file_bytes, update_file_expiry, upload_file,
     verify_challenge,
 };
+use crate::{
+    core::{S3Provider, StorageProvider},
+    error::Result,
+};
 
-//#[derive(Clone)]
-pub struct StateInfos<T: StorageProvider> {
-    pub provider: T,
-    pub db: Database // ToDo: this is flawed, PgConnection shouldn't be restricted behind an Rw or mutex imo
-}
-
-impl<T: StorageProvider> StateInfos<T> {
-    pub fn try_from_env(provider: T) -> Result<Self> {
-        Ok(Self { 
-            provider, 
-            db: Database::try_from_env()?
-        })
-    }
+pub struct AppState {
+    pub provider: RwLock<Box<dyn StorageProvider + Sync + Send>>,
+    pub database: Database,
 }
 
 pub async fn start_server() -> Result<()> {
@@ -44,8 +34,10 @@ pub async fn start_server() -> Result<()> {
         println!("{key}: {value}");
     }
 
-    let storage_provider = S3Provider::try_from_env().unwrap(); // ToDo: Add env var to decide which storageprovider
-    let state_info = Arc::new(StateInfos::try_from_env(storage_provider)?);
+    let state = Arc::new(AppState {
+        provider: RwLock::new(Box::new(S3Provider::try_from_env()?)),
+        database: Database::try_from_env()?,
+    });
 
     let app = Router::new()
         .route("/test", get(|| async { "Hello, World!" }))
@@ -56,6 +48,7 @@ pub async fn start_server() -> Result<()> {
         .route("/v1/files/:access_token/raw", get(get_raw_file_bytes))
         .route("/v1/files/:access_token/challenge", get(get_challenge))
         .route("/v1/files/:access_token/challenge", post(verify_challenge))
+        .with_state(state)
         .layer(
             CorsLayer::new()
                 .allow_origin(
@@ -65,8 +58,7 @@ pub async fn start_server() -> Result<()> {
                         .unwrap(),
                 )
                 .allow_methods(Any),
-        )
-        .layer(Extension(state_info));
+        );
 
     let server_port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let host = format!("0.0.0.0:{server_port}");

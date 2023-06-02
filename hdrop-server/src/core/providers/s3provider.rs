@@ -1,13 +1,10 @@
-use super::provider::StorageProvider;
-use super::provider::{Buffer, Fetchtype};
 use async_trait::async_trait;
-use s3::creds::Credentials;
-use s3::region::Region;
-use s3::Bucket;
-//use anyhow::Result;
-use crate::Result;
 use regex::Regex;
+use s3::{creds::Credentials, region::Region, Bucket};
 use std::env;
+
+use super::provider::{Fetchtype, StorageProvider};
+use crate::Result;
 
 pub struct S3Provider {
     pub bucket: Bucket,

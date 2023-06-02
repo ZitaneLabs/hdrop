@@ -1,93 +1,155 @@
-use diesel::prelude::*;
 // postgres://postgres:postgres@postgres:5432/hdrop
 // docker-compose up postgres
 
-use crate::schema::files;
 use crate::schema::files::dsl::*;
-use crate::{models::*, utils, error::Result};
+use crate::{error::Result, models::*, utils};
 use ::uuid::Uuid;
-use diesel::pg::PgConnection;
-use dotenvy::dotenv;
+use deadpool_diesel::postgres::{Manager, Pool};
+use diesel::prelude::*;
+use std::borrow::Cow;
 use std::env;
 use utils::{TokenGenerator, UPDATE_TOKEN_LENGTH};
-use parking_lot::RwLock;
 
 pub struct Database {
-    connection: RwLock<PgConnection>,
+    pool: Pool,
     generator: TokenGenerator,
 }
 
 impl Database {
     pub fn try_from_env() -> Result<Database> {
         let database_url = env::var("DATABASE_URL")?; // expect DATABASE_URL must be set
-        let pgconn = PgConnection::establish(&database_url)?; // .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+        let manager = Manager::new(database_url, deadpool_diesel::Runtime::Tokio1);
+        let pool = Pool::builder(manager).max_size(8).build()?;
         let generator = TokenGenerator::default();
-        Ok(Database {
-            connection: RwLock::new(pgconn),
-            generator,
-        })
+        Ok(Database { pool, generator })
     }
 
-    pub fn insert_file(&mut self, file: &InsertFile) -> InsertFile {
-        //let data = serde_json::to_value(file).unwrap();
-        diesel::insert_into(files)
-            .values(file)
-            .get_result(&mut *self.connection.write())
-            .expect("Error saving new file")
-        /*
-        ToDo: thiserror, return Result types
-
-        */
-        //unimplemented!("");
+    pub async fn insert_file(&self, file: InsertFile) -> Result<File> {
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(|conn| {
+                diesel::insert_into(files)
+                    .values(file)
+                    .get_result::<File>(conn)
+            })
+            .await??)
     }
 
-    pub fn update_file(&mut self, file: &InsertFile) {
-        diesel::update(files.filter(uuid.eq(&file.uuid)))
-            .set(file)
-            .execute(&mut *self.connection.write())
-            .expect("update failed");
+    pub async fn update_file(&self, file: File) -> Result<()> {
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(|conn| {
+                diesel::update(files.filter(uuid.eq(file.uuid)))
+                    .set(file)
+                    .execute(conn)
+                    .map(|_| ())
+            })
+            .await??)
     }
 
-    pub fn get_table() {
-        // database
-        unimplemented!("");
+    pub async fn update_file_expiry(&self, file: File) -> Result<()> {
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(move |conn| {
+                diesel::update(files.filter(uuid.eq(file.uuid)))
+                    .set(expiresAt.eq(file.expiresAt))
+                    .execute(conn)
+                    .map(|_| ())
+            })
+            .await??)
     }
 
-    pub fn update_file_expiry(&mut self, file: &InsertFile) {
-        diesel::update(files.filter(uuid.eq(&file.uuid)))
-            .set(expiresAt.eq(file.expiresAt))
-            .execute(&mut *self.connection.write())
-            .expect("update failed");
+    pub async fn get_file_by_uuid(&self, s_uuid: Uuid) -> Result<File> {
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(move |conn| files.filter(uuid.eq(s_uuid)).first(conn))
+            .await??)
     }
 
-    pub fn get_file(&mut self, s_uuid: &Uuid) -> Option<File> {
-        use crate::schema::files::dsl::*;
-        files
-            .filter(uuid.eq(s_uuid))
-            .first(&mut *self.connection.write())
-            .ok()
+    pub async fn get_file_by_access_token<'a>(
+        &self,
+        access_token: impl Into<Cow<'a, str>>,
+    ) -> Result<File> {
+        let access_token = access_token.into().into_owned();
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(move |conn| files.filter(accessToken.eq(access_token)).first(conn))
+            .await??)
     }
 
-    pub fn delete_file(&mut self, file: &InsertFile) -> File {
-        diesel::delete(files.filter(uuid.eq(&file.uuid)))
-            .get_result(&mut *self.connection.write())
-            .expect("Error deleting files row")
+    pub async fn get_hash<'a>(
+        &self,
+        access_token: impl Into<Cow<'a, str>>,
+    ) -> Result<(String, String, String)> {
+        let file = self.get_file_by_access_token(access_token).await?;
+
+        Ok((file.fileNameHash, file.iv, file.salt))
     }
 
-    pub fn check_access_token_collission(&mut self, access_token: &str) -> bool {
-        use crate::schema::files::dsl::*;
-        files
-            .filter(accessToken.eq(access_token))
-            .first::<File>(&mut *self.connection.write())
-            .is_ok()
+    pub async fn get_file_metadata<'a>(
+        &self,
+        access_token: impl Into<Cow<'a, str>>,
+    ) -> Result<(Option<String>, String, String, String)> {
+        let file = self.get_file_by_access_token(access_token).await?;
+
+        Ok((file.dataUrl, file.fileNameData, file.iv, file.salt))
     }
 
-    pub fn generate_access_token(&mut self) -> String {
+    pub async fn get_challenge<'a>(
+        &self,
+        access_token: impl Into<Cow<'a, str>>,
+    ) -> Result<(String, String, String)> {
+        //let access_token = access_token.into().into_owned();
+        let file = self.get_file_by_access_token(access_token).await?;
+
+        Ok((file.fileNameData, file.iv, file.salt))
+    }
+
+    pub async fn delete_file(&self, file: File) -> Result<File> {
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(move |conn| {
+                diesel::delete(files.filter(uuid.eq(&file.uuid))).get_result(conn)
+            })
+            .await??)
+    }
+
+    pub async fn check_access_token_collission<'a>(
+        &self,
+        access_token: impl Into<Cow<'a, str>>,
+    ) -> Result<bool> {
+        let access_token = access_token.into().into_owned();
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(|conn| {
+                files
+                    .filter(accessToken.eq(access_token))
+                    .first::<File>(conn)
+                    .is_ok()
+            })
+            .await?)
+    }
+
+    pub async fn generate_access_token(&self) -> Result<String> {
         let mut target_length = self.generator.get_access_token_min_length();
         let mut access_token = TokenGenerator::generate_token(target_length);
         let mut collisions = 0;
 
-        while self.check_access_token_collission(&access_token) {
+        while self.check_access_token_collission(&access_token).await? {
             collisions += 1;
 
             if collisions > 10 {
@@ -96,21 +158,22 @@ impl Database {
             access_token = TokenGenerator::generate_token(target_length);
         }
 
-        access_token
+        Ok(access_token)
     }
 
     pub fn generate_update_token() -> String {
         TokenGenerator::generate_token(UPDATE_TOKEN_LENGTH)
     }
+
+    /*
+    pub fn get_file(conn: &mut PgConnection, id_uuid: Uuid) -> QueryResult<File> {
+        files.filter(uuid.eq(id_uuid))
+             .first(conn)
+    }
+    */
 }
 
 /*
-pub fn get_file(conn: &mut PgConnection, id_uuid: Uuid) -> QueryResult<File> {
-    files.filter(uuid.eq(id_uuid))
-         .first(conn)
-}
-*/
-
 #[cfg(test)]
 mod tests {
     use super::Database;
@@ -245,3 +308,4 @@ mod tests {
         db.delete_file(&file);
     }
 }
+*/

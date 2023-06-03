@@ -22,4 +22,6 @@ pub enum Error {
     FileDataConversionError(&'static str),
     #[error("{0}")]
     State(#[from] hdrop_db::error::Error),
+    #[error("File upload failed: {reason}")]
+    FileUpload { reason: String },
 }

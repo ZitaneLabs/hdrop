@@ -675,6 +675,7 @@ dependencies = [
  "dotenvy",
  "futures",
  "hdrop-db",
+ "hdrop-shared",
  "pretty_env_logger",
  "regex",
  "rust-s3",
@@ -685,6 +686,13 @@ dependencies = [
  "tokio-util",
  "tower-http",
  "uuid",
+]
+
+[[package]]
+name = "hdrop-shared"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

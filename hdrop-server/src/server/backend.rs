@@ -1,4 +1,5 @@
 use axum::{
+    extract::DefaultBodyLimit,
     http::HeaderValue,
     routing::{delete, get, post},
     Router,
@@ -49,6 +50,7 @@ pub async fn start_server() -> Result<()> {
         .route("/v1/files/:access_token/challenge", get(get_challenge))
         .route("/v1/files/:access_token/challenge", post(verify_challenge))
         .with_state(state)
+        .layer(DefaultBodyLimit::max(256 * 1024 * 1024)) // 256MB
         .layer(
             CorsLayer::new()
                 .allow_origin(

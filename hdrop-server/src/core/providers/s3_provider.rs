@@ -34,7 +34,7 @@ impl S3Provider {
         .with_path_style();
 
         // -- Done
-        let regex = Regex::new(r"/+$").unwrap();
+        let regex = Regex::new(r"(?m)/+$").unwrap();
         let public_url = regex
             .replace(&env::var("S3_PUBLIC_URL").unwrap(), "")
             .to_string();
@@ -45,13 +45,11 @@ impl S3Provider {
 #[async_trait]
 impl StorageProvider for S3Provider {
     async fn store_file(&self, ident: String, content: &[u8]) -> Result<String> {
-        let s3_path = format!("/{ident}");
-
-        let _response_data = self.bucket.put_object(&s3_path, content).await?;
+        let _response_data = self.bucket.put_object(&ident, content).await?;
         //let response_data = bucket.get_object(s3_path).await?;
         //assert_eq!(test, response_data.as_slice());
 
-        Ok(format!("{s3_host}/{s3_path}", s3_host = self.public_url))
+        Ok(format!("{s3_host}/{ident}", s3_host = self.public_url))
     }
 
     async fn delete_file(&self, ident: String) -> Result<()> {
@@ -64,6 +62,7 @@ impl StorageProvider for S3Provider {
 
     async fn get_file(&self, ident: String) -> Result<Fetchtype> {
         let url = format!("{}/{}", self.public_url, ident);
+        println!("URL: {}", url);
 
         Ok(Fetchtype::FileUrl(url))
     }

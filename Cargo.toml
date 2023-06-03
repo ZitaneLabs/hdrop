@@ -2,5 +2,6 @@
 
 members = [
     "hdrop-db",
-    "hdrop-server"
+    "hdrop-server",
+    "hdrop-shared"
 ]

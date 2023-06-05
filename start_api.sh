@@ -4,8 +4,8 @@
 
 set -euo pipefail
 
-trap 'docker compose down' EXIT SIGINT
-docker compose up --build -d
+trap 'sudo docker compose down' EXIT SIGINT
+sudo docker compose up --build -d
 
 cargo build --release -p hdrop-server
 export RUST_BACKTRACE=1

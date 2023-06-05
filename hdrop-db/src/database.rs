@@ -1,9 +1,11 @@
 // postgres://postgres:postgres@postgres:5432/hdrop
 // docker-compose up postgres
 
+use crate::schema;
 use crate::schema::files::dsl::*;
 use crate::{error::Result, models::*, utils};
 use ::uuid::Uuid;
+use chrono::Utc;
 use deadpool_diesel::postgres::{Manager, Pool};
 use diesel::prelude::*;
 use std::borrow::Cow;
@@ -45,6 +47,25 @@ impl Database {
             .interact(|conn| {
                 diesel::update(files.filter(uuid.eq(file.uuid)))
                     .set(file)
+                    .execute(conn)
+                    .map(|_| ())
+            })
+            .await??)
+    }
+
+    pub async fn update_file_url<'a>(
+        &self,
+        s_uuid: Uuid,
+        file_url: impl Into<Cow<'a, str>>,
+    ) -> Result<()> {
+        let file_url = file_url.into().into_owned();
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(move |conn| {
+                diesel::update(files.filter(uuid.eq(s_uuid)))
+                    .set(dataUrl.eq(file_url))
                     .execute(conn)
                     .map(|_| ())
             })
@@ -105,6 +126,35 @@ impl Database {
         Ok((file.dataUrl, file.fileNameData, file.iv, file.salt))
     }
 
+    pub async fn flush(&self) -> Result<Vec<Uuid>> {
+        /*let x = Ok(self
+        .pool
+        .get()
+        .await?
+        .interact(move |conn| {
+            files.select(uuid).load::<Uuid>(conn)
+            //files.filter(expiresAt.gt(Utc::now())).select(uuid).get_result::<schema::files::columns::uuid>(conn)
+            //diesel::QueryDsl::filter(files, expiresAt.gt(Utc::now())).load::<schema::files::columns::uuid>(conn)
+                /*.group_by(expiresAt)
+                .having(expiresAt.gt(Utc::now()))
+                .select(uuid).load(conn)*/
+        })
+        .await??);*/
+        let x: Result<Vec<Uuid>> = Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(move |conn| {
+                files
+                    .filter(expiresAt.gt(Utc::now()))
+                    .select(uuid)
+                    .load::<Uuid>(conn)
+            })
+            .await??);
+
+        x
+    }
+
     pub async fn get_challenge<'a>(
         &self,
         access_token: impl Into<Cow<'a, str>>,
@@ -123,6 +173,15 @@ impl Database {
             .interact(move |conn| {
                 diesel::delete(files.filter(uuid.eq(&file.uuid))).get_result(conn)
             })
+            .await??)
+    }
+
+    pub async fn delete_file_by_uuid(&self, s_uuid: Uuid) -> Result<File> {
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(move |conn| diesel::delete(files.filter(uuid.eq(s_uuid))).get_result(conn))
             .await??)
     }
 

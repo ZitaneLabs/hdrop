@@ -1,5 +1,5 @@
+use super::provider::Fetchtype;
 use super::provider::StorageProvider;
-use super::provider::{Buffer, Fetchtype};
 use async_trait::async_trait;
 //use anyhow::Result;
 use crate::Result;
@@ -43,6 +43,7 @@ impl StorageProvider for OnPremiseProvider<'_> {
         fs::remove_file(file_path).expect("Unable to delete file");
         Ok(())
     }
+
     async fn get_file(&self, ident: String) -> Result<Fetchtype> {
         let mut data = vec![];
         let file_path = format!("{path}/{ident}", path = self.path);

@@ -1,18 +1,23 @@
 use super::{
+    background_workers::ProviderSyncEntry,
     multipart::{PartialUploadedFile, UploadedFile},
     AppState,
 };
-use crate::error::{Error, Result};
+use crate::{
+    core::Fetchtype,
+    error::{Error, Result},
+};
 use axum::{
-    body::Bytes,
+    body::{Bytes, StreamBody},
     extract::{Multipart, Path, Query, State},
+    response::IntoResponse,
     Json,
 };
 use chrono::Utc;
 use hdrop_db::{Database, InsertFile};
 use hdrop_shared::requests::{ChallengeData, ExpiryData};
 use hdrop_shared::{responses, ErrorData, Response, ResponseData};
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 use uuid::Uuid;
 
 #[derive(Debug, serde::Deserialize)]
@@ -61,27 +66,26 @@ pub async fn upload_file(
     };
 
     // Inser Partial File into DB
-    let mut file = state.database.insert_file(file).await.unwrap();
+    let _ = state.database.insert_file(file).await.unwrap();
+
+    // Cache to ensure instant availability after upload
+    state
+        .cache
+        .write()
+        .await
+        .put(uuid, data.file_data.to_vec())
+        .unwrap();
 
     // S3
-    let dataurl = match state
-        .provider
-        .read()
-        .await
-        .store_file(uuid.to_string().clone(), &data.file_data)
-        .await
-    {
-        Ok(url) => url,
-        Err(err) => {
-            return Json(Response::new(ResponseData::Error(ErrorData {
-                reason: format!("{:?}", err),
-            })))
-        }
+    let provider_sync_entry = ProviderSyncEntry {
+        provider: state.provider.clone(),
+        database: state.database.clone(),
+        uuid: uuid,
+        file_data: data.file_data,
+        cache: state.cache.clone(),
     };
-    // DB Update FileUrl here
-    file.dataUrl = Some(dataurl); // ToDo: change to dataUrl
-
-    state.database.update_file(file).await.unwrap();
+    // Send file for upload, db update & cache clearance to S3 Synchronization thread
+    state.tx.send(provider_sync_entry);
 
     // Test, remove later
     let response_data = state
@@ -101,13 +105,13 @@ pub async fn upload_file(
 }
 
 pub async fn access_file(
+    // rename: get_file_metadata or something else
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
 ) -> Json<Response<responses::FileMetaData>> {
     let Ok((file_url, file_name_data, iv, salt)) = state.database.get_file_metadata(access_token).await else {
         return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
     };
-
     Json(Response::new(ResponseData::Success(
         responses::FileMetaData {
             file_url,
@@ -118,21 +122,11 @@ pub async fn access_file(
     )))
 }
 
-// #[axum::debug_handler]
 pub async fn delete_file(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
     Query(query): Query<UpdateTokenQuery>,
 ) -> Json<Response<()>> {
-    /* let uuid = Uuid::new_v4().to_string();
-
-    if let Ok(()) = state.provider.read().await.delete_file(uuid).await {
-        Json(Response::new(ResponseData::Success(())))
-    } else {
-
-    */
-    // ToDo: Remove and get this from state later
-
     let file = state
         .database
         .get_file_by_access_token(&access_token)
@@ -148,11 +142,11 @@ pub async fn delete_file(
             .delete_file(file.uuid.to_string())
             .await
         {
-            state.database.delete_file(file).await.unwrap();
+            state.database.delete_file_by_uuid(file.uuid).await.unwrap();
             Json(Response::new(ResponseData::Success(())))
         } else {
             Json(Response::new(ResponseData::Error(ErrorData {
-                reason: "File download Failed".to_string(),
+                reason: "File deletion Failed".to_string(),
             })))
         }
     } else {
@@ -174,8 +168,14 @@ pub async fn update_file_expiry(
         .await
         .unwrap();
 
+    if expiry_data.expiry > 86400 {
+        return Json(Response::new(ResponseData::Error(ErrorData {
+            reason: "Expiry time above max allowed expiry time".to_string(),
+        })));
+    }
+
     if file.updateToken == query.update_token {
-        file.expiresAt = Utc::now() + chrono::Duration::seconds(expiry_data.expiry);
+        file.expiresAt = file.createdAt + chrono::Duration::seconds(expiry_data.expiry);
         state.database.update_file_expiry(file).await.unwrap();
         Json(Response::new(ResponseData::Success(())))
     } else {
@@ -185,8 +185,49 @@ pub async fn update_file_expiry(
     }
 }
 
-pub async fn get_raw_file_bytes(Path(access_token): Path<String>) -> Json<Response<()>> {
-    todo!();
+pub async fn get_raw_file_bytes(
+    State(state): State<Arc<AppState>>,
+    Path(access_token): Path<String>,
+) -> axum::response::Response {
+    let file_entry = state
+        .database
+        .get_file_by_access_token(access_token)
+        .await
+        .unwrap();
+
+    let cache = state.cache.read().await;
+    let cached_file = if let Ok(data) = cache.get(file_entry.uuid) {
+        data
+    } else {
+        match state
+            .provider
+            .read()
+            .await
+            .get_file(file_entry.uuid.to_string())
+            .await
+        {
+            Ok(fetch_type) => match fetch_type {
+                Fetchtype::FileData(data) => data.into(),
+                Fetchtype::FileUrl(_url) => {
+                    // ToDo: Overthink access_file & get_raw_files_bytes and their interplay together with storageprovider
+                    return Json(Response::new(ResponseData::Error::<String>(ErrorData {
+                        reason: "Wrong update token".to_string(),
+                    })))
+                    .into_response();
+                }
+            },
+            Err(reason) => {
+                return Json(Response::new(ResponseData::Error::<String>(ErrorData {
+                    reason: format!("{reason}"),
+                })))
+                .into_response()
+            }
+        }
+    };
+    let data = cached_file.into_owned(); // ToDo: Think about possibility to remove this copy
+    let response = data.into_response();
+
+    response
 }
 
 pub async fn get_challenge(

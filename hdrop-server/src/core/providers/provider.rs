@@ -12,9 +12,7 @@ pub trait StorageProvider {
     async fn get_file(&self, ident: String) -> Result<Fetchtype>;
 }
 
-pub type Buffer = Vec<u8>;
-
 pub enum Fetchtype {
-    FileData(Buffer),
+    FileData(Vec<u8>),
     FileUrl(String),
 }

@@ -26,5 +26,7 @@ hdrop-db = {path = "../hdrop-db"}
 hdrop-shared = {path = "../hdrop-shared"}
 tower-http = { version = "0.4.0", features = ["cors"] }
 bincache = { git = "ssh://git@github.com/ZitaneLabs/bincache.git" }
+metrics-exporter-prometheus = "0.12.1"
+tracing-subscriber = "0.3.17"
 #aws-creds = "0.35.0"
 #aws-region = "0.25.3"

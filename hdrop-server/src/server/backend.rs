@@ -1,15 +1,21 @@
 use axum::{
     body::Bytes,
+    error_handling::{HandleError, HandleErrorLayer},
     extract::DefaultBodyLimit,
     http::HeaderValue,
     routing::{delete, get, post},
-    Router,
+    BoxError, Json, Router,
 };
-use hdrop_db::{Database, File};
+use hdrop_db::{error, Database, File};
+use hdrop_shared::{ErrorData, Response, ResponseData};
+use serde::Serialize;
 use std::{env, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
-use tokio::sync::{
-    mpsc::{self, UnboundedSender},
-    RwLock,
+use tokio::{
+    runtime::Handle,
+    sync::{
+        mpsc::{self, UnboundedSender},
+        RwLock,
+    },
 };
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
@@ -23,7 +29,7 @@ use super::{
 };
 use crate::{
     core::{S3Provider, StorageProvider},
-    error::Result,
+    error::{Error, Result},
 };
 use bincache::{Cache, HybridCacheBuilder, HybridStrategy};
 
@@ -67,16 +73,20 @@ pub async fn start_server() -> Result<()> {
     ));
 
     let app = Router::new()
-        .route("/test", get(|| async { "Hello, World!" }))
-        .route("/v1/files", post(upload_file))
-        .route("/v1/files/:access_token", get(access_file))
-        .route("/v1/files/:access_token", delete(delete_file))
+        //.route("/test", get(|| async { "Hello, World!" }))
+        .route(
+            "/v1/files",
+            post(upload_file).layer(DefaultBodyLimit::max(256 * 1024 * 1024)), // 256MB
+        )
+        .route(
+            "/v1/files/:access_token",
+            get(access_file).delete(delete_file), // ToDo: Rename access_file to get_file?
+        )
         .route("/v1/files/:access_token/expiry", post(update_file_expiry))
         .route("/v1/files/:access_token/raw", get(get_raw_file_bytes))
         .route("/v1/files/:access_token/challenge", get(get_challenge))
         .route("/v1/files/:access_token/challenge", post(verify_challenge))
         .with_state(state)
-        .layer(DefaultBodyLimit::max(256 * 1024 * 1024)) // 256MB
         .layer(
             CorsLayer::new()
                 .allow_origin(
@@ -89,6 +99,9 @@ pub async fn start_server() -> Result<()> {
                 .allow_headers(Any),
         );
 
+    // Route & api refactor:: BELG
+    //let files_route ;
+
     let server_port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let host = format!("0.0.0.0:{server_port}");
     let addr = SocketAddr::from_str(&host).unwrap();
@@ -98,6 +111,12 @@ pub async fn start_server() -> Result<()> {
         .unwrap();
 
     Ok(())
+}
+
+fn handle_error(err: Error) -> Json<Response<String>> {
+    Json(Response::new(ResponseData::Error(ErrorData {
+        reason: format!("{}", err),
+    })))
 }
 
 /*

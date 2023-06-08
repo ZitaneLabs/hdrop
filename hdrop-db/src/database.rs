@@ -8,6 +8,7 @@ use ::uuid::Uuid;
 use chrono::Utc;
 use deadpool_diesel::postgres::{Manager, Pool};
 use diesel::prelude::*;
+use hdrop_shared::responses;
 use std::borrow::Cow;
 use std::env;
 use utils::{TokenGenerator, UPDATE_TOKEN_LENGTH};
@@ -111,36 +112,30 @@ impl Database {
     pub async fn get_hash<'a>(
         &self,
         access_token: impl Into<Cow<'a, str>>,
-    ) -> Result<(String, String, String)> {
+    ) -> Result<responses::VerifyChallengeData> {
         let file = self.get_file_by_access_token(access_token).await?;
-
-        Ok((file.fileNameHash, file.iv, file.salt))
+        Ok(responses::VerifyChallengeData {
+            file_name_hash: Some(file.fileNameHash),
+            iv: file.iv,
+            salt: file.salt,
+        })
     }
 
     pub async fn get_file_metadata<'a>(
         &self,
         access_token: impl Into<Cow<'a, str>>,
-    ) -> Result<(Option<String>, String, String, String)> {
+    ) -> Result<responses::FileMetaData> {
         let file = self.get_file_by_access_token(access_token).await?;
-
-        Ok((file.dataUrl, file.fileNameData, file.iv, file.salt))
+        Ok(responses::FileMetaData {
+            file_url: file.dataUrl,
+            file_name_data: file.fileNameData,
+            iv: file.iv,
+            salt: file.salt,
+        })
     }
 
     pub async fn flush(&self) -> Result<Vec<Uuid>> {
-        /*let x = Ok(self
-        .pool
-        .get()
-        .await?
-        .interact(move |conn| {
-            files.select(uuid).load::<Uuid>(conn)
-            //files.filter(expiresAt.gt(Utc::now())).select(uuid).get_result::<schema::files::columns::uuid>(conn)
-            //diesel::QueryDsl::filter(files, expiresAt.gt(Utc::now())).load::<schema::files::columns::uuid>(conn)
-                /*.group_by(expiresAt)
-                .having(expiresAt.gt(Utc::now()))
-                .select(uuid).load(conn)*/
-        })
-        .await??);*/
-        let x: Result<Vec<Uuid>> = Ok(self
+        Ok(self
             .pool
             .get()
             .await?
@@ -150,19 +145,21 @@ impl Database {
                     .select(uuid)
                     .load::<Uuid>(conn)
             })
-            .await??);
-
-        x
+            .await??)
     }
 
     pub async fn get_challenge<'a>(
         &self,
         access_token: impl Into<Cow<'a, str>>,
-    ) -> Result<(String, String, String)> {
+    ) -> Result<responses::GetChallengeData> {
         //let access_token = access_token.into().into_owned();
         let file = self.get_file_by_access_token(access_token).await?;
 
-        Ok((file.fileNameData, file.iv, file.salt))
+        Ok(responses::GetChallengeData {
+            challenge: file.fileNameData,
+            iv: file.iv,
+            salt: file.salt,
+        })
     }
 
     pub async fn delete_file(&self, file: File) -> Result<File> {

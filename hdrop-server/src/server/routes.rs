@@ -109,17 +109,10 @@ pub async fn access_file(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
 ) -> Json<Response<responses::FileMetaData>> {
-    let Ok((file_url, file_name_data, iv, salt)) = state.database.get_file_metadata(access_token).await else {
+    let Ok(file_metadata) = state.database.get_file_metadata(access_token).await else {
         return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
     };
-    Json(Response::new(ResponseData::Success(
-        responses::FileMetaData {
-            file_url,
-            file_name_data,
-            iv,
-            salt,
-        },
-    )))
+    Json(Response::new(ResponseData::Success(file_metadata)))
 }
 
 pub async fn delete_file(
@@ -234,17 +227,11 @@ pub async fn get_challenge(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
 ) -> Json<Response<responses::GetChallengeData>> {
-    let Ok((challenge, iv, salt)) = state.database.get_challenge(access_token).await else {
+    let Ok(get_challenge_data) = state.database.get_challenge(access_token).await else {
         return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
     };
 
-    Json(Response::new(ResponseData::Success(
-        responses::GetChallengeData {
-            challenge,
-            iv,
-            salt,
-        },
-    )))
+    Json(Response::new(ResponseData::Success(get_challenge_data)))
 }
 
 pub async fn verify_challenge(
@@ -252,15 +239,14 @@ pub async fn verify_challenge(
     Path(access_token): Path<String>,
     Json(json_data): Json<ChallengeData>,
 ) -> Json<Response<responses::VerifyChallengeData>> {
-    let Ok((file_name_hash, iv, salt)) = state.database.get_hash(access_token).await else {
+    let Ok(mut verify_challenge_data) = state.database.get_hash(access_token).await else {
         return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
     };
 
-    if file_name_hash == json_data.challenge {
+    if verify_challenge_data.file_name_hash == Some(json_data.challenge) {
+        verify_challenge_data.file_name_hash = None;
         // ToDo: Check if iv and salt needs to be sent here again
-        return Json(Response::new(ResponseData::Success(
-            responses::VerifyChallengeData { iv, salt },
-        )));
+        return Json(Response::new(ResponseData::Success(verify_challenge_data)));
     } else {
         return Json(Response::new(ResponseData::Error(ErrorData {
             reason: "Challenge failed".to_string(),

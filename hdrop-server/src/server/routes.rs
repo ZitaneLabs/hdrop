@@ -10,6 +10,7 @@ use crate::{
 use axum::{
     body::{Bytes, StreamBody},
     extract::{Multipart, Path, Query, State},
+    http::StatusCode,
     response::IntoResponse,
     Json,
 };
@@ -48,7 +49,12 @@ pub async fn upload_file(
     // Upload to StorageProvider & update DB (S3 etc.)
     let uuid = Uuid::new_v4();
 
-    let access_token = state.database.generate_access_token().await.unwrap();
+    let access_token = state
+        .database
+        .generate_access_token()
+        .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
+        .unwrap();
     let update_token = Database::generate_update_token();
     let time = Utc::now();
     let file = InsertFile {
@@ -66,14 +72,20 @@ pub async fn upload_file(
     };
 
     // Inser Partial File into DB
-    let _ = state.database.insert_file(file).await.unwrap();
+    let _ = state
+        .database
+        .insert_file(file)
+        .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
+        .unwrap();
 
     // Cache to ensure instant availability after upload
     state
         .cache
         .write()
         .await
-        .put(uuid, data.file_data.to_vec())
+        .put(uuid, data.file_data.to_vec()).await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         .unwrap();
 
     // S3
@@ -85,10 +97,14 @@ pub async fn upload_file(
         cache: state.cache.clone(),
     };
     // Send file for upload, db update & cache clearance to S3 Synchronization thread
-    state.tx.send(provider_sync_entry);
+    state
+        .tx
+        .send(provider_sync_entry)
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
+        .unwrap();
 
     // Test, remove later
-    let response_data = state
+    let _response_data = state
         .provider
         .read()
         .await
@@ -124,6 +140,7 @@ pub async fn delete_file(
         .database
         .get_file_by_access_token(&access_token)
         .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         .unwrap();
 
     if file.updateToken == query.update_token {
@@ -135,7 +152,12 @@ pub async fn delete_file(
             .delete_file(file.uuid.to_string())
             .await
         {
-            state.database.delete_file_by_uuid(file.uuid).await.unwrap();
+            state
+                .database
+                .delete_file_by_uuid(file.uuid)
+                .await
+                .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
+                .unwrap();
             Json(Response::new(ResponseData::Success(())))
         } else {
             Json(Response::new(ResponseData::Error(ErrorData {
@@ -159,6 +181,7 @@ pub async fn update_file_expiry(
         .database
         .get_file_by_access_token(access_token)
         .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         .unwrap();
 
     if expiry_data.expiry > 86400 {
@@ -169,7 +192,12 @@ pub async fn update_file_expiry(
 
     if file.updateToken == query.update_token {
         file.expiresAt = file.createdAt + chrono::Duration::seconds(expiry_data.expiry);
-        state.database.update_file_expiry(file).await.unwrap();
+        state
+            .database
+            .update_file_expiry(file)
+            .await
+            .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
+            .unwrap();
         Json(Response::new(ResponseData::Success(())))
     } else {
         Json(Response::new(ResponseData::Error(ErrorData {
@@ -186,10 +214,11 @@ pub async fn get_raw_file_bytes(
         .database
         .get_file_by_access_token(access_token)
         .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         .unwrap();
 
     let cache = state.cache.read().await;
-    let cached_file = if let Ok(data) = cache.get(file_entry.uuid) {
+    let cached_file = if let Ok(data) = cache.get(file_entry.uuid).await {
         data
     } else {
         match state

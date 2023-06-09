@@ -31,7 +31,7 @@ impl ProviderSyncEntry {
                 .await
             {
                 Ok(url) => url,
-                Err(err) => {
+                Err(_err) => {
                     tokio::time::sleep(Duration::from_secs(60 * x)).await;
                     x += 1;
                     continue;
@@ -41,15 +41,13 @@ impl ProviderSyncEntry {
             retry_sync_entry
                 .database
                 .update_file_url(retry_sync_entry.uuid, data_url)
-                .await
-                .unwrap();
-            // Clear Cache
+                .await?; // ToDo: what happens with the file if smth fails here, there is no recovery
+                         // Clear Cache
             retry_sync_entry
                 .cache
                 .write()
                 .await
-                .delete(retry_sync_entry.uuid)
-                .unwrap();
+                .delete(retry_sync_entry.uuid).await?;
             return Ok(());
         }
         panic!("GIGA FAIL");
@@ -69,7 +67,7 @@ impl ProviderSyncEntry {
                     .await
                 {
                     Ok(url) => url,
-                    Err(err) => {
+                    Err(_err) => {
                         /*return Json(Response::new(ResponseData::Error(ErrorData {
                             reason: format!("{:?}", err),
                         })))*/
@@ -81,15 +79,13 @@ impl ProviderSyncEntry {
                 provider_sync_entry
                     .database
                     .update_file_url(provider_sync_entry.uuid, data_url)
-                    .await
-                    .unwrap();
+                    .await?; /* ToDo: what happens with the file if smth fails here, there is no recovery & file never gets deleted from s3 */
                 // Clear Cache
                 provider_sync_entry
                     .cache
                     .write()
                     .await
-                    .delete(provider_sync_entry.uuid)
-                    .unwrap();
+                    .delete(provider_sync_entry.uuid).await?;
             }
             let _ = tokio::spawn(Self::synchronization_retry_worker(provider_sync_entry));
         }
@@ -121,12 +117,17 @@ impl ExpirationWorkerEntry {
                         .await
                         .delete_file(i.to_string())
                         .await
-                        .unwrap();
+                        .unwrap(); /*
+                                   ToDo: what happens with the file if smth fails here, it's still on s3? => but gets deleted in next run
+                                   prob doesnt matter as db gets cleared after s3 is successfully deleted
+                                   */
                     expiration_worker_entry
                         .database
                         .delete_file_by_uuid(i)
                         .await
-                        .unwrap();
+                        .unwrap(); /*
+                                   ToDo: what happens with the file if smth fails here, it's still in the db and maybe tries to delete on s3 again (which will fail) => infinite cycle?
+                                   */
                 }
             }
 

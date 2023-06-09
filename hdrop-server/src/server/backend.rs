@@ -8,7 +8,6 @@ use axum::{
 };
 use hdrop_db::{error, Database, File};
 use hdrop_shared::{ErrorData, Response, ResponseData};
-use serde::Serialize;
 use std::{env, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
 use tokio::{
     runtime::Handle,
@@ -60,7 +59,7 @@ pub async fn start_server() -> Result<()> {
         provider: Arc::new(RwLock::new(Box::new(S3Provider::try_from_env()?))),
         database: Arc::new(Database::try_from_env()?),
         tx,
-        cache: Arc::new(RwLock::new(HybridCacheBuilder::new().build().unwrap())),
+        cache: Arc::new(RwLock::new(HybridCacheBuilder::new().build()?)),
     });
 
     let expiration_worker_entry = ExpirationWorkerEntry {
@@ -89,12 +88,7 @@ pub async fn start_server() -> Result<()> {
         .with_state(state)
         .layer(
             CorsLayer::new()
-                .allow_origin(
-                    std::env::var("CORS_ORIGIN")
-                        .unwrap()
-                        .parse::<HeaderValue>()
-                        .unwrap(),
-                )
+                .allow_origin(std::env::var("CORS_ORIGIN")?.parse::<HeaderValue>()?)
                 .allow_methods(Any)
                 .allow_headers(Any),
         );

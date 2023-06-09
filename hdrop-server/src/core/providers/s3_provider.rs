@@ -35,9 +35,7 @@ impl S3Provider {
 
         // -- Done
         let regex = Regex::new(r"(?m)/+$")?;
-        let public_url = regex
-            .replace(&env::var("S3_PUBLIC_URL")?, "")
-            .to_string();
+        let public_url = regex.replace(&env::var("S3_PUBLIC_URL")?, "").to_string();
         Ok(S3Provider { bucket, public_url })
     }
 }

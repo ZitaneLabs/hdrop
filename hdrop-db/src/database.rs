@@ -1,7 +1,5 @@
 // postgres://postgres:postgres@postgres:5432/hdrop
 // docker-compose up postgres
-
-use crate::schema;
 use crate::schema::files::dsl::*;
 use crate::{error::Result, models::*, utils};
 use ::uuid::Uuid;
@@ -23,7 +21,7 @@ impl Database {
         let database_url = env::var("DATABASE_URL")?; // expect DATABASE_URL must be set
         let manager = Manager::new(database_url, deadpool_diesel::Runtime::Tokio1);
         let pool = Pool::builder(manager).max_size(8).build()?;
-        let generator = TokenGenerator::default();
+        let generator = TokenGenerator::default(); // ToDo: optional env var to call new, otherwise default
         Ok(Database { pool, generator })
     }
 

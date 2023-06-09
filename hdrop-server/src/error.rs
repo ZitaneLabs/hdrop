@@ -1,6 +1,7 @@
 use std::env::VarError;
 
 use axum::extract::multipart::MultipartError;
+use bincache::Error as BincacheError;
 use regex::Error as RegexError;
 use s3::{creds::error::CredentialsError, error::S3Error};
 use thiserror::Error;
@@ -20,6 +21,10 @@ pub enum Error {
     OtherProvider(String),
     #[error("{0}")]
     Regex(#[from] RegexError),
+    #[error("{0}")]
+    Cache(#[from] BincacheError),
+    #[error("{0}")]
+    InvalidHeaderValue(#[from] axum::http::header::InvalidHeaderValue),
     // Webserver
     #[error("{0}")]
     Multipart(#[from] MultipartError),

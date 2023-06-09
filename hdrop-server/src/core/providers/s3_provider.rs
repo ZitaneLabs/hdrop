@@ -14,19 +14,19 @@ pub struct S3Provider {
 impl S3Provider {
     pub fn try_from_env() -> Result<Self> {
         let region_custom = Region::Custom {
-            region: env::var("S3_REGION").unwrap(),
-            endpoint: env::var("S3_ENDPOINT").unwrap(),
+            region: env::var("S3_REGION")?,
+            endpoint: env::var("S3_ENDPOINT")?,
         };
         let credentials = Credentials::new(
-            Some(env::var("S3_ACCESS_KEY_ID").unwrap().as_ref()),
-            Some(env::var("S3_SECRET_ACCESS_KEY").unwrap().as_ref()),
+            Some(env::var("S3_ACCESS_KEY_ID")?.as_ref()),
+            Some(env::var("S3_SECRET_ACCESS_KEY")?.as_ref()),
             None,
             None,
             None,
         )?;
 
         let bucket = Bucket::new(
-            env::var("S3_BUCKET_NAME").unwrap().as_ref(),
+            env::var("S3_BUCKET_NAME")?.as_ref(),
             region_custom,
             // Credentials are collected from environment, config, profile or instance metadata
             credentials,
@@ -34,9 +34,9 @@ impl S3Provider {
         .with_path_style();
 
         // -- Done
-        let regex = Regex::new(r"(?m)/+$").unwrap();
+        let regex = Regex::new(r"(?m)/+$")?;
         let public_url = regex
-            .replace(&env::var("S3_PUBLIC_URL").unwrap(), "")
+            .replace(&env::var("S3_PUBLIC_URL")?, "")
             .to_string();
         Ok(S3Provider { bucket, public_url })
     }

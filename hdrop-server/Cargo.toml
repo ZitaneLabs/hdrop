@@ -17,7 +17,6 @@ futures = { version = "=0.3.25", default-features = false }
 bytes = "0.5.6"
 thiserror = "1.0"
 dotenvy = "0.15"
-rust-s3 = "0.33"
 serde_json = "1.0.96"
 async-trait = "0.1.68"
 anyhow = "1.0.71"
@@ -26,7 +25,6 @@ hdrop-db = {path = "../hdrop-db"}
 hdrop-shared = {path = "../hdrop-shared"}
 tower-http = { version = "0.4.0", features = ["cors"] }
 bincache = { git = "ssh://git@github.com/ZitaneLabs/bincache.git", feautres = ["rt_tokio_1"] }
+rust-s3-async = {git = "ssh://git@github.com/ZitaneLabs/rust-s3-async.git"}
 metrics-exporter-prometheus = "0.12.1"
 tracing-subscriber = "0.3.17"
-#aws-creds = "0.35.0"
-#aws-region = "0.25.3"

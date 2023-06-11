@@ -1,3 +1,4 @@
+mod background_workers;
 mod core;
 mod error;
 mod server;

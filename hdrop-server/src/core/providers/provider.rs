@@ -10,9 +10,11 @@ pub trait StorageProvider {
     async fn delete_file(&self, ident: String) -> Result<()>;
     /// Gets the file from the specified StorageProvider. E.g., fetches a download link or gets a datastream directly.
     async fn get_file(&self, ident: String) -> Result<Fetchtype>;
+    /// Check if a file exists
+    async fn file_exists(&self, ident: String) -> Result<bool>;
 }
 
-pub enum Fetchtype {
-    FileData(Vec<u8>),
+pub enum Fetchtype<'a> {
+    FileData(&'a [u8]),
     FileUrl(String),
 }

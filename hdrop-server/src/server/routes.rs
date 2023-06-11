@@ -1,12 +1,9 @@
 use super::{
-    background_workers::ProviderSyncEntry,
     multipart::{PartialUploadedFile, UploadedFile},
     AppState,
 };
-use crate::{
-    core::Fetchtype,
-    error::{Error, Result},
-};
+use crate::background_workers::background_workers::ProviderSyncEntry;
+use crate::core::Fetchtype;
 use axum::{
     body::{Bytes, StreamBody},
     extract::{Multipart, Path, Query, State},
@@ -84,7 +81,8 @@ pub async fn upload_file(
         .cache
         .write()
         .await
-        .put(uuid, data.file_data.to_vec()).await
+        .put(uuid, data.file_data.to_vec())
+        .await
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         .unwrap();
 
@@ -120,7 +118,7 @@ pub async fn upload_file(
     )))
 }
 
-pub async fn access_file(
+pub async fn get_file(
     // rename: get_file_metadata or something else
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
@@ -209,47 +207,45 @@ pub async fn update_file_expiry(
 pub async fn get_raw_file_bytes(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
-) -> axum::response::Response {
+) -> Result<axum::response::Response, (StatusCode, String)> {
     let file_entry = state
         .database
         .get_file_by_access_token(access_token)
         .await
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
-        .unwrap();
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
 
+
+    let provider = state.provider.read().await;
     let cache = state.cache.read().await;
-    let cached_file = if let Ok(data) = cache.get(file_entry.uuid).await {
-        data
-    } else {
-        match state
-            .provider
-            .read()
-            .await
+    let Ok(cached_file) = cache.get(file_entry.uuid).await
+    else {
+        match provider
             .get_file(file_entry.uuid.to_string())
             .await
         {
             Ok(fetch_type) => match fetch_type {
-                Fetchtype::FileData(data) => data.into(),
+                Fetchtype::FileData(data) => return Ok(data.clone().into_response()),
                 Fetchtype::FileUrl(_url) => {
                     // ToDo: Overthink access_file & get_raw_files_bytes and their interplay together with storageprovider
-                    return Json(Response::new(ResponseData::Error::<String>(ErrorData {
+                    return Ok(Json(Response::new(ResponseData::Error::<String>(ErrorData {
                         reason: "Wrong update token".to_string(),
                     })))
-                    .into_response();
+                    .into_response());
                 }
             },
             Err(reason) => {
-                return Json(Response::new(ResponseData::Error::<String>(ErrorData {
+                return Err((StatusCode::INTERNAL_SERVER_ERROR, reason.to_string()));
+                /* Ok(Json(Response::new(ResponseData::Error::<String>(ErrorData {
                     reason: format!("{reason}"),
                 })))
-                .into_response()
+                .into_response()) */
             }
         }
     };
     let data = cached_file.into_owned(); // ToDo: Think about possibility to remove this copy
     let response = data.into_response();
 
-    response
+    Ok(response)
 }
 
 pub async fn get_challenge(

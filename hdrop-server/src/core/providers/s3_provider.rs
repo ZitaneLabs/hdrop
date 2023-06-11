@@ -6,6 +6,7 @@ use std::env;
 use super::provider::{Fetchtype, StorageProvider};
 use crate::Result;
 
+#[derive(Debug)]
 pub struct S3Provider {
     pub bucket: Bucket,
     public_url: String,
@@ -63,6 +64,12 @@ impl StorageProvider for S3Provider {
         println!("URL: {}", url);
 
         Ok(Fetchtype::FileUrl(url))
+    }
+
+    async fn file_exists(&self, ident: String) -> Result<bool> {
+        let s3_path = ident.as_str();
+
+        Ok(self.bucket.object_exists(s3_path).await?) // ToDo: Is this based?
     }
 }
 

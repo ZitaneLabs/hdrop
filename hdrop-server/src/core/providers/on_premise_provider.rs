@@ -1,27 +1,46 @@
 use super::provider::Fetchtype;
 use super::provider::StorageProvider;
-use async_trait::async_trait;
-//use anyhow::Result;
 use crate::Result;
-use regex::Regex;
-use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
-use std::{env, fs};
+use async_trait::async_trait;
+use bincache::compression::Noop;
+use bincache::Cache;
+use bincache::CacheBuilder;
+use bincache::DiskStrategy;
+use std::borrow::Cow;
+use std::path::Path;
 
+#[derive(Debug)]
 pub struct OnPremiseProvider<'a> {
-    path: &'a str,
+    path: Cow<'a, Path>,
+    storage: Cache<String, DiskStrategy, Noop>,
 }
 
-impl<'a> OnPremiseProvider<'a> {
-    pub fn new(path: &'a str) -> Self {
-        OnPremiseProvider { path }
+impl OnPremiseProvider<'_> {
+    pub fn new<'a>(
+        path: Cow<'a, Path>,
+        disk_byte_limit: Option<usize>,
+        disk_entry_limit: Option<usize>,
+    ) -> Self {
+        OnPremiseProvider {
+            path,
+            storage: CacheBuilder::default()
+                .with_strategy(DiskStrategy::new(path, disk_byte_limit, disk_entry_limit))
+                .build()
+                .unwrap(),
+        }
+        //OnPremiseProvider { path }
     }
 }
 
 impl Default for OnPremiseProvider<'_> {
     fn default() -> Self {
+        let path = Path::new("uploaded_files").into();
         OnPremiseProvider {
-            path: "/uploaded_files",
+            path,
+            storage: CacheBuilder::default()
+                .with_strategy(DiskStrategy::new(path, None, None))
+                .build()
+                .unwrap(),
         }
     }
 }
@@ -29,28 +48,25 @@ impl Default for OnPremiseProvider<'_> {
 #[async_trait]
 impl StorageProvider for OnPremiseProvider<'_> {
     async fn store_file(&self, ident: String, content: &[u8]) -> Result<String> {
-        let file_path = format!("{path}/{ident}", path = self.path);
-
-        let f = File::create(&file_path).expect("Unable to create file");
-        let mut f = BufWriter::new(f);
-        f.write_all(content).expect("Unable to write data");
-
-        Ok(file_path)
+        self.storage.put(ident, content).await?;
+        Ok(format!("{path}/{ident}", path = self.path.display()))
     }
 
     async fn delete_file(&self, ident: String) -> Result<()> {
-        let file_path = format!("{path}/{ident}", path = self.path);
-        fs::remove_file(file_path).expect("Unable to delete file");
+        self.storage.delete(ident).await?;
         Ok(())
     }
 
     async fn get_file(&self, ident: String) -> Result<Fetchtype> {
-        let mut data = vec![];
-        let file_path = format!("{path}/{ident}", path = self.path);
-        let f = File::open(file_path).expect("Unable to open file");
-        let mut br = BufReader::new(f);
-        let r = br.read(&mut data).expect("Unable to read bytes"); // ToDo: this is not read_to_end(&mut data), change later to a proper impl
-        println!("{r}");
-        Ok(Fetchtype::FileData(data))
+        let mut data = self.storage.get(ident).await?;
+        Ok(Fetchtype::FileData(data.as_ref()))
+    }
+
+    async fn file_exists(&self, ident: String) -> Result<bool> {
+        //self.storage.
+        //ToDo: bincache add exists
+        let file_path = format!("{path}/{ident}", path = self.path.display());
+
+        Ok(Path::new(&file_path).exists())
     }
 }

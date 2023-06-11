@@ -50,6 +50,7 @@ No matter where you deploy, you'll need to configure the following environment v
 | ------------------------ | ------------------------- | ------------------------------------ |
 | `REACT_APP_BASE_URL`     | `https://example.org`     | The URL where the frontend is hosted |
 | `REACT_APP_API_ENDPOINT` | `https://api.example.org` | The URL where the API is hosted      |
+| `MEMORY_BYTES_LIMIT` | `https://api.example.org` | Memory bytes limit of memory cache     |
 
 #### Docker (Recommended)
 > We provide a preconfigured `Dockerfile` with nginx.

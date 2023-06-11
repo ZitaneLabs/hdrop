@@ -3,9 +3,10 @@ use futures::TryFutureExt;
 use hdrop_db::Database;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::{mpsc::UnboundedReceiver, RwLock};
+use tracing::instrument;
 use uuid::Uuid;
 
-use crate::{core::StorageProvider, error::Result};
+use crate::{core::StorageProvider, error::Result, server::CacheVariant};
 use bincache::{Cache, HybridStrategy};
 
 pub struct ProviderSyncEntry {
@@ -13,7 +14,7 @@ pub struct ProviderSyncEntry {
     pub database: Arc<Database>,
     pub file_data: Bytes,
     pub uuid: Uuid,
-    pub cache: Arc<RwLock<Cache<Uuid, HybridStrategy>>>,
+    pub cache: Arc<RwLock<CacheVariant>>,
 }
 
 impl ProviderSyncEntry {
@@ -47,13 +48,16 @@ impl ProviderSyncEntry {
                 .cache
                 .write()
                 .await
-                .delete(retry_sync_entry.uuid).await?;
+                .delete(retry_sync_entry.uuid)
+                .await?;
             return Ok(());
         }
         panic!("GIGA FAIL");
     }
 
+    #[instrument]
     pub async fn storage_synchronizer(mut rx: UnboundedReceiver<ProviderSyncEntry>) -> Result<()> {
+        tracing::info!("storage synchronizer started");
         while let Some(provider_sync_entry) = rx.recv().await {
             'sync_files: {
                 let data_url = match provider_sync_entry
@@ -85,7 +89,8 @@ impl ProviderSyncEntry {
                     .cache
                     .write()
                     .await
-                    .delete(provider_sync_entry.uuid).await?;
+                    .delete(provider_sync_entry.uuid)
+                    .await?;
             }
             let _ = tokio::spawn(Self::synchronization_retry_worker(provider_sync_entry));
         }
@@ -97,37 +102,72 @@ impl ProviderSyncEntry {
 pub struct ExpirationWorkerEntry {
     pub provider: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,
     pub database: Arc<Database>,
-    pub cache: Arc<RwLock<Cache<Uuid, HybridStrategy>>>,
+    pub cache: Arc<RwLock<CacheVariant>>,
 }
 impl ExpirationWorkerEntry {
-    pub async fn expiration_worker(expiration_worker_entry: ExpirationWorkerEntry) -> ! {
+    #[instrument(skip_all)]
+    pub async fn expiration_worker(expiration_worker_entry: ExpirationWorkerEntry) -> () {
+        tracing::info!("expiration worker started");
+        async fn delete_file_by_uuid(expiration_worker_entry: &ExpirationWorkerEntry, uuid: Uuid) {
+            match expiration_worker_entry
+                .database
+                .delete_file_by_uuid(uuid)
+                .await
+            {
+                Ok(_) => tracing::debug!("File {uuid} deleted from db"),
+                Err(err) => tracing::error!("{err}"),
+            }
+        }
+
         loop {
             'delete_files: {
-                println!("expiration worker started"); // ToDo
-                                                       // Logic
                 let Ok(files_to_delete) = expiration_worker_entry.database.flush().await else {
-                break 'delete_files
-            };
+                    break 'delete_files
+                };
 
-                println!("{:?}", files_to_delete);
+                tracing::debug!("{:?}", files_to_delete);
                 for i in files_to_delete {
-                    expiration_worker_entry
+                    match expiration_worker_entry
                         .provider
                         .read()
                         .await
-                        .delete_file(i.to_string())
+                        .file_exists(i.to_string())
                         .await
-                        .unwrap(); /*
-                                   ToDo: what happens with the file if smth fails here, it's still on s3? => but gets deleted in next run
-                                   prob doesnt matter as db gets cleared after s3 is successfully deleted
-                                   */
-                    expiration_worker_entry
-                        .database
-                        .delete_file_by_uuid(i)
-                        .await
-                        .unwrap(); /*
-                                   ToDo: what happens with the file if smth fails here, it's still in the db and maybe tries to delete on s3 again (which will fail) => infinite cycle?
-                                   */
+                    {
+                        // We don't care if the file exists or not, there is a db entry which must be deleted in both cases
+                        Ok(case) => {
+                            if !case {
+                                // Log the uncommon case, that the file is actually not there for whatever reason to inspect the infra
+                                tracing::warn!("File deleted/non-existent although it's in the db and got scheduled");
+                                delete_file_by_uuid(&expiration_worker_entry, i).await;
+                                // Skip S3 deletion
+                                continue;
+                            };
+                            if let Err(err) = expiration_worker_entry
+                                .provider
+                                .read()
+                                .await
+                                .delete_file(i.to_string())
+                                .await
+                            {
+                                // S3 Could not delete, so it will be scheduled again for the next flush as the db is not cleared
+                                tracing::error!(
+                                    "File could not get deleted from StorageProvider: {err}"
+                                );
+                            } else {
+                                delete_file_by_uuid(&expiration_worker_entry, i).await;
+                            }
+                        }
+                        // If there is an error, we can't delete the db entry and it will be scheduled for the next flush to retry again
+                        Err(err) => tracing::error!("Check if file exists failed: {err}"),
+                    }
+
+                    /*
+                    ToDo: What should happen if the db entry can't get deleted?
+                    */
+                    /*
+                    ToDo: What happens with the file if file deletion fails: it's still in the db and tries to delete in next schedule again
+                    */
                 }
             }
 

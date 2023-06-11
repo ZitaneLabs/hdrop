@@ -36,4 +36,10 @@ pub enum Error {
     State(#[from] hdrop_db::error::Error),
     #[error("File upload failed: {reason}")]
     FileUpload { reason: String },
+    #[error("Flush does not exist for Disk or Memory Strategy")]
+    Flush,
+    #[error("Recover does not exist for Disk or Memory Strategy")]
+    Recover,
+    #[error("Cache variant does not exist. Existing Cache variants: Memory, Disk, Hybrid")]
+    Strategy,
 }

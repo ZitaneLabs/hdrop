@@ -139,7 +139,7 @@ impl Database {
             .await?
             .interact(move |conn| {
                 files
-                    .filter(expiresAt.gt(Utc::now()))
+                    .filter(expiresAt.lt(Utc::now()))
                     .select(uuid)
                     .load::<Uuid>(conn)
             })
@@ -171,12 +171,16 @@ impl Database {
             .await??)
     }
 
-    pub async fn delete_file_by_uuid(&self, s_uuid: Uuid) -> Result<File> {
+    pub async fn delete_file_by_uuid(&self, s_uuid: Uuid) -> Result<()> {
         Ok(self
             .pool
             .get()
             .await?
-            .interact(move |conn| diesel::delete(files.filter(uuid.eq(s_uuid))).get_result(conn))
+            .interact(move |conn| {
+                diesel::delete(files.filter(uuid.eq(s_uuid)))
+                    .execute(conn)
+                    .map(|_| ())
+            })
             .await??)
     }
 

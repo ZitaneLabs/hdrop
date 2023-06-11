@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 /* TokenGenerator */
 pub const UPDATE_TOKEN_LENGTH: usize = 8;
+#[derive(Debug)]
 pub struct TokenGenerator {
     access_token_min_length: usize,
 }

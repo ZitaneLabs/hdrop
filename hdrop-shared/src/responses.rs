@@ -23,14 +23,10 @@ impl<T: Serialize> Response<T> {
         };
         Self { status, data }
     }
-    // Belg
-    pub fn error(reason: String) -> Self {
-        let err = Response::new(ResponseData::Error(ErrorData { reason: reason }));
 
-        err
+    pub fn error(reason: String) -> Self {
+        Response::new(ResponseData::Error(ErrorData { reason }))
     }
-    // Success Predefined Answers:
-    // Todo Belg
 }
 
 #[derive(Debug, Serialize)]

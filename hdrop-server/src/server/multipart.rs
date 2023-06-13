@@ -1,7 +1,7 @@
+use crate::error::{Error, Result};
 use axum::{body::Bytes, extract::Multipart};
 
-use crate::error::{Error, Result};
-
+/// Initial struct which allows file data to be incomplete.
 #[derive(Debug, Default)]
 pub struct PartialUploadedFile {
     file_data: Option<Bytes>,
@@ -49,6 +49,7 @@ impl PartialUploadedFile {
     }
 }
 
+/// Struct which must include complete file data.
 #[derive(Debug)]
 pub struct UploadedFile {
     pub file_data: Bytes,
@@ -58,6 +59,7 @@ pub struct UploadedFile {
     pub salt: String,
 }
 
+/// Convert initial struct into finalized struct. Fails if a field is missing.
 impl TryFrom<PartialUploadedFile> for UploadedFile {
     type Error = Error;
     fn try_from(data: PartialUploadedFile) -> Result<Self> {

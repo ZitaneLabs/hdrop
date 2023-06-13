@@ -1,72 +1,58 @@
 use super::provider::Fetchtype;
 use super::provider::StorageProvider;
-use crate::Result;
+use crate::{parse_and_upscale_to_mb, Result};
 use async_trait::async_trait;
-use bincache::compression::Noop;
+use bincache::compression::Zstd;
 use bincache::Cache;
 use bincache::CacheBuilder;
 use bincache::DiskStrategy;
-use std::borrow::Cow;
+use std::env;
 use std::path::Path;
 
 #[derive(Debug)]
-pub struct OnPremiseProvider<'a> {
-    path: Cow<'a, Path>,
-    storage: Cache<String, DiskStrategy, Noop>,
+pub struct OnPremiseProvider {
+    storage: Cache<String, DiskStrategy, Zstd>,
 }
 
-impl OnPremiseProvider<'_> {
-    pub fn new<'a>(
-        path: Cow<'a, Path>,
-        disk_byte_limit: Option<usize>,
-        disk_entry_limit: Option<usize>,
-    ) -> Self {
-        OnPremiseProvider {
-            path,
-            storage: CacheBuilder::default()
-                .with_strategy(DiskStrategy::new(path, disk_byte_limit, disk_entry_limit))
-                .build()
-                .unwrap(),
-        }
-        //OnPremiseProvider { path }
-    }
-}
+impl OnPremiseProvider {
+    pub async fn try_from_env() -> Result<Self> {
+        let storage_path = env::var("STORAGE_PATH").unwrap_or_else(|_| "files".to_owned());
+        let storage_path = Path::new(&storage_path);
+        let storage_limit = env::var("STORAGE_LIMIT").ok();
 
-impl Default for OnPremiseProvider<'_> {
-    fn default() -> Self {
-        let path = Path::new("uploaded_files").into();
-        OnPremiseProvider {
-            path,
+        Ok(Self {
             storage: CacheBuilder::default()
-                .with_strategy(DiskStrategy::new(path, None, None))
+                .with_strategy(DiskStrategy::new(
+                    storage_path,
+                    parse_and_upscale_to_mb(storage_limit),
+                    None,
+                ))
+                .with_compression(Zstd::default())
                 .build()
+                .await
                 .unwrap(),
-        }
+        })
     }
 }
 
 #[async_trait]
-impl StorageProvider for OnPremiseProvider<'_> {
-    async fn store_file(&self, ident: String, content: &[u8]) -> Result<String> {
+impl StorageProvider for OnPremiseProvider {
+    async fn store_file(&mut self, ident: String, content: &[u8]) -> Result<Option<String>> {
         self.storage.put(ident, content).await?;
-        Ok(format!("{path}/{ident}", path = self.path.display()))
+        Ok(None)
     }
 
-    async fn delete_file(&self, ident: String) -> Result<()> {
+    async fn delete_file(&mut self, ident: String) -> Result<()> {
         self.storage.delete(ident).await?;
         Ok(())
     }
 
     async fn get_file(&self, ident: String) -> Result<Fetchtype> {
-        let mut data = self.storage.get(ident).await?;
-        Ok(Fetchtype::FileData(data.as_ref()))
+        let data = self.storage.get(ident).await?;
+        Ok(Fetchtype::FileData(data.into_owned()))
     }
 
     async fn file_exists(&self, ident: String) -> Result<bool> {
-        //self.storage.
-        //ToDo: bincache add exists
-        let file_path = format!("{path}/{ident}", path = self.path.display());
-
-        Ok(Path::new(&file_path).exists())
+        Ok(self.storage.exists(ident))
     }
 }

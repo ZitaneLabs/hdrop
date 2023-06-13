@@ -1,8 +1,8 @@
 use sha3::{Digest, Sha3_256};
 use uuid::Uuid;
 
-/* TokenGenerator */
 pub const UPDATE_TOKEN_LENGTH: usize = 8;
+/// Access- and Update token generator.
 #[derive(Debug)]
 pub struct TokenGenerator {
     access_token_min_length: usize,
@@ -17,18 +17,11 @@ impl Default for TokenGenerator {
 }
 
 impl TokenGenerator {
-    pub fn new(access_token_min_length: usize) -> Self {
-        TokenGenerator {
-            access_token_min_length,
-        }
-    }
-
     pub fn get_access_token_min_length(&self) -> usize {
         self.access_token_min_length
     }
 
-    /// Generate Token
-    /// Generates Sha3(uuidv4) as String
+    /// Generates a SHA3(uuidv4) as String truncated to the given length.
     pub fn generate_token(length: usize) -> String {
         let uuid = Uuid::new_v4();
         let mut hasher = Sha3_256::new();

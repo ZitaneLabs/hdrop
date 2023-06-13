@@ -2,7 +2,6 @@
 
 diesel::table! {
     files (uuid) {
-        id -> Int4,
         uuid -> Uuid,
         accessToken -> Text,
         updateToken -> Text,
@@ -15,14 +14,3 @@ diesel::table! {
         expiresAt -> Timestamptz,
     }
 }
-
-diesel::table! {
-    statistics (id) {
-        id -> Int4,
-        uploadCount -> Int4,
-        deleteCount -> Int4,
-        existCount -> Int4,
-    }
-}
-
-diesel::allow_tables_to_appear_in_same_query!(files, statistics,);

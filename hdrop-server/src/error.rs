@@ -18,8 +18,6 @@ pub enum Error {
     #[error("{0}")]
     S3Credential(#[from] CredentialsError),
     #[error("{0}")]
-    OtherProvider(String),
-    #[error("{0}")]
     Regex(#[from] RegexError),
     #[error("{0}")]
     Cache(#[from] BincacheError),
@@ -28,18 +26,14 @@ pub enum Error {
     // Webserver
     #[error("{0}")]
     Multipart(#[from] MultipartError),
-    #[error("Missing field name in Multipart Formdata")]
-    MissingFieldName,
     #[error("Conversion to UploadedFileData failed due to PartialUploadedFileData being incomplete (Missing field: {0})")]
     FileDataConversionError(&'static str),
     #[error("{0}")]
     State(#[from] hdrop_db::error::Error),
     #[error("File upload failed: {reason}")]
     FileUpload { reason: String },
-    #[error("Flush does not exist for Disk or Memory Strategy")]
-    Flush,
     #[error("Recover does not exist for Disk or Memory Strategy")]
-    Recover,
+    NoRecover,
     #[error("Cache variant does not exist. Existing Cache variants: Memory, Disk, Hybrid")]
     Strategy,
 }

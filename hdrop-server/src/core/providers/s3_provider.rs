@@ -34,7 +34,6 @@ impl S3Provider {
         )?
         .with_path_style();
 
-        // -- Done
         let regex = Regex::new(r"(?m)/+$")?;
         let public_url = regex.replace(&env::var("S3_PUBLIC_URL")?, "").to_string();
         Ok(S3Provider { bucket, public_url })
@@ -43,15 +42,18 @@ impl S3Provider {
 
 #[async_trait]
 impl StorageProvider for S3Provider {
-    async fn store_file(&self, ident: String, content: &[u8]) -> Result<String> {
+    async fn store_file(&mut self, ident: String, content: &[u8]) -> Result<Option<String>> {
         let _response_data = self.bucket.put_object(&ident, content).await?;
         //let response_data = bucket.get_object(s3_path).await?;
         //assert_eq!(test, response_data.as_slice());
 
-        Ok(format!("{s3_host}/{ident}", s3_host = self.public_url))
+        Ok(Some(format!(
+            "{s3_host}/{ident}",
+            s3_host = self.public_url
+        )))
     }
 
-    async fn delete_file(&self, ident: String) -> Result<()> {
+    async fn delete_file(&mut self, ident: String) -> Result<()> {
         let s3_path = ident.as_str();
 
         let _response_data = self.bucket.delete_object(s3_path).await?;
@@ -69,7 +71,7 @@ impl StorageProvider for S3Provider {
     async fn file_exists(&self, ident: String) -> Result<bool> {
         let s3_path = ident.as_str();
 
-        Ok(self.bucket.object_exists(s3_path).await?) // ToDo: Is this based?
+        Ok(self.bucket.object_exists(s3_path).await?)
     }
 }
 

@@ -18,9 +18,9 @@ export S3_PUBLIC_URL="http://localhost:4566/hdrop"
 export S3_REGION="eu-west-1"
 export S3_SECRET_ACCESS_KEY="dev"
 export DATABASE_URL="postgres://postgres:postgres@localhost:5432/hdrop"
-export CACHE_VARIANT="Memory"
-export MEMORY_BYTES_LIMIT="100000000" # 100MB
-export MEMORY_ENTRY_LIMIT="100" # 100 Entries
+export CACHE_STRATEGY="memory"
+export CACHE_MEMORY_LIMIT_MB="100"
+#export CACHE_DISK_LIMIT_MB="100"
 
 cargo run --release -p hdrop-server
 

@@ -4,7 +4,7 @@ use tokio::sync::RwLock;
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::{core::StorageProvider, server::CacheVariant};
+use crate::{core::StorageProvider, server::CacheVariant, Result};
 
 pub struct ExpirationWorker {
     provider: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,
@@ -25,70 +25,107 @@ impl ExpirationWorker {
         }
     }
 
-    #[instrument(skip(self))]
-    pub async fn run(self) -> () {
-        tracing::info!("expiration worker started");
+    pub async fn get_expired_files(&self) -> Vec<Uuid> {
+        self.database
+            .flush()
+            .await
+            .unwrap_or_else(|_| Vec::with_capacity(0))
+    }
 
-        loop {
-            'delete_files: {
-                let Ok(files_to_delete) = self.database.flush().await else {
-                    break 'delete_files
-                };
-
-                tracing::debug!("Found files to delete: {:?}", files_to_delete);
-                for i in files_to_delete {
-                    match self.provider.read().await.file_exists(i.to_string()).await {
-                        Ok(case) => {
-                            // Check if file does not exist on StorageProvider
-                            if !case {
-                                // File does not exist on StorageProvider, checks for Cache
-                                tracing::info!("File does not exist on StorageProvider");
-                                if self.cache.read().await.exists(i) {
-                                    match self.cache.write().await.delete(i).await {
-                                        Ok(_) => (),
-                                        Err(err) => tracing::error!(
-                                            "Could not delete file from cache {err}"
-                                        ),
-                                    }
-                                } else {
-                                    // Log the uncommon case, that the file is actually not there for whatever reason to inspect the infra
-                                    tracing::error!(
-                                        "File does neither exist on StorageProvider nor in Cache"
-                                    );
-                                }
-                                // We don't care if the file exists or not, there is a db entry which must be deleted in both cases
-                                self.delete_file_by_uuid(i).await;
-                                // Skip S3 deletion
-                                continue;
-                            } else {
-                                // File exists on StorageProvider, delete it
-                                if let Err(err) =
-                                    self.provider.write().await.delete_file(i.to_string()).await
-                                {
-                                    // StorageProvider Could not delete, so it will be scheduled again for the next flush as the db is not cleared
-                                    tracing::error!(
-                                        "File could not get deleted from StorageProvider: {err}"
-                                    );
-                                } else {
-                                    // Delete db entry
-                                    self.delete_file_by_uuid(i).await;
-                                }
-                            }
-                        }
-                        // If there is a StorageProvider error, we must not delete the db entry and it will be scheduled for the next flush to retry again
-                        Err(err) => tracing::error!("Check if file exists failed: {err}"),
-                    }
-                }
-            }
-
-            tokio::time::sleep(Duration::from_secs(60)).await;
+    async fn delete_file_from_database(&self, uuid: Uuid) {
+        if let Err(err) = self.database.delete_file_by_uuid(uuid).await {
+            tracing::error!("Could not delete file from database: {err}");
+        } else {
+            tracing::trace!("File deleted from database: {uuid}");
         }
     }
 
-    async fn delete_file_by_uuid(&self, uuid: Uuid) {
-        match self.database.delete_file_by_uuid(uuid).await {
-            Ok(_) => tracing::debug!("File {uuid} deleted from db"),
-            Err(err) => tracing::error!("{err}"),
+    async fn delete_file_from_provider(&self, uuid: Uuid) -> Result<()> {
+        // Check if file exists in storage provider
+        let result = self
+            .provider
+            .read()
+            .await
+            .file_exists(uuid.to_string())
+            .await;
+
+        // Match result
+        match result {
+            Ok(true) => (),
+            Ok(false) => {
+                tracing::warn!("File not found in StorageProvider: {uuid}");
+                return Ok(());
+            }
+            Err(err) => {
+                tracing::error!("Unable to check if file exists in StorageProvider: {err}");
+                return Err(err);
+            }
+        }
+
+        // Delete file from storage provider
+        let result = self
+            .provider
+            .write()
+            .await
+            .delete_file(uuid.to_string())
+            .await;
+
+        // Match result
+        match result {
+            Ok(_) => {
+                tracing::trace!("File deleted from StorageProvider: {uuid}");
+                Ok(())
+            }
+            Err(err) => {
+                tracing::error!("Could not delete file from StorageProvider: {err}");
+                Err(err)
+            }
+        }
+    }
+
+    pub async fn delete_file(&self, file: Uuid) {
+        // Check if file exists in cache
+        if self.cache.read().await.exists(file.clone()) {
+            // Actually delete file from cache
+            if let Err(err) = self.cache.write().await.delete(file).await {
+                tracing::error!("Could not delete file from cache: {err}");
+            }
+        } else {
+            tracing::debug!("File not found in cache");
+        }
+
+        // Delete file from provider
+        if let Ok(_) = self.delete_file_from_provider(file).await {
+            // Delete file from database
+            self.delete_file_from_database(file).await;
+        }
+    }
+
+    pub async fn sweep(&self) {
+        // Get expired files from database
+        let files = self.get_expired_files().await;
+
+        // Log count of expired files
+        if !files.is_empty() {
+            tracing::trace!("Found {} files to be deleted", files.len());
+        }
+
+        // Iterate over expired files
+        for file in files {
+            self.delete_file(file).await
+        }
+    }
+
+    #[instrument(skip(self))]
+    pub async fn run(self) -> () {
+        tracing::info!("Expiration worker started");
+
+        loop {
+            tracing::trace!("Deleting expired files");
+            self.sweep().await;
+
+            // Repeat every 60 seconds
+            tokio::time::sleep(Duration::from_secs(60)).await;
         }
     }
 }

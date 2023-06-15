@@ -71,10 +71,20 @@ impl CacheVariant {
     }
 
     pub async fn put(&mut self, key: Uuid, value: Vec<u8>) -> Result<()> {
-        match self {
-            CacheVariant::Disk(cache) => Ok(cache.put(key, value).await?),
-            CacheVariant::Hybrid(cache) => Ok(cache.put(key, value).await?),
-            CacheVariant::Memory(cache) => Ok(cache.put(key, value).await?),
+        let result = match self {
+            CacheVariant::Disk(cache) => cache.put(key, value).await,
+            CacheVariant::Hybrid(cache) => cache.put(key, value).await,
+            CacheVariant::Memory(cache) => cache.put(key, value).await,
+        };
+        {
+            match &result {
+                Err(bincache::Error::LimitExceeded { limit_kind }) => {
+                    tracing::error!("Cache limit exceeded: {limit_kind}");
+
+                    Ok(result?)
+                }
+                _ => Ok(result?),
+            }
         }
     }
 

@@ -118,7 +118,6 @@ pub async fn upload_file(
 }
 
 pub async fn get_file(
-    // rename: get_file_metadata or something else
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
 ) -> Json<Response<responses::FileMetaData>> {
@@ -261,7 +260,6 @@ pub async fn verify_challenge(
 
     if verify_challenge_data.file_name_hash == Some(json_data.challenge) {
         verify_challenge_data.file_name_hash = None;
-        // ToDo: Check if iv and salt needs to be sent here again
         Json(Response::new(ResponseData::Success(verify_challenge_data)))
     } else {
         Json(Response::new(ResponseData::Error(ErrorData {

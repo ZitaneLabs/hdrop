@@ -85,17 +85,19 @@ impl ExpirationWorker {
 
     pub async fn delete_file(&self, file: Uuid) {
         // Check if file exists in cache
-        if self.cache.read().await.exists(file.clone()) {
+        if self.cache.read().await.exists(file) {
             // Actually delete file from cache
             if let Err(err) = self.cache.write().await.delete(file).await {
                 tracing::error!("Could not delete file from cache: {err}");
+            } else {
+                tracing::trace!("File deleted from Cache");
             }
         } else {
             tracing::debug!("File not found in cache");
         }
 
         // Delete file from provider
-        if let Ok(_) = self.delete_file_from_provider(file).await {
+        if self.delete_file_from_provider(file).await.is_ok() {
             // Delete file from database
             self.delete_file_from_database(file).await;
         }

@@ -87,7 +87,6 @@ pub async fn start_server() -> Result<()> {
 
     // API Routes
     let app = Router::new()
-        //.route("/test", get(|| async { "Hello, World!" }))
         .route(
             "/v1/files",
             post(upload_file).layer(DefaultBodyLimit::max(256 * 1024 * 1024)), // 256MB
@@ -106,9 +105,6 @@ pub async fn start_server() -> Result<()> {
                 .allow_methods(Any)
                 .allow_headers(Any),
         );
-
-    // ToDo: Route & api refactor:: BELG
-    //let files_route ;
 
     let server_port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let host = format!("0.0.0.0:{server_port}");

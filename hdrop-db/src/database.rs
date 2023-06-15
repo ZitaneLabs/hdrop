@@ -54,9 +54,9 @@ impl Database {
     pub async fn update_data_url<'a>(
         &self,
         s_uuid: Uuid,
-        file_url: impl Into<Cow<'a, str>>,
+        file_url: Option<impl Into<Cow<'a, str>>>,
     ) -> Result<()> {
-        let file_url = file_url.into().into_owned();
+        let file_url: Option<String> = file_url.map(|inner| inner.into().into_owned());
         Ok(self
             .pool
             .get()

@@ -66,10 +66,20 @@ impl TryFrom<PartialUploadedFile> for UploadedFile {
         if let Some(reason) = data.error {
             return Err(Error::FileUpload { reason });
         }
+
         Ok(Self {
-            file_data: data
+            file_data: { 
+            let data =  
+                data
                 .file_data
-                .ok_or(Error::FileDataConversionError("file_data"))?,
+                .ok_or(Error::FileDataConversionError("file_data"))?;
+
+            if Bytes::len(&data) > 200 {
+                return Err(Error::FileLimitExceeded("200", "200"));
+            }
+
+            data
+            },
             file_name_data: data
                 .file_name_data
                 .ok_or(Error::FileDataConversionError("file_name_data"))?,

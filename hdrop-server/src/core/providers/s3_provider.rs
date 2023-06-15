@@ -44,8 +44,6 @@ impl S3Provider {
 impl StorageProvider for S3Provider {
     async fn store_file(&mut self, ident: String, content: &[u8]) -> Result<Option<String>> {
         let _response_data = self.bucket.put_object(&ident, content).await?;
-        //let response_data = bucket.get_object(s3_path).await?;
-        //assert_eq!(test, response_data.as_slice());
 
         Ok(Some(format!(
             "{s3_host}/{ident}",

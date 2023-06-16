@@ -21,8 +21,7 @@ impl OnPremiseProvider {
                 .with_strategy(DiskStrategy::new(storage_path, storage_limit_mb, None))
                 .with_compression(Zstd::default())
                 .build()
-                .await
-                .unwrap(),
+                .await?,
         })
     }
 }

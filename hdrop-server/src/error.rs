@@ -1,3 +1,5 @@
+use std::net::AddrParseError;
+
 use axum::extract::multipart::MultipartError;
 use bincache::Error as BincacheError;
 use regex::Error as RegexError;
@@ -38,6 +40,8 @@ pub enum Error {
     State(#[from] hdrop_db::error::Error),
     #[error("File upload failed: {reason}")]
     FileUpload { reason: String },
+    #[error("Socket could not get parsed: {0}")]
+    SocketParse(#[from] AddrParseError),
     // Cache
     #[error("Recover does not exist for Disk or Memory Strategy")]
     NoRecover,

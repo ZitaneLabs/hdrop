@@ -140,7 +140,7 @@ impl Server {
         let server_host = "0.0.0.0";
         let server_port = env::port().unwrap_or(8080);
         let server_addr = format!("{server_host}:{server_port}");
-        let socket_addr = SocketAddr::from_str(&server_addr).unwrap();
+        let socket_addr = SocketAddr::from_str(&server_addr)?;
 
         // Start the server
         axum::Server::bind(&socket_addr)

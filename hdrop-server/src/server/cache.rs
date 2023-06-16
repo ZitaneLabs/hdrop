@@ -24,15 +24,13 @@ impl CacheVariant {
         let disk_byte_limit = env::cache_disk_limit_mb().map(mb_to_bytes).ok();
 
         match cache_variant.to_lowercase().as_ref() {
-            "memory" => {
-                let x = CacheBuilder::default()
+            "memory" => Ok(CacheVariant::Memory(
+                CacheBuilder::default()
                     .with_strategy(MemoryStrategy::new(memory_byte_limit, None))
                     .with_compression(Zstd::default())
                     .build()
-                    .await
-                    .unwrap();
-                Ok(CacheVariant::Memory(x))
-            }
+                    .await?,
+            )),
             "disk" => Ok(CacheVariant::Disk(
                 CacheBuilder::default()
                     .with_strategy(DiskStrategy::new(cache_dir, disk_byte_limit, None))

@@ -2,7 +2,7 @@ use chrono::Utc;
 use deadpool_diesel::postgres::{Manager, Pool};
 use diesel::prelude::*;
 use hdrop_shared::responses;
-use std::{borrow::Cow, env};
+use std::borrow::Cow;
 use uuid::Uuid;
 
 use crate::{
@@ -20,8 +20,7 @@ pub struct Database {
 impl Database {
     /// Initialize the database from environment variables.
     pub fn try_from_env() -> Result<Database> {
-        // DATABASE_URL must be set, therefore panic is reasonable here.
-        let database_url = env::var("DATABASE_URL")?;
+        let database_url = hdrop_shared::env::database_url()?;
         let manager = Manager::new(database_url, deadpool_diesel::Runtime::Tokio1);
         let pool = Pool::builder(manager).max_size(8).build()?;
         let generator = TokenGenerator::default();

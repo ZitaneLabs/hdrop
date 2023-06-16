@@ -1,3 +1,3 @@
-mod parse_and_upscale_to_mb;
+mod unit_utils;
 
-pub use parse_and_upscale_to_mb::parse_and_upscale_to_mb;
+pub use unit_utils::mb_to_bytes;

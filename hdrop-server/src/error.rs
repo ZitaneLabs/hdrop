@@ -1,5 +1,3 @@
-use std::env::VarError;
-
 use axum::extract::multipart::MultipartError;
 use bincache::Error as BincacheError;
 use regex::Error as RegexError;
@@ -10,16 +8,17 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Error, Debug)]
 pub enum Error {
+    // Env
+    #[error("Environment error: {0}")]
+    EnvError(#[from] hdrop_shared::env::EnvError),
     // S3
-    #[error("{0}")]
-    Env(#[from] VarError),
-    #[error("{0}")]
+    #[error("S3 error: {0}")]
     S3(#[from] S3Error),
-    #[error("{0}")]
+    #[error("S3 error: {0}")]
     S3Credential(#[from] CredentialsError),
-    #[error("{0}")]
+    #[error("Regex error: {0}")]
     Regex(#[from] RegexError),
-    #[error("{0}")]
+    #[error("Bincache error: {0}")]
     Cache(#[from] BincacheError),
     #[error("{0}")]
     InvalidHeaderValue(#[from] axum::http::header::InvalidHeaderValue),

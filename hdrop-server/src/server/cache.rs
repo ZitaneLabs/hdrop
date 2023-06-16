@@ -1,12 +1,12 @@
-use crate::parse_and_upscale_to_mb;
-use crate::Result;
-use bincache::compression::Zstd;
-use bincache::strategies::Limits;
-use bincache::{Cache, CacheBuilder, DiskStrategy, HybridStrategy, MemoryStrategy};
-use std::borrow::Cow;
-use std::env;
-use std::path::Path;
+use bincache::{
+    compression::Zstd, strategies::Limits, Cache, CacheBuilder, DiskStrategy, HybridStrategy,
+    MemoryStrategy,
+};
+use hdrop_shared::env;
+use std::{borrow::Cow, path::PathBuf};
 use uuid::Uuid;
+
+use crate::{utils::mb_to_bytes, Result};
 
 type ZstdCache<S> = Cache<Uuid, S, Zstd>;
 
@@ -18,20 +18,15 @@ pub enum CacheVariant {
 
 impl CacheVariant {
     pub async fn try_from_env() -> Result<Self> {
-        let cache_variant: String =
-            env::var("CACHE_STRATEGY").unwrap_or_else(|_| "memory".to_string());
+        let cache_variant: String = env::cache_strategy().unwrap_or_else(|_| "memory".to_string());
+        let cache_dir = env::cache_dir().unwrap_or_else(|_| PathBuf::from("file_cache"));
+        let memory_byte_limit = env::cache_memory_limit_mb().map(mb_to_bytes).ok();
+        let disk_byte_limit = env::cache_disk_limit_mb().map(mb_to_bytes).ok();
 
-        let cache_dir = env::var("CACHE_DIR").unwrap_or_else(|_| "file_cache".to_string());
-        let cache_dir = Path::new(&cache_dir);
-        let memory_byte_limit = env::var("CACHE_MEMORY_LIMIT_MB").ok();
-        let disk_byte_limit = env::var("CACHE_DISK_LIMIT_MB").ok();
         match cache_variant.to_lowercase().as_ref() {
             "memory" => {
                 let x = CacheBuilder::default()
-                    .with_strategy(MemoryStrategy::new(
-                        parse_and_upscale_to_mb(memory_byte_limit),
-                        None,
-                    ))
+                    .with_strategy(MemoryStrategy::new(memory_byte_limit, None))
                     .with_compression(Zstd::default())
                     .build()
                     .await
@@ -40,30 +35,20 @@ impl CacheVariant {
             }
             "disk" => Ok(CacheVariant::Disk(
                 CacheBuilder::default()
-                    .with_strategy(DiskStrategy::new(
-                        cache_dir,
-                        parse_and_upscale_to_mb(disk_byte_limit),
-                        None,
-                    ))
+                    .with_strategy(DiskStrategy::new(cache_dir, disk_byte_limit, None))
                     .with_compression(Zstd::default())
                     .build()
-                    .await
-                    .unwrap(),
+                    .await?,
             )),
             "hybrid" => {
-                let entry_limit = None;
-                let memory_limit =
-                    Limits::new(parse_and_upscale_to_mb(memory_byte_limit), entry_limit);
-                let disk_entry_limit = None;
-                let disk_limit =
-                    Limits::new(parse_and_upscale_to_mb(disk_byte_limit), disk_entry_limit);
+                let memory_limits = Limits::new(memory_byte_limit, None);
+                let disk_limits = Limits::new(disk_byte_limit, None);
                 Ok(CacheVariant::Hybrid(
                     CacheBuilder::default()
-                        .with_strategy(HybridStrategy::new(cache_dir, memory_limit, disk_limit))
+                        .with_strategy(HybridStrategy::new(cache_dir, memory_limits, disk_limits))
                         .with_compression(Zstd::default())
                         .build()
-                        .await
-                        .unwrap(),
+                        .await?,
                 ))
             }
             _ => Err(crate::error::Error::Strategy),

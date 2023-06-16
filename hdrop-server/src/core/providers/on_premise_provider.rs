@@ -1,13 +1,10 @@
-use super::provider::Fetchtype;
-use super::provider::StorageProvider;
-use crate::{parse_and_upscale_to_mb, Result};
 use async_trait::async_trait;
-use bincache::compression::Zstd;
-use bincache::Cache;
-use bincache::CacheBuilder;
-use bincache::DiskStrategy;
-use std::env;
-use std::path::Path;
+use bincache::{compression::Zstd, Cache, CacheBuilder, DiskStrategy};
+use hdrop_shared::env;
+use std::path::PathBuf;
+
+use super::provider::{Fetchtype, StorageProvider};
+use crate::{utils::mb_to_bytes, Result};
 
 #[derive(Debug)]
 pub struct OnPremiseProvider {
@@ -16,17 +13,12 @@ pub struct OnPremiseProvider {
 
 impl OnPremiseProvider {
     pub async fn try_from_env() -> Result<Self> {
-        let storage_path = env::var("STORAGE_PATH").unwrap_or_else(|_| "files".to_owned());
-        let storage_path = Path::new(&storage_path);
-        let storage_limit = env::var("STORAGE_LIMIT").ok();
+        let storage_path = env::onpremise_storage_dir().unwrap_or_else(|_| PathBuf::from("files"));
+        let storage_limit_mb = env::onpremise_storage_limit_mb().ok().map(mb_to_bytes);
 
         Ok(Self {
             storage: CacheBuilder::default()
-                .with_strategy(DiskStrategy::new(
-                    storage_path,
-                    parse_and_upscale_to_mb(storage_limit),
-                    None,
-                ))
+                .with_strategy(DiskStrategy::new(storage_path, storage_limit_mb, None))
                 .with_compression(Zstd::default())
                 .build()
                 .await

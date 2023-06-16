@@ -1,13 +1,11 @@
 use diesel::ConnectionError;
-use std::env::VarError;
-use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("{0}")]
-    Env(#[from] VarError),
+    #[error("Environment error: {0}")]
+    Env(#[from] hdrop_shared::env::EnvError),
     #[error("{0}")]
     Connection(#[from] ConnectionError),
     #[error("{0}")]

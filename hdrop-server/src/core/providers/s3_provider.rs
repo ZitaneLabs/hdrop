@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use hdrop_shared::env;
 use regex::Regex;
 use s3::{creds::Credentials, region::Region, Bucket};
-use std::env;
 
 use super::provider::{Fetchtype, StorageProvider};
 use crate::Result;
@@ -15,19 +15,19 @@ pub struct S3Provider {
 impl S3Provider {
     pub fn try_from_env() -> Result<Self> {
         let region_custom = Region::Custom {
-            region: env::var("S3_REGION")?,
-            endpoint: env::var("S3_ENDPOINT")?,
+            region: env::s3_region()?,
+            endpoint: env::s3_endpoint()?,
         };
         let credentials = Credentials::new(
-            Some(env::var("S3_ACCESS_KEY_ID")?.as_ref()),
-            Some(env::var("S3_SECRET_ACCESS_KEY")?.as_ref()),
+            Some(&env::s3_access_key_id()?),
+            Some(&env::s3_secret_access_key()?),
             None,
             None,
             None,
         )?;
 
         let bucket = Bucket::new(
-            env::var("S3_BUCKET_NAME")?.as_ref(),
+            &env::s3_bucket_name()?,
             region_custom,
             // Credentials are collected from environment, config, profile or instance metadata
             credentials,
@@ -35,7 +35,7 @@ impl S3Provider {
         .with_path_style();
 
         let regex = Regex::new(r"(?m)/+$")?;
-        let public_url = regex.replace(&env::var("S3_PUBLIC_URL")?, "").to_string();
+        let public_url = regex.replace(&env::s3_public_url()?, "").to_string();
         Ok(S3Provider { bucket, public_url })
     }
 }

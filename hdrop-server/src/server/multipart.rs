@@ -72,25 +72,9 @@ impl TryFrom<PartialUploadedFile> for UploadedFile {
         }
 
         Ok(Self {
-            file_data: {
-                let data = data
-                    .file_data
-                    .ok_or(Error::FileDataConversionError("file_data"))?;
-
-                let file_size = Bytes::len(&data);
-                let upload_limit = env::single_file_limit_mb()
-                    .map(mb_to_bytes)
-                    .unwrap_or(100_000_000);
-
-                if file_size > upload_limit {
-                    return Err(Error::FileLimitExceeded {
-                        file_size: bytes_to_mb(file_size),
-                        upload_limit: bytes_to_mb(upload_limit),
-                    });
-                }
-
-                data
-            },
+            file_data: data
+                .file_data
+                .ok_or(Error::FileDataConversionError("file_data"))?,
             file_name_data: data
                 .file_name_data
                 .ok_or(Error::FileDataConversionError("file_name_data"))?,

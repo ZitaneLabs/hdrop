@@ -23,7 +23,7 @@ anyhow = "1.0.71"
 regex = "1.8.3"
 hdrop-db = { path = "../hdrop-db" }
 hdrop-shared = { path = "../hdrop-shared" }
-tower-http = { version = "0.4.0", features = ["cors"] }
+tower-http = { version = "0.4.0", features = ["cors", "limit"] }
 bincache = { git = "ssh://git@github.com/ZitaneLabs/bincache.git", features = ["rt_tokio_1", "comp_zstd"] }
 rust-s3-async = { git = "ssh://git@github.com/ZitaneLabs/rust-s3-async.git" }
 metrics-exporter-prometheus = "0.12.1"

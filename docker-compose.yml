@@ -39,6 +39,7 @@ services:
       - S3_BUCKET_NAME=hdrop
       - S3_PUBLIC_URL=http://localhost:4566/hdrop
       - CORS_ORIGIN=*
+      - SINGLE_FILE_LIMIT_MB=100
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/hdrop
     platform: linux/x86_64
     depends_on:
@@ -46,7 +47,7 @@ services:
       - localstack
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
-  
+
   api_rust:
     profiles: ["api-rs"]
     build:

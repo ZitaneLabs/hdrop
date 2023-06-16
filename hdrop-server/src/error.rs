@@ -22,20 +22,18 @@ pub enum Error {
     Cache(#[from] BincacheError),
     #[error("{0}")]
     InvalidHeaderValue(#[from] axum::http::header::InvalidHeaderValue),
+    #[error("Invalid CORS origin: {0}")]
+    InvalidCorsOrigin(String),
     // Webserver
     #[error("{0}")]
     Multipart(#[from] MultipartError),
     #[error("Conversion to UploadedFileData failed due to PartialUploadedFileData being incomplete (Missing field: {0})")]
     FileDataConversionError(&'static str),
-    #[error("Conversion to UploadedFileData failed due to file being too large (File size: {file_size} mb, Allowed limit: {upload_limit} mb)")]
-    FileLimitExceeded {
-        file_size: usize,
-        upload_limit: usize,
-    },
     #[error("{0}")]
     State(#[from] hdrop_db::error::Error),
     #[error("File upload failed: {reason}")]
     FileUpload { reason: String },
+    // Cache
     #[error("Recover does not exist for Disk or Memory Strategy")]
     NoRecover,
     #[error("Cache variant does not exist. Existing Cache variants: Memory, Disk, Hybrid")]

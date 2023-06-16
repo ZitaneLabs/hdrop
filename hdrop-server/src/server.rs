@@ -7,7 +7,10 @@ use axum::{
 use hdrop_shared::env;
 use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::sync::mpsc::{self, UnboundedReceiver};
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::{
+    cors::{AllowOrigin, Any, CorsLayer},
+    limit::RequestBodyLimitLayer,
+};
 
 mod app_state;
 mod cache;
@@ -27,6 +30,7 @@ use crate::{
         storage_synchronizer::{ProviderSyncEntry, StorageSynchronizer},
     },
     error::{Error, Result},
+    utils::mb_to_bytes,
 };
 
 pub struct Server {
@@ -46,6 +50,28 @@ impl Server {
                 ),
                 err => tracing::error!("Recovery failed: {err}"),
             },
+        }
+    }
+
+    fn cors_origin() -> Result<AllowOrigin> {
+        match env::cors_origin() {
+            // Handle wildcard origin
+            Ok(ref origin) if origin == "*" => Ok(AllowOrigin::any()),
+            // Handle list of origins
+            Ok(origins) => {
+                let origin_list = origins
+                    .split(",")
+                    .map(|origin| {
+                        origin
+                            .trim()
+                            .parse::<HeaderValue>()
+                            .map_err(|_| Error::InvalidCorsOrigin(origin.to_string()))
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                Ok(AllowOrigin::list(origin_list))
+            }
+            // Handle default origin
+            Err(_) => Ok(AllowOrigin::any()),
         }
     }
 }
@@ -83,6 +109,9 @@ impl Server {
             .run(),
         );
 
+        // Calculate request body limit
+        let request_body_limit_bytes = mb_to_bytes(env::single_file_limit_mb().unwrap_or(100));
+
         // Define API routes
         let app = Router::new()
             .route(
@@ -97,9 +126,12 @@ impl Server {
                 get(get_challenge).post(verify_challenge),
             )
             .with_state(self.state)
+            // Limit request body size
+            .layer(RequestBodyLimitLayer::new(request_body_limit_bytes))
+            // Order matters! The CORS layer must be the last layer in the middleware stack.
             .layer(
                 CorsLayer::new()
-                    .allow_origin(env::cors_origin()?.parse::<HeaderValue>()?)
+                    .allow_origin(Self::cors_origin()?)
                     .allow_methods(Any)
                     .allow_headers(Any),
             );

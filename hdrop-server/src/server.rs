@@ -60,7 +60,7 @@ impl Server {
             // Handle list of origins
             Ok(origins) => {
                 let origin_list = origins
-                    .split(",")
+                    .split(',')
                     .map(|origin| {
                         origin
                             .trim()

@@ -11,6 +11,11 @@ pub enum Error {
     // Env
     #[error("Environment error: {0}")]
     Env(#[from] hdrop_shared::env::EnvError),
+    // StorageProvider
+    #[error("Invalid Storage provider: {0}")]
+    InvalidProvider(String),
+    #[error("No Storage provider given")]
+    NoProvider,
     // S3
     #[error("S3 error: {0}")]
     S3(#[from] S3Error),

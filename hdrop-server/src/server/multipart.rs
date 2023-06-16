@@ -1,11 +1,7 @@
-use crate::{
-    error::{Error, Result},
-    utils::{bytes_to_mb, mb_to_bytes},
-};
+use crate::error::{Error, Result};
 use axum::{body::Bytes, extract::Multipart};
-use hdrop_shared::env;
 
-/// Initial struct which allows file data to be incomplete and above single file limit.
+/// Initial struct which allows file data to be incomplete.
 #[derive(Debug, Default)]
 pub struct PartialUploadedFile {
     file_data: Option<Bytes>,

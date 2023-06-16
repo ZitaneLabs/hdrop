@@ -47,6 +47,7 @@ macro_rules! env_get {
 env_get!(port => u16);
 env_get!(cors_origin);
 env_get!(single_file_limit_mb => usize);
+env_get!(storage_provider);
 
 // Database
 env_get!(database_url);

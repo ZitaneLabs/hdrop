@@ -98,15 +98,6 @@ pub async fn upload_file(
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         .unwrap();
 
-    // Test, remove later
-    let _response_data = state
-        .provider
-        .read()
-        .await
-        .get_file(uuid.to_string())
-        .await
-        .expect("S3 Download FAIL");
-
     Json(Response::new(ResponseData::Success(
         response::UploadFileData {
             access_token,

@@ -61,7 +61,6 @@ impl StorageProvider for S3Provider {
 
     async fn get_file(&self, ident: String) -> Result<Fetchtype> {
         let url = format!("{}/{}", self.public_url, ident);
-        println!("URL: {}", url);
 
         Ok(Fetchtype::FileUrl(url))
     }
@@ -70,23 +69,5 @@ impl StorageProvider for S3Provider {
         let s3_path = ident.as_str();
 
         Ok(self.bucket.object_exists(s3_path).await?)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    fn test_upload() {
-        /*
-        let bucket = self.bucket;
-        let s3_path = ident.as_str();
-
-        let test = b"I'm going to S3!";
-
-        let response_data = bucket.put_object(s3_path, content).await?;
-
-        let response_data = bucket.get_object(s3_path).await?;
-        //assert_eq!(response_data.status_code(), 200);
-        */
     }
 }

@@ -27,8 +27,11 @@ pub enum Error {
     Multipart(#[from] MultipartError),
     #[error("Conversion to UploadedFileData failed due to PartialUploadedFileData being incomplete (Missing field: {0})")]
     FileDataConversionError(&'static str),
-    #[error("Conversion to UploadedFileData failed due to file being too large (Size: {0}, Allowed size: {1})")]
-    FileLimitExceeded(&'static str, &'static str),
+    #[error("Conversion to UploadedFileData failed due to file being too large (File size: {file_size} mb, Allowed limit: {upload_limit} mb)")]
+    FileLimitExceeded {
+        file_size: usize,
+        upload_limit: usize,
+    },
     #[error("{0}")]
     State(#[from] hdrop_db::error::Error),
     #[error("File upload failed: {reason}")]

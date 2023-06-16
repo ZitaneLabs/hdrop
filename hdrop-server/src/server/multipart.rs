@@ -1,7 +1,11 @@
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    utils::{bytes_to_mb, mb_to_bytes},
+};
 use axum::{body::Bytes, extract::Multipart};
+use hdrop_shared::env;
 
-/// Initial struct which allows file data to be incomplete.
+/// Initial struct which allows file data to be incomplete and above single file limit.
 #[derive(Debug, Default)]
 pub struct PartialUploadedFile {
     file_data: Option<Bytes>,
@@ -73,8 +77,16 @@ impl TryFrom<PartialUploadedFile> for UploadedFile {
                     .file_data
                     .ok_or(Error::FileDataConversionError("file_data"))?;
 
-                if Bytes::len(&data) > 200 {
-                    return Err(Error::FileLimitExceeded("200", "200"));
+                let file_size = Bytes::len(&data);
+                let upload_limit = env::single_file_limit_mb()
+                    .map(mb_to_bytes)
+                    .unwrap_or(100_000_000);
+
+                if file_size > upload_limit {
+                    return Err(Error::FileLimitExceeded {
+                        file_size: bytes_to_mb(file_size),
+                        upload_limit: bytes_to_mb(upload_limit),
+                    });
                 }
 
                 data

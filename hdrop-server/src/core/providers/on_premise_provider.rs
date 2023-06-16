@@ -13,8 +13,8 @@ pub struct OnPremiseProvider {
 
 impl OnPremiseProvider {
     pub async fn try_from_env() -> Result<Self> {
-        let storage_path = env::onpremise_storage_dir().unwrap_or_else(|_| PathBuf::from("files"));
-        let storage_limit_mb = env::onpremise_storage_limit_mb().ok().map(mb_to_bytes);
+        let storage_path = env::local_storage_dir().unwrap_or_else(|_| PathBuf::from("files"));
+        let storage_limit_mb = env::local_storage_limit_mb().ok().map(mb_to_bytes);
 
         Ok(Self {
             storage: CacheBuilder::default()

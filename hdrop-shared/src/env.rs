@@ -66,6 +66,6 @@ env_get!(s3_secret_access_key);
 env_get!(s3_bucket_name);
 env_get!(s3_public_url);
 
-// On-Premise Provider
-env_get!(onpremise_storage_dir => PathBuf);
-env_get!(onpremise_storage_limit_mb => usize);
+// Local Provider
+env_get!(local_storage_dir => PathBuf);
+env_get!(local_storage_limit_mb => usize);

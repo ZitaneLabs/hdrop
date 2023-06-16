@@ -45,7 +45,7 @@ impl StorageSynchronizer {
         };
 
         // Start background task to retry synchronization
-        let _ = tokio::spawn(Self::synchronization_retry_worker(provider_sync_entry));
+        tokio::spawn(Self::synchronization_retry_worker(provider_sync_entry));
     }
 
     pub async fn save_to_provider(
@@ -72,7 +72,7 @@ impl StorageSynchronizer {
         // Database update DataUrl here
         if let Err(err) = database.update_data_url(uuid, data_url.as_ref()).await {
             tracing::error!("Database data url update failed: {err}");
-            let _ = tokio::spawn(Self::database_retry_worker(data_url, database, uuid));
+            tokio::spawn(Self::database_retry_worker(data_url, database, uuid));
         } else {
             tracing::trace!("File dataUrl successfully updated in database");
             //clear_cache()
@@ -83,7 +83,7 @@ impl StorageSynchronizer {
     pub async fn clear_cache(cache: Arc<RwLock<CacheVariant>>, file_uuid: Uuid) {
         if let Err(err) = Self::check_and_delete_cache_entry(cache.clone(), file_uuid).await {
             tracing::error!("Could not delete file from cache: {err}");
-            let _ = tokio::spawn(Self::cache_retry_worker(cache.clone(), file_uuid));
+            tokio::spawn(Self::cache_retry_worker(cache.clone(), file_uuid));
         } else {
             tracing::trace!("File deleted from Cache");
         }

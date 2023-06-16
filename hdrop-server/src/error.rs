@@ -10,7 +10,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     // Env
     #[error("Environment error: {0}")]
-    EnvError(#[from] hdrop_shared::env::EnvError),
+    Env(#[from] hdrop_shared::env::EnvError),
     // S3
     #[error("S3 error: {0}")]
     S3(#[from] S3Error),

@@ -61,7 +61,7 @@ pub async fn start_server() -> Result<()> {
 
     // Start storage synchronizer worker
     let (tx, rx) = mpsc::unbounded_channel::<ProviderSyncEntry>();
-    _ = tokio::spawn(StorageSynchronizer::new(rx).run());
+    tokio::spawn(StorageSynchronizer::new(rx).run());
 
     // Get db, storage provider and cache
     let state = Arc::new(AppState::new(tx).await?);
@@ -85,7 +85,7 @@ pub async fn start_server() -> Result<()> {
         state.cache.clone(),
     );
     // Background Worker for deleting expired files, every 60 seconds
-    _ = tokio::spawn(expiration_worker_entry.run());
+    tokio::spawn(expiration_worker_entry.run());
 
     // API Routes
     let app = Router::new()
@@ -116,7 +116,7 @@ pub async fn start_server() -> Result<()> {
     axum::Server::bind(&socket_addr)
         .serve(app.into_make_service())
         .await
-        .expect(&format!("Server failed to start on {server_addr}"));
+        .unwrap_or_else(|_| panic!("Server failed to start on {server_addr}"));
 
     tracing::info!("Server started on {server_addr}");
     Ok(())

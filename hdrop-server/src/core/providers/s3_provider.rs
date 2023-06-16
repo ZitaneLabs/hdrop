@@ -75,7 +75,7 @@ impl StorageProvider for S3Provider {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
 
     fn test_upload() {
         /*

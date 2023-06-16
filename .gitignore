@@ -5,3 +5,9 @@
 
 # macOS
 .DS_Store
+
+# Cargo Workspace
+target
+
+# VS Code
+.vscode/

@@ -2,9 +2,6 @@ use super::{
     multipart::{PartialUploadedFile, UploadedFile},
     AppState,
 };
-use crate::background_workers::storage_synchronizer::ProviderSyncEntry;
-
-use crate::core::Fetchtype;
 use axum::{
     extract::{Multipart, Path, Query, State},
     http::StatusCode,
@@ -13,10 +10,11 @@ use axum::{
 };
 use chrono::Utc;
 use hdrop_db::{Database, InsertFile};
-use hdrop_shared::requests::{ChallengeData, ExpiryData};
-use hdrop_shared::{responses, ErrorData, Response, ResponseData};
+use hdrop_shared::{requests as request, responses as response, ErrorData, Response, ResponseData};
 use std::sync::Arc;
 use uuid::Uuid;
+
+use crate::{background_workers::storage_synchronizer::ProviderSyncEntry, core::Fetchtype};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct UpdateTokenQuery {
@@ -25,12 +23,11 @@ pub struct UpdateTokenQuery {
 }
 
 /* Routes */
-// #[axum::debug_handler]
 pub async fn upload_file(
     State(state): State<Arc<AppState>>,
     multipart_formdata: Multipart,
-) -> Json<Response<responses::UploadFileData>> {
-    // Multipart Upload to Server
+) -> Json<Response<response::UploadFileData>> {
+    // Parse multipart formdata
     let data: UploadedFile = match PartialUploadedFile::from_multipart(multipart_formdata)
         .await
         .try_into()
@@ -93,9 +90,10 @@ pub async fn upload_file(
         file_data: data.file_data,
         cache: state.cache.clone(),
     };
+
     // Send file for upload, db update & cache clearance to S3 Synchronization thread
     state
-        .tx
+        .provider_sync_tx
         .send(provider_sync_entry)
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         .unwrap();
@@ -110,7 +108,7 @@ pub async fn upload_file(
         .expect("S3 Download FAIL");
 
     Json(Response::new(ResponseData::Success(
-        responses::UploadFileData {
+        response::UploadFileData {
             access_token,
             update_token,
         },
@@ -120,7 +118,7 @@ pub async fn upload_file(
 pub async fn get_file(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
-) -> Json<Response<responses::FileMetaData>> {
+) -> Json<Response<response::FileMetaData>> {
     let Ok(file_metadata) = state.database.get_file_metadata(access_token).await else {
         return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
     };
@@ -171,7 +169,7 @@ pub async fn update_file_expiry(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
     Query(query): Query<UpdateTokenQuery>,
-    Json(expiry_data): Json<ExpiryData>,
+    Json(expiry_data): Json<request::ExpiryData>,
 ) -> Json<Response<()>> {
     let mut file = state
         .database
@@ -241,7 +239,7 @@ pub async fn get_raw_file_bytes(
 pub async fn get_challenge(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
-) -> Json<Response<responses::GetChallengeData>> {
+) -> Json<Response<response::GetChallengeData>> {
     let Ok(get_challenge_data) = state.database.get_challenge(access_token).await else {
         return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
     };
@@ -252,8 +250,8 @@ pub async fn get_challenge(
 pub async fn verify_challenge(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
-    Json(json_data): Json<ChallengeData>,
-) -> Json<Response<responses::VerifyChallengeData>> {
+    Json(json_data): Json<request::ChallengeData>,
+) -> Json<Response<response::VerifyChallengeData>> {
     let Ok(mut verify_challenge_data) = state.database.get_hash(access_token).await else {
         return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
     };

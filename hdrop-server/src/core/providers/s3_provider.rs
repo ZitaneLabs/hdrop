@@ -75,7 +75,6 @@ impl StorageProvider for S3Provider {
 
 #[cfg(test)]
 mod tests {
-    
 
     fn test_upload() {
         /*

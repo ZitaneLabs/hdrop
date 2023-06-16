@@ -50,7 +50,6 @@ No matter where you deploy, you'll need to configure the following environment v
 | ------------------------ | ------------------------- | ------------------------------------ |
 | `REACT_APP_BASE_URL`     | `https://example.org`     | The URL where the frontend is hosted |
 | `REACT_APP_API_ENDPOINT` | `https://api.example.org` | The URL where the API is hosted      |
-| `MEMORY_BYTES_LIMIT` | `https://api.example.org` | Memory bytes limit of memory cache     |
 
 #### Docker (Recommended)
 > We provide a preconfigured `Dockerfile` with nginx.
@@ -82,16 +81,31 @@ Deploying to other providers should be similarly simple. Just be sure to configu
 **Environment Variables**<br>
 No matter where you deploy, you'll need to configure the following environment variables:
 
-| Name                   | Example Value                  | Description                |
-| ---------------------- | ------------------------------ | -------------------------- |
-| `DATABASE_URL`         | `postgres://user:pass@host/db` | Postgres Connection String |
-| `S3_REGION`            | `example-region-1`             | S3 region                  |
-| `S3_ENDPOINT`          | `https://foo.s3.example.org`   | S3 endpoint                |
-| `S3_ACCESS_KEY_ID`     | `AKIAIOSFODNN7EXAMPLE`         | S3 Access Key ID           |
-| `S3_SECRET_ACCESS_KEY` | `bPxRfiCYEXAMPLEKEY`           | S3 Secret Access Key       |
-| `S3_PUBLIC_URL`        | `https://storage.example.org`  | S3 Public Bucket URL       |
-| `S3_BUCKET_NAME`       | `hdrop`                        | S3 Bucket Name             |
-| `CORS_ORIGIN`          | `*`                            | Allowed CORS Origin        |
+| Name                     | Example                        | Description                | Required | Default        |
+| ------------------------ | ------------------------------ | -------------------------- | -------- | -------------- |
+| `PORT`                   | `2000`                         | Listener port              | No       | `8080`         |
+| `DATABASE_URL`           | `postgres://user:pass@host/db` | Postgres Connection String | Yes      | -              |
+| `STORAGE_PROVIDER`       | `s3` / `local`                 | Storage provider           | Yes      | -              |
+| `S3_REGION`              | `example-region-1`             | S3 region                  | Yes[^1]  | -              |
+| `S3_ENDPOINT`            | `https://foo.s3.example.org`   | S3 endpoint                | Yes[^1]  | -              |
+| `S3_ACCESS_KEY_ID`       | `AKIAIOSFODNN7EXAMPLE`         | S3 Access Key ID           | Yes[^1]  | -              |
+| `S3_SECRET_ACCESS_KEY`   | `bPxRfiCYEXAMPLEKEY`           | S3 Secret Access Key       | Yes[^1]  | -              |
+| `S3_PUBLIC_URL`          | `https://storage.example.org`  | S3 Public Bucket URL       | Yes[^1]  | -              |
+| `S3_BUCKET_NAME`         | `hdrop`                        | S3 Bucket Name             | Yes[^1]  | -              |
+| `LOCAL_STORAGE_DIR`      | `/var/hdrop-storage`           | Local storage path         | No[^2]   | `./files`      |
+| `LOCAL_STORAGE_LIMIT_MB` | `250`                          | Local storage limit in MB  | No[^2]   | -              |
+| `CORS_ORIGIN`            | `*` / `example.com,foo.bar`    | Allowed CORS origins       | No       | `*`            |
+| `CACHE_STRATEGY`         | `memory` / `disk` / `hybrid`   | Cache strategy             | No       | `memory`       |
+| `CACHE_MEMORY_LIMIT_MB`  | `250`                          | Cache memory limit in MB   | No[^3]   | -              |
+| `CACHE_DISK_LIMIT_MB`    | `250`                          | Cache disk limit in MB     | No[^4]   | -              |
+| `CACHE_DIR`              | `/var/cache`                   | Cache storage directory    | No[^4]   | `./file_cache` |
+| `SINGLE_FILE_LIMIT_MB`   | `250`                          | Body limit per request     | No[^5]   | `100`          |
+
+[^1]: Only required if `STORAGE_PROVIDER` is set to `s3`
+[^2]: Not required, but recommended if `STORAGE_PROVIDER` is set to `local`
+[^3]: Not required, but recommended if `CACHE_STRATEGY` is set to `memory` or `hybrid`
+[^4]: Not required, but recommended if `CACHE_STRATEGY` is set to `disk` or `hybrid`
+[^5]: This is only `100MB` by default, so you should probably set this to something reasonable
 
 #### Docker (Recommended)
 We provide a preconfigured `Dockerfile` with pm2.

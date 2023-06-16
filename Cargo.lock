@@ -209,7 +209,7 @@ checksum = "604178f6c5c21f02dc555784810edfb88d34ac2c73b2eae109655649ee73ce3d"
 [[package]]
 name = "bincache"
 version = "0.3.2"
-source = "git+ssh://git@github.com/ZitaneLabs/bincache.git#e7db11578b5eb405628aa0f95715410a5833ea8e"
+source = "git+https://github.com/ZitaneLabs/bincache.git#e7db11578b5eb405628aa0f95715410a5833ea8e"
 dependencies = [
  "async-compression",
  "async-trait",
@@ -1525,7 +1525,7 @@ dependencies = [
 [[package]]
 name = "rust-s3-async"
 version = "0.35.0"
-source = "git+ssh://git@github.com/ZitaneLabs/rust-s3-async.git#19fd06f4d8b7d1e01e965a41c1d5b51a6d2c3b8d"
+source = "git+https://github.com/ZitaneLabs/rust-s3-async.git#19fd06f4d8b7d1e01e965a41c1d5b51a6d2c3b8d"
 dependencies = [
  "async-trait",
  "aws-creds",

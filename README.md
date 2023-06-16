@@ -5,17 +5,24 @@
 ## Features
 
 - Easy to self-host
-- End-to-end encrypted
+- Modern UI/UX
+- End-to-end encrypted (E2EE)
 - Automatic file deletion
+- Supports S3 and simple disk storage
 - No user accounts
+- Metrics included
 
 ## Docs
 
 | Name                   | Link                              |
 | ---------------------- | --------------------------------- |
+| Deployment             | [deployment.md](./docs/deployment.md) |
 | Security               | [security.md](./docs/security.md) |
 | API Spec v1 (OpenAPI)  | [api_v1.yml](./docs/api_v1.yml)   |
 | API Spec v1 (Markdown) | [api_v1.md](./docs/api_v1.md)     |
+| Full Feature List      | [features.md](./docs/features.md) |
+| Changelog              | [changelog.md](./docs/changelog.md) |
+   
 
 ## Development
 
@@ -65,7 +72,7 @@ Deploying to other providers should be similarly simple. Just be sure to configu
 **Prerequisites**<br>
 
 - Postgres database
-- S3-compatible object store<br>
+- S3-compatible object store or available disks<br>
   Examples of compatible providers include:
   - Amazon S3
   - Cloudflare R2

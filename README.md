@@ -1,5 +1,13 @@
-# hdrop
-> Simple, self-hosted encrypted file transfer.
+<h1><img src="./hdrop-web/public/logo512.png" width="32" height="32" />&nbsp;hdrop</h1>
+
+**Simple, self-hosted encrypted file transfer.**
+
+## Features
+
+- Easy to self-host
+- End-to-end encrypted
+- Automatic file deletion
+- No user accounts
 
 ## Docs
 

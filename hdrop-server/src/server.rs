@@ -142,13 +142,14 @@ impl Server {
         let server_addr = format!("{server_host}:{server_port}");
         let socket_addr = SocketAddr::from_str(&server_addr)?;
 
+        tracing::info!("Starting server on {server_addr}");
+
         // Start the server
         axum::Server::bind(&socket_addr)
             .serve(app.into_make_service())
             .await
             .unwrap_or_else(|err| panic!("Server failed to start on {server_addr}: {err:?}"));
 
-        tracing::info!("Server started on {server_addr}");
         Ok(())
     }
 }

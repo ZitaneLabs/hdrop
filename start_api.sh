@@ -4,8 +4,12 @@
 
 set -euo pipefail
 
-trap 'sudo docker compose down' EXIT SIGINT
-sudo docker compose up --build -d
+trap 'docker compose down' EXIT SIGINT
+docker compose up --build --wait -d
+
+pushd hdrop-db
+DATABASE_URL="postgres://postgres:postgres@localhost:5432/hdrop" diesel migration run
+popd
 
 cargo build --release -p hdrop-server
 export RUST_BACKTRACE=1
@@ -20,8 +24,7 @@ export S3_SECRET_ACCESS_KEY="dev"
 export DATABASE_URL="postgres://postgres:postgres@localhost:5432/hdrop"
 export CACHE_STRATEGY="memory"
 export CACHE_MEMORY_LIMIT_MB="100"
+export STORAGE_PROVIDER="s3"
 #export CACHE_DISK_LIMIT_MB="100"
 
 cargo run --release -p hdrop-server
-
-# DATABASE_URL="postgres://postgres:postgres@localhost:5432/hdrop" diesel migration redo

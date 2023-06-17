@@ -84,8 +84,6 @@ impl StorageSynchronizer {
         if let Err(err) = Self::check_and_delete_cache_entry(cache.clone(), file_uuid).await {
             tracing::error!("Could not delete file from cache: {err}");
             tokio::spawn(Self::cache_retry_worker(cache.clone(), file_uuid));
-        } else {
-            tracing::trace!("File deleted from Cache");
         }
     }
 

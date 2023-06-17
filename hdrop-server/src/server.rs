@@ -8,6 +8,7 @@ use hdrop_shared::env;
 use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 use tower_http::{
+    compression::CompressionLayer,
     cors::{AllowOrigin, Any, CorsLayer},
     limit::RequestBodyLimitLayer,
 };
@@ -128,6 +129,8 @@ impl Server {
             .with_state(self.state)
             // Limit request body size
             .layer(RequestBodyLimitLayer::new(request_body_limit_bytes))
+            // Use brotli compression if applicable
+            .layer(CompressionLayer::new())
             // Order matters! The CORS layer must be the last layer in the middleware stack.
             .layer(
                 CorsLayer::new()

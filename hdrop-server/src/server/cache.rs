@@ -1,6 +1,5 @@
 use bincache::{
-    compression::Zstd, strategies::Limits, Cache, CacheBuilder, DiskStrategy, HybridStrategy,
-    MemoryStrategy,
+    strategies::Limits, Cache, CacheBuilder, DiskStrategy, HybridStrategy, MemoryStrategy, Noop,
 };
 use hdrop_shared::env;
 use std::{borrow::Cow, path::PathBuf};
@@ -8,12 +7,12 @@ use uuid::Uuid;
 
 use crate::{utils::mb_to_bytes, Result};
 
-type ZstdCache<S> = Cache<Uuid, S, Zstd>;
+type FileCache<S> = Cache<Uuid, S, Noop>;
 
 pub enum CacheVariant {
-    Memory(ZstdCache<MemoryStrategy>),
-    Disk(ZstdCache<DiskStrategy>),
-    Hybrid(ZstdCache<HybridStrategy>),
+    Memory(FileCache<MemoryStrategy>),
+    Disk(FileCache<DiskStrategy>),
+    Hybrid(FileCache<HybridStrategy>),
 }
 
 impl CacheVariant {
@@ -27,14 +26,12 @@ impl CacheVariant {
             "memory" => Ok(CacheVariant::Memory(
                 CacheBuilder::default()
                     .with_strategy(MemoryStrategy::new(memory_byte_limit, None))
-                    .with_compression(Zstd::default())
                     .build()
                     .await?,
             )),
             "disk" => Ok(CacheVariant::Disk(
                 CacheBuilder::default()
                     .with_strategy(DiskStrategy::new(cache_dir, disk_byte_limit, None))
-                    .with_compression(Zstd::default())
                     .build()
                     .await?,
             )),
@@ -44,7 +41,6 @@ impl CacheVariant {
                 Ok(CacheVariant::Hybrid(
                     CacheBuilder::default()
                         .with_strategy(HybridStrategy::new(cache_dir, memory_limits, disk_limits))
-                        .with_compression(Zstd::default())
                         .build()
                         .await?,
                 ))

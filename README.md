@@ -99,13 +99,14 @@ No matter where you deploy, you'll need to configure the following environment v
 | `CACHE_MEMORY_LIMIT_MB`  | `250`                          | Cache memory limit in MB   | No[^3]   | -              |
 | `CACHE_DISK_LIMIT_MB`    | `250`                          | Cache disk limit in MB     | No[^4]   | -              |
 | `CACHE_DIR`              | `/var/cache`                   | Cache storage directory    | No[^4]   | `./file_cache` |
-| `SINGLE_FILE_LIMIT_MB`   | `250`                          | Body limit per request     | No[^5]   | `100`          |
+| `SINGLE_FILE_LIMIT_MB`   | `250`                          | File upload limit[^5]      | No[^6]   | `100`          |
 
 [^1]: Only required if `STORAGE_PROVIDER` is set to `s3`
 [^2]: Not required, but recommended if `STORAGE_PROVIDER` is set to `local`
 [^3]: Not required, but recommended if `CACHE_STRATEGY` is set to `memory` or `hybrid`
 [^4]: Not required, but recommended if `CACHE_STRATEGY` is set to `disk` or `hybrid`
-[^5]: This is only `100MB` by default, so you should probably set this to something reasonable
+[^5]: The file upload limit is the total body limit per request
+[^6]: This is only `100MB` by default, so you should probably set this to something reasonable
 
 #### Docker (Recommended)
 We provide a preconfigured `Dockerfile` with pm2.

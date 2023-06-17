@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bincache::{compression::Zstd, Cache, CacheBuilder, DiskStrategy};
+use bincache::{Cache, CacheBuilder, DiskStrategy, Noop};
 use hdrop_shared::env;
 use std::path::PathBuf;
 
@@ -8,7 +8,7 @@ use crate::{utils::mb_to_bytes, Result};
 
 #[derive(Debug)]
 pub struct OnPremiseProvider {
-    storage: Cache<String, DiskStrategy, Zstd>,
+    storage: Cache<String, DiskStrategy, Noop>,
 }
 
 impl OnPremiseProvider {
@@ -19,7 +19,6 @@ impl OnPremiseProvider {
         Ok(Self {
             storage: CacheBuilder::default()
                 .with_strategy(DiskStrategy::new(storage_path, storage_limit_mb, None))
-                .with_compression(Zstd::default())
                 .build()
                 .await?,
         })

@@ -1,13 +1,14 @@
-import { AesGcm, DataBundle, Pbkdf2 } from './'
+import { AesGcm, Base64, DataBundle, DerivedKey } from './'
 
 export default class CryptoHelper {
-    static async encrypt(data: BufferSource, password: string): Promise<DataBundle> {
-        const derived_key = await Pbkdf2.deriveKey(password)
-        const aes_bundle = await AesGcm.encrypt(data, derived_key.key)
-        return new DataBundle(derived_key, aes_bundle)
+    static generatePassword(): string {
+        const length = Number.parseInt(process.env.NEXT_PUBLIC_PASSWORD_BYTES ?? '32')
+        const bytes = crypto.getRandomValues(new Uint8Array(length))
+        return Base64.encode(bytes)
     }
 
-    static async decrypt(data: DataBundle): Promise<ArrayBuffer> {
-        return await AesGcm.decrypt(data.aes_bundle.data, data.derived_key.key, data.aes_bundle.iv)
+    static generateChallenge(): Uint8Array {
+        const length = Number.parseInt(process.env.NEXT_PUBLIC_CHALLENGE_BYTES ?? '32')
+        return crypto.getRandomValues(new Uint8Array(length))
     }
 }

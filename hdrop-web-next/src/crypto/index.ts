@@ -1,5 +1,5 @@
 export { default as AesGcm, AesBundle } from './AesGcm'
 export { default as Base64 } from './Base64'
 export { default as CryptoHelper } from './CryptoHelper'
-export { default as DataBundle } from './DataBundle'
 export { default as Pbkdf2, DerivedKey } from './Pbkdf2'
+export { default as Sha256 } from './Sha256'

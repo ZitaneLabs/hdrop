@@ -3,27 +3,24 @@ export class AesBundle {
 }
 
 export default class AesGcm {
-    static async encrypt(data: BufferSource, key: CryptoKey): Promise<AesBundle> {
+    static generateParams(): AesGcmParams {
         const iv = crypto.getRandomValues(new Uint8Array(12))
-        let params: AesGcmParams = {
+        return {
             name: 'AES-GCM',
             iv,
             tagLength: 128,
         }
-        const encryptedData = await crypto.subtle.encrypt(
+    }
+
+    static async encrypt(data: BufferSource, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
+        return await crypto.subtle.encrypt(
             params,
             key,
             data
         )
-        return new AesBundle(iv, encryptedData)
     }
 
-    static async decrypt(data: BufferSource, key: CryptoKey, iv: Uint8Array): Promise<ArrayBuffer> {
-        let params: AesGcmParams = {
-            name: 'AES-GCM',
-            iv,
-            tagLength: 128,
-        }
+    static async decrypt(data: BufferSource, key: CryptoKey, iv: Uint8Array, params: AesGcmParams): Promise<ArrayBuffer> {
         return await crypto.subtle.decrypt(
             params,
             key,

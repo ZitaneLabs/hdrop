@@ -9,8 +9,12 @@ use axum::{
     Json,
 };
 use chrono::Utc;
-use hdrop_db::{Database, InsertFile};
-use hdrop_shared::{requests as request, responses as response, ErrorData, Response, ResponseData};
+use hdrop_db::{Database, File, InsertFile};
+use hdrop_shared::{
+    requests as request,
+    responses::{self as response, FileMetaData},
+    ErrorData, Response, ResponseData,
+};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -57,7 +61,8 @@ pub async fn upload_file(
         updateToken: update_token.clone(),
         dataUrl: None,
         fileNameData: data.file_name_data,
-        fileNameHash: data.file_name_hash,
+        challengeData: data.challenge_data,
+        challengeHash: data.challenge_hash,
         salt: data.salt,
         iv: data.iv,
         createdAt: time,
@@ -109,11 +114,48 @@ pub async fn upload_file(
 pub async fn get_file(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
-) -> Json<Response<response::FileMetaData>> {
-    let Ok(file_metadata) = state.database.get_file_metadata(access_token).await else {
-        return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
+) -> impl IntoResponse {
+    let Ok(file_entry) = state.database.get_file_by_access_token(&access_token).await else {
+        return Json(Response::new(ResponseData::<()>::Error(ErrorData { reason: "No file found for given access token".to_string() }))).into_response()
     };
-    Json(Response::new(ResponseData::Success(file_metadata)))
+
+    match file_entry.dataUrl {
+        Some(_) => Json(Response::new(ResponseData::Success(FileMetaData {
+            file_url: file_entry.dataUrl,
+        })))
+        .into_response(),
+        None => get_raw_file_bytes(State(state), file_entry)
+            .await
+            .into_response(),
+    }
+}
+
+pub async fn get_raw_file_bytes(
+    State(state): State<Arc<AppState>>,
+    file_entry: File,
+) -> impl IntoResponse {
+    // Check for file in cache
+    let cache = state.cache.read().await;
+    if let Ok(data) = cache.get(file_entry.uuid).await {
+        return data.into_owned().into_response();
+    }
+
+    // Check for file in provider
+    let provider = state.provider.read().await;
+    if let Ok(fetched_data) = provider.get_file(file_entry.uuid.to_string()).await {
+        match fetched_data {
+            Fetchtype::FileData(data) => data.to_vec().into_response(),
+            Fetchtype::FileUrl(_) => Json(Response::new(ResponseData::<()>::Error(ErrorData {
+                reason: "Unable to locate file data".to_string(),
+            })))
+            .into_response(),
+        }
+    } else {
+        Json(Response::new(ResponseData::<()>::Error(ErrorData {
+            reason: "Error in StorageProvider".to_string(), // ToDo: Statuscode with err code matchen
+        })))
+        .into_response()
+    }
 }
 
 pub async fn delete_file(
@@ -191,42 +233,6 @@ pub async fn update_file_expiry(
     }
 }
 
-pub async fn get_raw_file_bytes(
-    State(state): State<Arc<AppState>>,
-    Path(access_token): Path<String>,
-) -> impl IntoResponse {
-    let file_entry = state.database.get_file_by_access_token(access_token).await;
-    let Ok(file_entry) = file_entry else {
-        return Json(Response::new(ResponseData::<()>::Error(ErrorData {
-            reason: "File does not exist".to_string(),
-        })))
-        .into_response();
-    };
-
-    // Check for file in cache
-    let cache = state.cache.read().await;
-    if let Ok(data) = cache.get(file_entry.uuid).await {
-        return data.into_owned().into_response();
-    }
-
-    // Check for file in provider
-    let provider = state.provider.read().await;
-    if let Ok(fetched_data) = provider.get_file(file_entry.uuid.to_string()).await {
-        match fetched_data {
-            Fetchtype::FileData(data) => data.to_vec().into_response(),
-            Fetchtype::FileUrl(_) => Json(Response::new(ResponseData::<()>::Error(ErrorData {
-                reason: "Unable to locate file data".to_string(),
-            })))
-            .into_response(),
-        }
-    } else {
-        Json(Response::new(ResponseData::<()>::Error(ErrorData {
-            reason: "Unable to locate file data".to_string(),
-        })))
-        .into_response()
-    }
-}
-
 pub async fn get_challenge(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
@@ -243,12 +249,12 @@ pub async fn verify_challenge(
     Path(access_token): Path<String>,
     Json(json_data): Json<request::ChallengeData>,
 ) -> Json<Response<response::VerifyChallengeData>> {
-    let Ok(mut verify_challenge_data) = state.database.get_hash(access_token).await else {
+    let Ok(mut verify_challenge_data) = state.database.get_verification_data(access_token).await else {
         return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
     };
 
-    if verify_challenge_data.file_name_hash == Some(json_data.challenge) {
-        verify_challenge_data.file_name_hash = None;
+    if verify_challenge_data.challenge_hash == Some(json_data.challenge) {
+        verify_challenge_data.challenge_hash = None;
         Json(Response::new(ResponseData::Success(verify_challenge_data)))
     } else {
         Json(Response::new(ResponseData::Error(ErrorData {

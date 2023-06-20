@@ -121,7 +121,6 @@ impl Server {
             )
             .route("/v1/files/:access_token", get(get_file).delete(delete_file))
             .route("/v1/files/:access_token/expiry", post(update_file_expiry))
-            .route("/v1/files/:access_token/raw", get(get_raw_file_bytes))
             .route(
                 "/v1/files/:access_token/challenge",
                 get(get_challenge).post(verify_challenge),

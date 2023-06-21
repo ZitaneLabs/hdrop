@@ -7,30 +7,21 @@ export default async function authenticated(req: Request, res: Response, next: N
     // Check for access token
     if (typeof accessToken !== 'string') {
         return res.status(400).json({
-            status: 'error',
-            data: {
-                reason: 'Missing access token'
-            }
+            reason: 'Missing access token'
         })
     }
 
     // Check for update token
     if (typeof updateToken !== 'string') {
         return res.status(400).json({
-            status: 'error',
-            data: {
-                reason: 'Missing update token'
-            }
+            reason: 'Missing update token'
         })
     }
 
     // Validate tokens
     if (!await req.context.dbClient.validateTokens(accessToken, updateToken)) {
         return res.status(401).json({
-            status: 'error',
-            data: {
-                reason: 'Invalid access- or update-token'
-            }
+            reason: 'Invalid access- or update-token'
         })
     }
 

@@ -5,10 +5,7 @@ export default async function validateAccessToken(req: Request, res: Response, n
 
     if (!await req.context.dbClient.accessTokenExists(accessToken)) {
         return res.status(404).json({
-            status: 'error',
-            data: {
-                reason: 'File not found'
-            }
+            reason: 'File not found'
         })
     }
 

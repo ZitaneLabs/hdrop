@@ -12,6 +12,14 @@ export default class AesGcm {
         }
     }
 
+    static restoreParams(iv: Uint8Array): AesGcmParams {
+        return {
+            name: 'AES-GCM',
+            iv,
+            tagLength: 128,
+        }
+    }
+
     static async encrypt(data: BufferSource, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
         return await crypto.subtle.encrypt(
             params,
@@ -20,7 +28,7 @@ export default class AesGcm {
         )
     }
 
-    static async decrypt(data: BufferSource, key: CryptoKey, iv: Uint8Array, params: AesGcmParams): Promise<ArrayBuffer> {
+    static async decrypt(data: BufferSource, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
         return await crypto.subtle.decrypt(
             params,
             key,

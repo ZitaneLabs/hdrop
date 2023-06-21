@@ -1,6 +1,8 @@
 # API Spec
 
-### API v1
+This is the initial API spec for hdrop, which was used for the MVP. It has been replaced by the [API v1](./api_v1.md) spec.
+
+### API v0
 
 ##### Error Response Format
 ```json
@@ -12,7 +14,7 @@
 }
 ```
 
-#### `POST /v1/files`
+#### `POST /v0/files`
 > Upload a file.
 
 ##### Request
@@ -39,7 +41,7 @@
 }
 ```
 
-#### `POST /v1/files/{access_token}/expiry`
+#### `POST /v0/files/{access_token}/expiry`
 > Update the expiration time for a file.
 
 ##### Request
@@ -66,7 +68,7 @@
 }
 ```
 
-#### `DELETE /v1/files/{access_token}`
+#### `DELETE /v0/files/{access_token}`
 > Delete a file.
 
 ##### Request
@@ -86,7 +88,7 @@
 }
 ```
 
-#### `GET /v1/files/{access_token}`
+#### `GET /v0/files/{access_token}`
 > Retrieve file metadata.
 
 ##### Response
@@ -104,14 +106,14 @@
 }
 ```
 
-#### `GET /v1/files/{access_token}/raw`
+#### `GET /v0/files/{access_token}/raw`
 > Retrieve the raw encrypted file bytes.
 
 ##### Response
 > Success Type: `application/octet-stream`
 > Error Type: `application/json`
 
-### `GET /v1/files/{access_token}/challenge`
+### `GET /v0/files/{access_token}/challenge`
 > Get a challenge for a file.
 
 ##### Response
@@ -128,7 +130,7 @@
 }
 ```
 
-#### `POST /v1/files/{access_token}/challenge`
+#### `POST /v0/files/{access_token}/challenge`
 > Verify a challenge for a file.
 
 ##### Request

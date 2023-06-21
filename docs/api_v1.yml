@@ -1,330 +1,261 @@
-openapi: 3.0.3
+openapi: 3.1.0
 
 info:
   title: hdrop API v1
   description: Full specification for the hdrop API v1.
   version: 1.0.0
-  contact:
-    email: splittydev@gmail.com
 
 servers:
-  - url: https://hdrop.io/api/v1
+  - url: https://api.hdrop.io/v1
+    description: The official hdrop server
+  - url: https://api-staging.hdrop.io/v1
+    description: The official hdrop staging server
 
 tags:
   - name: files
-    description: Endpoints for manipulating files
+    description: File operations
+  - name: challenge
+    description: Challenges are used to unambiguously verify that a user has access to a specific file.
 
 paths:
-  /v1/files:
+  /files:
     post:
       summary: Upload a file
-      description: Upload a file
       tags:
         - files
       operationId: uploadFile
+      security: []
       requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UploadFileRequest'
-        required: true
+        $ref: '#/components/requestBodies/UploadFile'
       responses:
         '201':
-          description: File created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UploadFileResponse'
-        '400':
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
-  /v1/files/{access_token}:
+          $ref: "#/components/responses/UploadFile"
+        '4xx':
+          $ref: "#/components/responses/Error"
+        '5xx':
+          $ref: "#/components/responses/Error"
+
+  /files/{access_token}:
     get:
       summary: Access a file
-      description: Access a file
       tags:
         - files
       operationId: accessFile
+      security:
+        - BearerAuth: []
       parameters:
-        - name: access_token
-          in: path
-          description: Access token for the file
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/access_token'
       responses:
         '200':
-          description: File information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AccessFileResponse'
-        '404':
-          description: File not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: "#/components/responses/AccessFile"
+        '4xx':
+          $ref: "#/components/responses/Error"
+        '5xx':
+          $ref: "#/components/responses/Error"
     delete:
       summary: Delete a file
-      description: Delete a file
       tags:
         - files
       operationId: deleteFile
+      security: []
       parameters:
-        - name: access_token
-          in: path
-          description: Access token for the file
-          required: true
-          schema:
-            type: string
-        - name: update_token
-          in: query
-          description: Update token for the file
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/access_token"
+        - $ref: "#/components/parameters/update_token"
       responses:
         '200':
-          description: File deleted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '401':
-          description: Invalid update token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: File not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: "#/components/responses/Success"
+        '4xx':
+          $ref: "#/components/responses/Error"
+        '5xx':
+          $ref: "#/components/responses/Error"
 
-  /v1/files/{access_token}/expiry:
+  /files/{access_token}/expiry:
     post:
-      summary: Update a file's expiry
-      description: Update a file's expiry
+      summary: Set file expiry
       tags:
         - files
-      operationId: updateFileExpiry
+      operationId: setFileExpiry
+      security: []
       parameters:
-        - name: access_token
-          in: path
-          description: Access token for the file
-          required: true
-          schema:
-            type: string
-        - name: update_token
-          in: query
-          description: Update token for the file
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/access_token"
+        - $ref: "#/components/parameters/update_token"
       requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                expiry:
-                  type: integer
-                  example: 3600
-        required: true
+        $ref: "#/components/requestBodies/SetFileExpiry"
       responses:
         '200':
-          description: File updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Invalid update token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: File not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
-  /v1/files/{access_token}/metadata:
+          $ref: "#/components/responses/Success"
+        '4xx':
+          $ref: "#/components/responses/Error"
+        '5xx':
+          $ref: "#/components/responses/Error"
+
+  /files/{access_token}/challenge:
     get:
-      summary: Access a file
-      description: Access a file
+      summary: Get a challenge
       tags:
-        - files
-      operationId: accessFileMetadata
+        - challenge
+      operationId: getChallenge
+      security: []
       parameters:
-        - name: access_token
-          in: path
-          description: Access token for the file
-          required: true
+        - $ref: '#/components/parameters/access_token'
+      responses:
+        '200':
+          $ref: "#/components/responses/GetChallenge"
+        '4xx':
+          $ref: "#/components/responses/Error"
+        '5xx':
+          $ref: "#/components/responses/Error"
+    post:
+      summary: Submit a challenge
+      tags:
+        - challenge
+      operationId: submitChallenge
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/access_token'
+      requestBody:
+        $ref: "#/components/requestBodies/SubmitChallenge"
+      responses:
+        '200':
+          $ref: "#/components/responses/SubmitChallenge"
+        '4xx':
+          $ref: "#/components/responses/Error"
+        '5xx':
+          $ref: "#/components/responses/Error"
+
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    access_token:
+      required: true
+      name: access_token
+      in: path
+      description: Access token for the file
+      schema:
+        type: string
+    update_token:
+      required: true
+      name: update_token
+      in: query
+      description: Update token for the file
+      schema:
+        type: string
+  requestBodies:
+    UploadFile:
+      required: true
+      description: Upload a file
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              iv:
+                type: string
+                format: base64
+              salt:
+                type: string
+                format: base64
+              file_data:
+                type: string
+                format: binary
+              file_name_data:
+                type: string
+                format: base64
+              challenge_data:
+                type: string
+                format: base64
+              challenge_hash:
+                type: string
+    SetFileExpiry:
+      required: true
+      description: Set file expiry
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              expiry:
+                description: Expiry time in seconds
+                type: number
+    SubmitChallenge:
+      required: true
+      description: Submit a challenge
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              challenge:
+                type: string
+  responses:
+    Error:
+      description: Common error response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason:
+                type: string
+    Success:
+      description: Common success response
+      content:
+        application/json:
+          schema:
+            type: object
+    UploadFile:
+      description: File uploaded
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              access_token:
+                type: string
+              update_token:
+                type: string
+    GetChallenge:
+      description: Challenge obtained
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              salt:
+                type: string
+                format: base64
+              iv:
+                type: string
+                format: base64
+              challenge:
+                type: string
+                format: base64
+    SubmitChallenge:
+      description: Challenge result
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              file_name_data:
+                description: Encrypted file name
+                type: string
+                format: base64
+    AccessFile:
+      description: File details
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              file_url:
+                description: Direct download URL for the file
+                type: string
+        application/octet-stream:
           schema:
             type: string
-      responses:
-        '200':
-          description: File metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AccessFileMetadataResponse'
-        '404':
-          description: File not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          
-components:
-  schemas:
-    #
-    # Templates
-    #
-    
-    BasicResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [success, error]
-
-    SuccessResponse:
-      allOf:
-        - $ref: '#/components/schemas/BasicResponse'
-        - type: object
-          properties:
-            status:
-              type: string
-              default: "success"
-    
-    ErrorResponse:
-      allOf:
-        - $ref: '#/components/schemas/BasicResponse'
-        - type: object
-          properties:
-            status:
-              type: string
-              default: "error"
-            data:
-              type: object
-              properties:
-                reason:
-                  type: string
-    
-    #
-    # Requests
-    #
-    
-    UploadFileRequest:
-      type: object
-      properties:
-        file_data:
-          type: string
-          format: base64
-          example: "bHVsdWx1LnR4dA=="
-        file_name_data:
-          type: string
-          format: base64
-          example: "SGVsbG8sIHdvcmxkIQ=="
-        file_extension:
-          type: string
-          example: "txt"
-        iv:
-          type: string
-          format: base64
-          example: "MDAwMDAwMDAwMDAw"
-        salt:
-          type: string
-          format: base64
-          example: "MDAwMDAwMDAwMDAwMDAwMA=="
-    
-    #
-    # Responses
-    #
-    
-    UploadFileResponse:
-      allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
-        - type: object
-          properties:
-            status:
-              type: string
-              default: "success"
-            data:
-              type: object
-              properties:
-                access_token:
-                  type: string
-                  example: "abc123"
-                update_token:
-                  type: string
-                  example: "qec61jytfzj"
-    
-    AccessFileResponse:
-      allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
-        - type: object
-          properties:
-            status:
-              type: string
-              default: "success"
-            data:
-              type: object
-              properties:
-                file_data:
-                  type: string
-                  format: base64
-                  example: "bHVsdWx1LnR4dA=="
-                file_name_data:
-                  type: string
-                  format: base64
-                  example: "SGVsbG8sIHdvcmxkIQ=="
-                iv:
-                  type: string
-                  format: base64
-                  example: "MDAwMDAwMDAwMDAw"
-                salt:
-                  type: string
-                  format: base64
-                  example: "MDAwMDAwMDAwMDAwMDAwMA=="
-
-    AccessFileMetadataResponse:
-      allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
-        - type: object
-          properties:
-            status:
-              type: string
-              default: "success"
-            data:
-              type: object
-              properties:
-                file_name_data:
-                  type: string
-                  format: base64
-                  example: "SGVsbG8sIHdvcmxkIQ=="
-                iv:
-                  type: string
-                  format: base64
-                  example: "MDAwMDAwMDAwMDAw"
-                salt:
-                  type: string
-                  format: base64
-                  example: "MDAwMDAwMDAwMDAwMDAwMA=="
+            format: binary

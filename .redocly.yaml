@@ -1,0 +1,8 @@
+organization: ZitaneLabs
+
+extends:
+  -  recommended
+
+apis:
+  hdrop@v1:
+    root: ./docs/api_v1.yml

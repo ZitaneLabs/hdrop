@@ -6,7 +6,7 @@ import { toast, Toaster } from "react-hot-toast"
 import { Cpu, Key } from "lucide-react"
 import Wave from "react-wavify"
 
-import Downloader, { DownloadPhase, DownloadResult } from "@/api/Downloader"
+import { Downloader, DownloadPhase, DownloadResult } from "@/api"
 import { Switch, Match as UntypedMatch, PasswordField, FilePreview } from "@/components"
 
 const Match = UntypedMatch<DownloadPhase | null>
@@ -25,7 +25,6 @@ export default function DownloadFilePage() {
     const [progress, setProgress] = useState<number>(0)
     const [fileName, setFileName] = useState<string | null>(null)
     const [result, setResult] = useState<DownloadResult | null>(null)
-    const [error, setError] = useState<string | null>(null)
 
     const password = useMemo(() => {
         return hashPassword ?? userPassword
@@ -52,7 +51,9 @@ export default function DownloadFilePage() {
             }
         }).catch(e => {
             console.error(e)
-            toast.error(e.message)
+            toast.error(e.message, {
+                duration: 10000,
+            })
         })
     }, [accessToken, password])
 

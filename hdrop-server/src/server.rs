@@ -21,8 +21,7 @@ mod routes;
 use app_state::AppState;
 pub use cache::CacheVariant;
 use routes::{
-    delete_file, get_challenge, get_file, get_raw_file_bytes, update_file_expiry, upload_file,
-    verify_challenge,
+    delete_file, get_challenge, get_file, update_file_expiry, upload_file, verify_challenge,
 };
 
 use crate::{
@@ -121,7 +120,6 @@ impl Server {
             )
             .route("/v1/files/:access_token", get(get_file).delete(delete_file))
             .route("/v1/files/:access_token/expiry", post(update_file_expiry))
-            .route("/v1/files/:access_token/raw", get(get_raw_file_bytes))
             .route(
                 "/v1/files/:access_token/challenge",
                 get(get_challenge).post(verify_challenge),

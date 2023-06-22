@@ -117,15 +117,14 @@ impl Database {
             .await??)
     }
 
-    pub async fn get_hash<'a>(
+    pub async fn get_verification_data<'a>(
         &self,
         access_token: impl Into<Cow<'a, str>>,
     ) -> Result<responses::VerifyChallengeData> {
         let file = self.get_file_by_access_token(access_token).await?;
         Ok(responses::VerifyChallengeData {
-            file_name_hash: Some(file.fileNameHash),
-            iv: file.iv,
-            salt: file.salt,
+            challenge_hash: Some(file.challengeHash),
+            file_name_data: file.fileNameData,
         })
     }
 
@@ -136,9 +135,6 @@ impl Database {
         let file = self.get_file_by_access_token(access_token).await?;
         Ok(responses::FileMetaData {
             file_url: file.dataUrl,
-            file_name_data: file.fileNameData,
-            iv: file.iv,
-            salt: file.salt,
         })
     }
 
@@ -163,9 +159,9 @@ impl Database {
         let file = self.get_file_by_access_token(access_token).await?;
 
         Ok(responses::GetChallengeData {
-            challenge: file.fileNameData,
-            iv: file.iv,
             salt: file.salt,
+            iv: file.iv,
+            challenge: file.fileNameData,
         })
     }
 

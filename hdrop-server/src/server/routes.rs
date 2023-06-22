@@ -9,12 +9,22 @@ use axum::{
     Json,
 };
 use chrono::Utc;
-use hdrop_db::{Database, InsertFile};
-use hdrop_shared::{requests as request, responses as response, ErrorData, Response, ResponseData};
+use hdrop_db::{Database, File, InsertFile};
+use hdrop_shared::{
+    requests as request,
+    responses::{FileMetaData, GetChallengeData, UploadFileData, VerifyChallengeData},
+};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::{background_workers::storage_synchronizer::ProviderSyncEntry, core::Fetchtype};
+use crate::{
+    background_workers::{
+        expiration_worker::ExpirationWorker, storage_synchronizer::ProviderSyncEntry,
+    },
+    core::Fetchtype,
+    error::Error,
+    Result,
+};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct UpdateTokenQuery {
@@ -26,29 +36,16 @@ pub struct UpdateTokenQuery {
 pub async fn upload_file(
     State(state): State<Arc<AppState>>,
     multipart_formdata: Multipart,
-) -> Json<Response<response::UploadFileData>> {
+) -> Result<Json<UploadFileData>> {
     // Parse multipart formdata
-    let data: UploadedFile = match PartialUploadedFile::from_multipart(multipart_formdata)
+    let data: UploadedFile = PartialUploadedFile::from_multipart(multipart_formdata)
         .await
-        .try_into()
-    {
-        Ok(x) => x,
-        Err(reason) => {
-            return Json(Response::new(ResponseData::Error(ErrorData {
-                reason: format!("{reason}"),
-            })))
-        }
-    };
+        .try_into()?;
 
     // Upload to StorageProvider & update DB (S3 etc.)
     let uuid = Uuid::new_v4();
 
-    let access_token = state
-        .database
-        .generate_access_token()
-        .await
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
-        .unwrap();
+    let access_token = state.database.generate_access_token().await?;
     let update_token = Database::generate_update_token();
     let time = Utc::now();
     let file = InsertFile {
@@ -57,7 +54,8 @@ pub async fn upload_file(
         updateToken: update_token.clone(),
         dataUrl: None,
         fileNameData: data.file_name_data,
-        fileNameHash: data.file_name_hash,
+        challengeData: data.challenge_data,
+        challengeHash: data.challenge_hash,
         salt: data.salt,
         iv: data.iv,
         createdAt: time,
@@ -65,12 +63,7 @@ pub async fn upload_file(
     };
 
     // Inser Partial File into DB
-    let _ = state
-        .database
-        .insert_file(file)
-        .await
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
-        .unwrap();
+    let _ = state.database.insert_file(file).await?;
 
     // Cache to ensure instant availability after upload
     state
@@ -78,9 +71,7 @@ pub async fn upload_file(
         .write()
         .await
         .put(uuid, data.file_data.to_vec())
-        .await
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
-        .unwrap();
+        .await?;
 
     // S3
     let provider_sync_entry = ProviderSyncEntry {
@@ -91,68 +82,80 @@ pub async fn upload_file(
         cache: state.cache.clone(),
     };
 
-    // Send file for upload, db update & cache clearance to S3 Synchronization thread
+    // Send file for upload, db update & cache clearance to storage synchronization thread
     state
         .provider_sync_tx
         .send(provider_sync_entry)
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
-        .unwrap();
+        .expect("Unable to send data to the storage synchronizer");
 
-    Json(Response::new(ResponseData::Success(
-        response::UploadFileData {
-            access_token,
-            update_token,
-        },
-    )))
+    Ok(Json(UploadFileData {
+        access_token,
+        update_token,
+    }))
 }
 
 pub async fn get_file(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
-) -> Json<Response<response::FileMetaData>> {
-    let Ok(file_metadata) = state.database.get_file_metadata(access_token).await else {
-        return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
-    };
-    Json(Response::new(ResponseData::Success(file_metadata)))
+) -> Result<impl IntoResponse> {
+    let file_entry = state
+        .database
+        .get_file_by_access_token(&access_token)
+        .await?;
+
+    match file_entry.dataUrl {
+        Some(_) => Ok(Json(FileMetaData {
+            file_url: file_entry.dataUrl,
+        })
+        .into_response()),
+        None => Ok(get_raw_file_bytes(State(state), file_entry)
+            .await?
+            .into_response()),
+    }
+}
+
+pub async fn get_raw_file_bytes(
+    State(state): State<Arc<AppState>>,
+    file_entry: File,
+) -> Result<impl IntoResponse> {
+    // Check for file in cache
+    let cache = state.cache.read().await;
+    if let Ok(data) = cache.get(file_entry.uuid).await {
+        return Ok(data.into_owned().into_response());
+    }
+
+    // Check for file in provider
+    let provider = state.provider.read().await;
+    let fetched_data = provider.get_file(file_entry.uuid.to_string()).await?;
+    match fetched_data {
+        Fetchtype::FileData(data) => Ok(data.to_vec().into_response()),
+        Fetchtype::FileUrl(_) => Err(Error::InvalidFile),
+    }
 }
 
 pub async fn delete_file(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
     Query(query): Query<UpdateTokenQuery>,
-) -> Json<Response<()>> {
+) -> Result<Json<()>> {
     let file = state
         .database
         .get_file_by_access_token(&access_token)
-        .await
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
-        .unwrap();
+        .await?;
 
     if file.updateToken == query.update_token {
         // Delete file
-        if let Ok(()) = state
-            .provider
-            .write()
-            .await
-            .delete_file(file.uuid.to_string())
-            .await
-        {
-            state
-                .database
-                .delete_file_by_uuid(file.uuid)
-                .await
-                .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
-                .unwrap();
-            Json(Response::new(ResponseData::Success(())))
-        } else {
-            Json(Response::new(ResponseData::Error(ErrorData {
-                reason: "File deletion Failed".to_string(),
-            })))
-        }
+        let deletion_worker = ExpirationWorker::new(
+            state.provider.clone(),
+            state.database.clone(),
+            state.cache.clone(),
+        );
+
+        deletion_worker.delete_file(file.uuid).await?;
+        Ok(Json(()))
     } else {
-        Json(Response::new(ResponseData::Error(ErrorData {
-            reason: "Wrong update token".to_string(),
-        })))
+        Err(Error::UpdateToken)
     }
 }
 
@@ -161,98 +164,48 @@ pub async fn update_file_expiry(
     Path(access_token): Path<String>,
     Query(query): Query<UpdateTokenQuery>,
     Json(expiry_data): Json<request::ExpiryData>,
-) -> Json<Response<()>> {
+) -> Result<Json<()>> {
     let mut file = state
         .database
         .get_file_by_access_token(access_token)
-        .await
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
-        .unwrap();
+        .await?;
 
     if expiry_data.expiry > 86400 {
-        return Json(Response::new(ResponseData::Error(ErrorData {
-            reason: "Expiry time above max allowed expiry time".to_string(),
-        })));
+        return Err(Error::InvalidExpiry);
     }
 
     if file.updateToken == query.update_token {
         file.expiresAt = file.createdAt + chrono::Duration::seconds(expiry_data.expiry);
-        state
-            .database
-            .update_file_expiry(file)
-            .await
-            .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
-            .unwrap();
-        Json(Response::new(ResponseData::Success(())))
+        state.database.update_file_expiry(file).await?;
+
+        Ok(Json(()))
     } else {
-        Json(Response::new(ResponseData::Error(ErrorData {
-            reason: "Wrong update token".to_string(),
-        })))
-    }
-}
-
-pub async fn get_raw_file_bytes(
-    State(state): State<Arc<AppState>>,
-    Path(access_token): Path<String>,
-) -> impl IntoResponse {
-    let file_entry = state.database.get_file_by_access_token(access_token).await;
-    let Ok(file_entry) = file_entry else {
-        return Json(Response::new(ResponseData::<()>::Error(ErrorData {
-            reason: "File does not exist".to_string(),
-        })))
-        .into_response();
-    };
-
-    // Check for file in cache
-    let cache = state.cache.read().await;
-    if let Ok(data) = cache.get(file_entry.uuid).await {
-        return data.into_owned().into_response();
-    }
-
-    // Check for file in provider
-    let provider = state.provider.read().await;
-    if let Ok(fetched_data) = provider.get_file(file_entry.uuid.to_string()).await {
-        match fetched_data {
-            Fetchtype::FileData(data) => data.to_vec().into_response(),
-            Fetchtype::FileUrl(_) => Json(Response::new(ResponseData::<()>::Error(ErrorData {
-                reason: "Unable to locate file data".to_string(),
-            })))
-            .into_response(),
-        }
-    } else {
-        Json(Response::new(ResponseData::<()>::Error(ErrorData {
-            reason: "Unable to locate file data".to_string(),
-        })))
-        .into_response()
+        Err(Error::UpdateToken)
     }
 }
 
 pub async fn get_challenge(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
-) -> Json<Response<response::GetChallengeData>> {
-    let Ok(get_challenge_data) = state.database.get_challenge(access_token).await else {
-        return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
-    };
+) -> Result<Json<GetChallengeData>> {
+    let get_challenge_data = state.database.get_challenge(access_token).await?;
 
-    Json(Response::new(ResponseData::Success(get_challenge_data)))
+    Ok(Json(get_challenge_data))
 }
 
 pub async fn verify_challenge(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
     Json(json_data): Json<request::ChallengeData>,
-) -> Json<Response<response::VerifyChallengeData>> {
-    let Ok(mut verify_challenge_data) = state.database.get_hash(access_token).await else {
-        return Json(Response::new(ResponseData::Error(ErrorData { reason: "No file found for given access token".to_string() })))
-    };
+) -> Result<Json<VerifyChallengeData>> {
+    let mut verify_challenge_data = state.database.get_verification_data(access_token).await?;
 
-    if verify_challenge_data.file_name_hash == Some(json_data.challenge) {
-        verify_challenge_data.file_name_hash = None;
-        Json(Response::new(ResponseData::Success(verify_challenge_data)))
+    if verify_challenge_data.challenge_hash == Some(json_data.challenge) {
+        verify_challenge_data.challenge_hash = None;
+        let response = Json(verify_challenge_data);
+
+        Ok(response)
     } else {
-        Json(Response::new(ResponseData::Error(ErrorData {
-            reason: "Challenge failed".to_string(),
-        })))
+        Err(Error::Challenge)
     }
 }

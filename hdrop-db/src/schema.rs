@@ -7,11 +7,11 @@ diesel::table! {
         updateToken -> Text,
         dataUrl -> Nullable<Text>,
         fileNameData -> Text,
-        challengeData -> Text,
-        challengeHash -> Text,
         salt -> Text,
         iv -> Text,
         createdAt -> Timestamptz,
         expiresAt -> Timestamptz,
+        challengeData -> Text,
+        challengeHash -> Text,
     }
 }

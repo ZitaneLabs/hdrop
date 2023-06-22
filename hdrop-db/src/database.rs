@@ -125,7 +125,6 @@ impl Database {
         Ok(responses::VerifyChallengeData {
             challenge_hash: Some(file.challengeHash),
             file_name_data: file.fileNameData,
-            download_token: "".to_string(),
         })
     }
 
@@ -160,9 +159,9 @@ impl Database {
         let file = self.get_file_by_access_token(access_token).await?;
 
         Ok(responses::GetChallengeData {
-            challenge: file.fileNameData,
-            iv: file.iv,
             salt: file.salt,
+            iv: file.iv,
+            challenge: file.fileNameData,
         })
     }
 

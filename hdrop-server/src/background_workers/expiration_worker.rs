@@ -4,7 +4,7 @@ use tokio::sync::RwLock;
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::{core::StorageProvider, server::CacheVariant, Result};
+use crate::{core::StorageProvider, error::Error, server::CacheVariant, Result};
 
 pub struct ExpirationWorker {
     provider: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,
@@ -32,11 +32,13 @@ impl ExpirationWorker {
             .unwrap_or_else(|_| Vec::with_capacity(0))
     }
 
-    async fn delete_file_from_database(&self, uuid: Uuid) {
+    async fn delete_file_from_database(&self, uuid: Uuid) -> Result<()> {
         if let Err(err) = self.database.delete_file_by_uuid(uuid).await {
             tracing::error!("Could not delete file from database: {err}");
+            Err(Error::Database(err))
         } else {
             tracing::trace!("File deleted from database: {uuid}");
+            Ok(())
         }
     }
 
@@ -83,12 +85,14 @@ impl ExpirationWorker {
         }
     }
 
-    pub async fn delete_file(&self, file: Uuid) {
+    pub async fn delete_file(&self, file: Uuid) -> Result<()> {
         // Check if file exists in cache
+        let mut cache_error: bool = false;
         if self.cache.read().await.exists(file) {
             // Actually delete file from cache
             if let Err(err) = self.cache.write().await.delete(file).await {
                 tracing::error!("Could not delete file from cache: {err}");
+                cache_error = true;
             } else {
                 tracing::trace!("File deleted from Cache");
             }
@@ -99,7 +103,17 @@ impl ExpirationWorker {
         // Delete file from provider
         if self.delete_file_from_provider(file).await.is_ok() {
             // Delete file from database
-            self.delete_file_from_database(file).await;
+            if self.delete_file_from_database(file).await.is_err() {
+                return Err(Error::DatabaseDeletion);
+            }
+        } else {
+            return Err(Error::ProviderDeletion);
+        }
+
+        if cache_error {
+            Err(Error::CacheDeletion)
+        } else {
+            Ok(())
         }
     }
 
@@ -114,7 +128,8 @@ impl ExpirationWorker {
 
         // Iterate over expired files
         for file in files {
-            self.delete_file(file).await
+            // Error cases get ignored in background workers
+            let _ = self.delete_file(file).await;
         }
     }
 

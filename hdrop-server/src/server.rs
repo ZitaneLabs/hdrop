@@ -21,8 +21,7 @@ mod routes;
 use app_state::AppState;
 pub use cache::CacheVariant;
 use routes::{
-    delete_file, get_challenge, get_file, get_raw_file_bytes, update_file_expiry, upload_file,
-    verify_challenge,
+    delete_file, get_challenge, get_file, update_file_expiry, upload_file, verify_challenge,
 };
 
 use crate::{

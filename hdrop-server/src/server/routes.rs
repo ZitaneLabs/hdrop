@@ -4,9 +4,10 @@ use super::{
 };
 use axum::{
     extract::{Multipart, Path, Query, State},
+    headers::{authorization::Bearer, Authorization},
     http::StatusCode,
     response::IntoResponse,
-    Json,
+    Json, TypedHeader,
 };
 use chrono::Utc;
 use hdrop_db::{Database, File, InsertFile};
@@ -97,8 +98,21 @@ pub async fn upload_file(
 
 pub async fn get_file(
     State(state): State<Arc<AppState>>,
+    TypedHeader(bearer): TypedHeader<Authorization<Bearer>>,
     Path(access_token): Path<String>,
 ) -> Result<impl IntoResponse> {
+    // Check bearer token to restrict access
+    let challenge_hash = state
+        .database
+        .get_verification_data(&access_token)
+        .await?
+        .challenge_hash
+        .unwrap_or("".to_string());
+
+    if bearer.token() != challenge_hash {
+        return Err(Error::InvalidChallenge);
+    }
+
     let file_entry = state
         .database
         .get_file_by_access_token(&access_token)
@@ -206,6 +220,6 @@ pub async fn verify_challenge(
 
         Ok(response)
     } else {
-        Err(Error::Challenge)
+        Err(Error::InvalidChallenge)
     }
 }

@@ -1,4 +1,4 @@
-<h1><img src="./hdrop-web/public/logo512.png" width="32" height="32" />&nbsp;hdrop</h1>
+<h1><img src="./hdrop-web-next/public/logo512.png" width="32" height="32" />&nbsp;hdrop</h1>
 
 **Simple, self-hosted encrypted file transfer.**
 
@@ -53,13 +53,13 @@ No matter where you deploy, you'll need to configure the following environment v
 #### Docker (Recommended)
 > We provide a preconfigured `Dockerfile` with nginx.
 
-Simply deploy the `Dockerfile` in `hdrop-web` to your favorite cloud provider.
+Simply deploy the `Dockerfile` in `hdrop-web-next` to your favorite cloud provider.
 
 #### Vercel
 
 1. Fork the repo
 2. Create a new Vercel project and link it to your fork
-3. Set the root directory to `hdrop-web`
+3. Set the root directory to `hdrop-web-next`
 4. Deploy and enjoy!
 
 #### Other Providers

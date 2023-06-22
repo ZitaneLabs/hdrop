@@ -59,6 +59,7 @@ export default function Home() {
                     color: 'white',
                 }
             }} />
+
             <Switch value={phase}>
 
                 {/* Waiting for file upload */}
@@ -86,15 +87,15 @@ export default function Home() {
                         <span className="text-gray-300 text-xl">Uploading...</span>
                         <div className='absolute w-full h-full transition-all duration-500 ease-linear' style={{ bottom: `calc(-${1 - progress} * 16rem)` }}>
                             <Wave
-                                    className="h-full mix-blend-color-dodge"
-                                    fill='hsl(0,0%,30%)'
-                                    paused={false}
-                                    options={{
-                                            height: 0,
-                                            amplitude: 5,
-                                            speed: 0.5,
-                                            points: 3,
-                                    }}
+                                className="h-full mix-blend-color-dodge"
+                                fill='hsl(0,0%,30%)'
+                                paused={false}
+                                options={{
+                                    height: 0,
+                                    amplitude: 5,
+                                    speed: 0.5,
+                                    points: 3,
+                                }}
                             />
                         </div>
                     </div>

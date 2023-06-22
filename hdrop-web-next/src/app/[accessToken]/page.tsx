@@ -14,11 +14,7 @@ const Match = UntypedMatch<DownloadPhase | null>
 export default function DownloadFilePage() {
     const { accessToken } = useParams()
 
-    const getPasswordFromHash = () => {
-        if (window.location.hash.length === 0) return null
-        return window.location.hash.slice(1)
-    }
-
+    // State
     const [hashPassword, setHashPassword] = useState<string | null | undefined>(undefined)
     const [userPassword, setUserPassword] = useState<string | null>(null)
     const [phase, setPhase] = useState<DownloadPhase | null>(null)
@@ -26,14 +22,18 @@ export default function DownloadFilePage() {
     const [fileName, setFileName] = useState<string | null>(null)
     const [result, setResult] = useState<DownloadResult | null>(null)
 
+    // The password is either obtained from the url fragment or specified by the user
     const password = useMemo(() => {
         return hashPassword ?? userPassword
     }, [hashPassword, userPassword])
 
+    // Try to get password from url fragment
     useEffect(() => {
-        setHashPassword(getPasswordFromHash())
+        if (window.location.hash.length === 0) return
+        setHashPassword(window.location.hash.slice(1))
     }, [])
 
+    // Start download when password is set
     useEffect(() => {
         if (accessToken === undefined || password === null) return
         Downloader.downloadFile({
@@ -67,18 +67,20 @@ export default function DownloadFilePage() {
             }} />
             <Switch value={phase}>
 
-                {/* Wait for password input */}
+                {/* Waiting for password input */}
                 <Match on={null} when={hashPassword === null}>
                     <PasswordField onSubmit={value => setUserPassword(value)} />
                 </Match>
 
-                {/*  */}
+                {/* Solving challenge / validating file access */}
                 <Match on='validating'>
                     <div className="flex flex-col gap-4 relative justify-center items-center w-64 h-64 rounded-full bg-[hsla(0,0%,0%,.1)] animate-pulse overflow-hidden select-none">
                         <Key size={48} />
                         <span className="z-10">Authorizing...</span>
                     </div>
                 </Match>
+
+                {/* Downloading encrypted file contents */}
                 <Match on='downloading'>
                     <div className="relative flex justify-center items-center w-64 h-64 rounded-full bg-[hsla(0,0%,0%,.1)] overflow-hidden select-none">
                         <span className="text-gray-300 text-xl">Downloading...</span>
@@ -97,12 +99,16 @@ export default function DownloadFilePage() {
                         </div>
                     </div>
                 </Match>
+
+                {/* Decrypting file contents */}
                 <Match on='decrypting'>
                     <div className="flex flex-col gap-4 relative justify-center items-center w-64 h-64 rounded-full bg-[hsla(0,0%,0%,.1)] animate-pulse overflow-hidden select-none">
                         <Cpu size={48} />
                         <span className="z-10">Decrypting...</span>
                     </div>
                 </Match>
+
+                {/* Preview */}
                 <Match on='done'>
                     <FilePreview data={result?.data} fileName={fileName ?? ''} />
                 </Match>

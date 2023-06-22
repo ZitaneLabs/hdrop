@@ -116,7 +116,7 @@ impl Server {
         let app = Router::new()
             .route(
                 "/v1/files",
-                post(upload_file).layer(DefaultBodyLimit::max(256 * 1024 * 1024)), // 256MB
+                post(upload_file).layer(DefaultBodyLimit::max(request_body_limit_bytes)), // 256MB
             )
             .route("/v1/files/:access_token", get(get_file).delete(delete_file))
             .route("/v1/files/:access_token/expiry", post(update_file_expiry))

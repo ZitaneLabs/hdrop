@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Copy, Lock, Upload } from 'lucide-react'
+import { toast, Toaster } from 'react-hot-toast'
 import Wave from 'react-wavify'
 
 import APIClient from '@/api/ApiClient'
@@ -52,6 +53,12 @@ export default function Home() {
 
   return (
     <main className="flex flex-col justify-center items-center">
+      <Toaster containerStyle={{ marginTop: '4rem' }} toastOptions={{
+        style: {
+          background: 'hsl(0,0%,30%)',
+          color: 'white',
+        }
+      }} />
       <Switch value={phase}>
 
         {/* Waiting for file upload */}
@@ -91,11 +98,6 @@ export default function Home() {
               />
             </div>
           </div>
-          {error && (
-            <div>
-              {error}
-            </div>
-          )}
         </Match>
 
         {/* Done */}
@@ -113,14 +115,21 @@ export default function Home() {
               }}
             />
             <div className="flex flex-col gap-8 pt-8 justify-center items-center bg-[hsla(0,0%,0%,.1)] rounded-lg drop-shadow-md transition ease-out duration-[.5s] backdrop-blur-sm overflow-hidden">
-              <div className="flex w-[calc(100%_-_4rem)] gap-4 justify-center items-center px-4 py-4 bg-[hsl(0,0%,10%)] rounded-md cursor-pointer">
+              <div className="flex w-[calc(100%_-_4rem)] gap-4 justify-center items-center px-4 py-4 bg-[hsl(0,0%,10%)] rounded-md cursor-pointer" onClick={() => {
+                navigator.clipboard.writeText(downloadUrl ?? '')
+                toast.success('Copied to clipboard')
+              }}>
                 <span className="font-mono">{downloadUrl?.replace(/https?:[/]{2}/, '')}</span>
                 <Copy size={20} />
               </div>
               <div className="flex w-full gap-2 px-8 py-6 bg-[hsl(0,0%,15%)]">
                 <CopyButton value={uploadResult?.password}>Password</CopyButton>
                 <CopyButton value={downloadUrlWithPassword}>Link with Password</CopyButton>
-                <DeleteButton>Delete</DeleteButton>
+                <DeleteButton
+                  accessToken={uploadResult?.accessToken ?? ''}
+                  updateToken={uploadResult?.updateToken ?? ''}>
+                  Delete
+                </DeleteButton>
               </div>
             </div>
           </div>

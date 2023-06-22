@@ -112,6 +112,13 @@ export default class APIClient {
         }
     }
 
+    static async deleteFile(accessToken: string, updateToken: string): Promise<void> {
+        await this.sendRaw({
+            method: 'DELETE',
+            url: this.buildEndpoint(['v1', 'files', accessToken], { updateToken }),
+        })
+    }
+
     static async getChallenge(accessToken: string): Promise<GetChallengeResponse> {
         return await this.send({
             method: 'GET',

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
+import { toast, Toaster } from "react-hot-toast"
 import { Cpu, Key } from "lucide-react"
 import Wave from "react-wavify"
 
@@ -51,12 +52,18 @@ export default function DownloadFilePage() {
             }
         }).catch(e => {
             console.error(e)
-            setError(e.message)
+            toast.error(e.message)
         })
     }, [accessToken, password])
 
     return (
         <main className="flex flex-col justify-center items-center">
+            <Toaster containerStyle={{ marginTop: '4rem' }} toastOptions={{
+                style: {
+                background: 'hsl(0,0%,30%)',
+                color: 'white',
+                }
+            }} />
             <Switch value={phase}>
 
                 {/* Wait for password input */}

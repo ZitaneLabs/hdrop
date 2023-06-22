@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Loader2 } from "lucide-react"
 
 import { ApiClient } from "@/api"
+import { toast } from "react-hot-toast"
 
 type Props = {
     accessToken: string
@@ -21,9 +22,14 @@ export default function ExpirySelector({ accessToken, updateToken, steps }: Prop
         setCurrentExpiry(value)
 
         // Server update
-        ApiClient.updateExpiry(accessToken, updateToken, value).then(() => {
+        const promise = ApiClient.updateExpiry(accessToken, updateToken, value).then(() => {
             setLoadingExpiry(0)
             setCurrentExpiry(value)
+        })
+        toast.promise(promise, {
+            loading: 'Updating expiry...',
+            success: <b>Expiry updated!</b>,
+            error: <b>Failed to update expiry!</b>
         })
     }
 

@@ -2,6 +2,7 @@
 
 import { ReactNode, useState } from 'react'
 import { Copy } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
 type Props = {
     value?: string
@@ -9,11 +10,10 @@ type Props = {
 }
 
 export default function CopyButton({ value, children }: Props) {
-    const [isCopied, setIsCopied] = useState(false)
-
     const onClick = () => {
         if (!value) return
         navigator.clipboard.writeText(value)
+        toast.success('Copied to clipboard')
     }
 
     return (

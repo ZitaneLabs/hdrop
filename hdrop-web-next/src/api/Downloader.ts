@@ -1,5 +1,5 @@
 import { AesGcm, Base64, Pbkdf2, Sha256 } from "@/crypto"
-import APIClient from "./ApiClient"
+import { ApiClient } from './'
 
 export type DownloadPhase = "validating" | "downloading" | "decrypting" | "done"
 export type DownloadResult = {
@@ -22,7 +22,7 @@ export default class Downloader {
         onProgressChange('validating', 0);
 
         // Solve challenge
-        const { challenge, salt, iv } = await APIClient.getChallenge(accessToken)
+        const { challenge, salt, iv } = await ApiClient.getChallenge(accessToken)
         const challengeBytes = Base64.decode(challenge)
         const saltBytes = Base64.decode(salt)
         const derivedKey = await Pbkdf2.deriveKey(password, saltBytes)
@@ -32,7 +32,7 @@ export default class Downloader {
         const challengeHash = await Sha256.hash(new Uint8Array(decryptedChallenge))
 
         // Submit challenge
-        const { file_name_data } = await APIClient.submitChallenge(accessToken, challengeHash)
+        const { file_name_data } = await ApiClient.submitChallenge(accessToken, challengeHash)
 
         // Decrypt file name
         const fileNameBytes = Base64.decode(file_name_data)
@@ -42,7 +42,7 @@ export default class Downloader {
 
         // Download file
         onProgressChange('downloading', 0);
-        const fileBytes = await APIClient.downloadFile(accessToken, challengeHash, progress => {
+        const fileBytes = await ApiClient.downloadFile(accessToken, challengeHash, progress => {
             onProgressChange('downloading', progress);
         })
 

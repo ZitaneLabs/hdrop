@@ -2,6 +2,7 @@
 
 import { ReactNode, useState } from 'react'
 import { Copy } from 'lucide-react'
+
 type Props = {
     value?: string
     children: ReactNode

@@ -5,15 +5,14 @@ import { useDropzone } from 'react-dropzone'
 import { Copy, Lock, Upload } from 'lucide-react'
 import Wave from 'react-wavify'
 
-import Uploader, { UploadPhase, UploadResult } from '@/api/Uploader'
-import Switch, { Match } from '@/components/Switch'
-import CopyButton from '@/components/CopyButton'
 import APIClient from '@/api/ApiClient'
-import DeleteButton from '@/components/DeleteButton'
-import ExpirySelector from '@/components/ExpirySelector'
+import Uploader, { UploadPhase, UploadResult } from '@/api/Uploader'
+import { Switch, Match as UntypedMatch, CopyButton, DeleteButton, ExpirySelector } from '@/components'
+
+const Match = UntypedMatch<UploadPhase | null>
 
 export default function Home() {
-  const [uploadPhase, setUploadPhase] = useState<UploadPhase | null>(null)
+  const [phase, setPhase] = useState<UploadPhase | null>(null)
   const [progress, setProgress] = useState<number>(0)
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -33,7 +32,7 @@ export default function Home() {
   }, [uploadResult])
 
   const onProgressChange = (phase: UploadPhase, progress: number) => {
-    setUploadPhase(phase)
+    setPhase(phase)
     setProgress(progress)
   }
 
@@ -53,7 +52,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col justify-center items-center">
-      <Switch value={uploadPhase}>
+      <Switch value={phase}>
 
         {/* Waiting for file upload */}
         <Match on={null}>

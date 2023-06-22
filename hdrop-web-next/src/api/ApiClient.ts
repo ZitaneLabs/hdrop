@@ -1,7 +1,12 @@
 import Axios, { AxiosRequestConfig, AxiosResponse, isAxiosError } from "axios"
 
-import { UploadFileData } from "./request"
-import { DownloadFileJsonResponse, GetChallengeResponse, SubmitChallengeResponse, UploadFileResponse } from "./response"
+import {
+    DownloadFileJsonResponse,
+    GetChallengeResponse,
+    SubmitChallengeResponse,
+    UploadFileResponse,
+    UploadFileData,
+} from "./"
 
 /**
  * Base URL of the website

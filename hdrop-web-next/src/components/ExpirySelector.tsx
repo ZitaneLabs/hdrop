@@ -1,8 +1,9 @@
 'use client'
 
-import APIClient from "@/api/ApiClient"
-import { Loader2 } from "lucide-react"
 import { useState } from "react"
+import { Loader2 } from "lucide-react"
+
+import { ApiClient } from "@/api"
 
 type Props = {
     accessToken: string
@@ -20,7 +21,7 @@ export default function ExpirySelector({ accessToken, updateToken, steps }: Prop
         setCurrentExpiry(value)
 
         // Server update
-        APIClient.updateExpiry(accessToken, updateToken, value).then(() => {
+        ApiClient.updateExpiry(accessToken, updateToken, value).then(() => {
             setLoadingExpiry(0)
             setCurrentExpiry(value)
         })

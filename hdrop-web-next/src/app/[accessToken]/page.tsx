@@ -2,13 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
-
-import Downloader, { DownloadPhase, DownloadResult } from "@/api/Downloader"
-import Switch, { Match as UntypedMatch } from "@/components/Switch"
-import PasswordField from "@/components/PasswordField"
 import { Cpu, Key } from "lucide-react"
 import Wave from "react-wavify"
-import FilePreview from "@/components/FilePreview"
+
+import Downloader, { DownloadPhase, DownloadResult } from "@/api/Downloader"
+import { Switch, Match as UntypedMatch, PasswordField, FilePreview } from "@/components"
 
 const Match = UntypedMatch<DownloadPhase | null>
 

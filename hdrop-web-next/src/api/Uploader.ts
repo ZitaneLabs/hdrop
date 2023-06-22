@@ -1,7 +1,5 @@
 import { AesGcm, CryptoHelper, Pbkdf2, Sha256 } from "@/crypto"
-
-import APIClient from "./ApiClient"
-import { UploadFileData } from "./request"
+import { ApiClient, UploadFileData } from "./"
 
 export type UploadPhase = "encrypting" | "uploading" | "done"
 export type UploadResult = {
@@ -49,7 +47,7 @@ export default class Uploader {
 
         // Upload file
         onProgressChange('uploading', 0);
-        const resp = await APIClient.uploadFile(data, progress => {
+        const resp = await ApiClient.uploadFile(data, progress => {
             onProgressChange('uploading', progress);
         })
 

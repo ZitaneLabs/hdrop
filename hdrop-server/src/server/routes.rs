@@ -29,7 +29,6 @@ use crate::{
 
 #[derive(Debug, serde::Deserialize)]
 pub struct UpdateTokenQuery {
-    #[serde(rename = "updateToken")]
     update_token: String,
 }
 

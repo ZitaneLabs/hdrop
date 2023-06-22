@@ -232,9 +232,9 @@ components:
           schema:
             type: object
             properties:
-              AccessToken:
+              access_token:
                 type: string
-              UpdateToken:
+              update_token:
                 type: string
     GetChallenge:
       description: Challenge obtained

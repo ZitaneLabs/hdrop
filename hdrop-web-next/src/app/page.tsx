@@ -26,7 +26,7 @@ export default function Home() {
     // Compute the download URL with password
     const downloadUrlWithPassword = useMemo(() => {
         if (uploadResult) {
-            return APIClient.getDownloadLink(uploadResult.accessToken, uploadResult.password)
+            return ApiClient.getDownloadLink(uploadResult.accessToken, uploadResult.password)
         }
     }, [uploadResult])
 

@@ -29,13 +29,16 @@ paths:
         $ref: '#/components/requestBodies/UploadFile'
       responses:
         '201':
+          description: File uploaded
           $ref: "#/components/responses/UploadFile"
         '4xx':
+          description: Client error
           $ref: "#/components/responses/Error"
         '5xx':
+          description: Server error
           $ref: "#/components/responses/Error"
 
-  /files/{access_token}:
+  /files/{accessToken}:
     get:
       summary: Access a file
       tags:
@@ -44,13 +47,16 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/access_token'
+        - $ref: '#/components/parameters/accessToken'
       responses:
         '200':
+          description: File details
           $ref: "#/components/responses/AccessFile"
         '4xx':
+          description: Client error
           $ref: "#/components/responses/Error"
         '5xx':
+          description: Server error
           $ref: "#/components/responses/Error"
     delete:
       summary: Delete a file
@@ -59,17 +65,20 @@ paths:
       operationId: deleteFile
       security: []
       parameters:
-        - $ref: "#/components/parameters/access_token"
-        - $ref: "#/components/parameters/update_token"
+        - $ref: "#/components/parameters/accessToken"
+        - $ref: "#/components/parameters/updateToken"
       responses:
         '200':
+          description: File deleted
           $ref: "#/components/responses/Success"
         '4xx':
+          description: Client error
           $ref: "#/components/responses/Error"
         '5xx':
+          description: Server error
           $ref: "#/components/responses/Error"
 
-  /files/{access_token}/expiry:
+  /files/{accessToken}/expiry:
     post:
       summary: Set file expiry
       tags:
@@ -77,19 +86,22 @@ paths:
       operationId: setFileExpiry
       security: []
       parameters:
-        - $ref: "#/components/parameters/access_token"
-        - $ref: "#/components/parameters/update_token"
+        - $ref: "#/components/parameters/accessToken"
+        - $ref: "#/components/parameters/updateToken"
       requestBody:
         $ref: "#/components/requestBodies/SetFileExpiry"
       responses:
         '200':
+          description: File expiry set
           $ref: "#/components/responses/Success"
         '4xx':
+          description: Client error
           $ref: "#/components/responses/Error"
         '5xx':
+          description: Server error
           $ref: "#/components/responses/Error"
 
-  /files/{access_token}/challenge:
+  /files/{accessToken}/challenge:
     get:
       summary: Get a challenge
       tags:
@@ -97,13 +109,16 @@ paths:
       operationId: getChallenge
       security: []
       parameters:
-        - $ref: '#/components/parameters/access_token'
+        - $ref: '#/components/parameters/accessToken'
       responses:
         '200':
+          description: Challenge obtained
           $ref: "#/components/responses/GetChallenge"
         '4xx':
+          description: Client error
           $ref: "#/components/responses/Error"
         '5xx':
+          description: Server error
           $ref: "#/components/responses/Error"
     post:
       summary: Submit a challenge
@@ -112,15 +127,18 @@ paths:
       operationId: submitChallenge
       security: []
       parameters:
-        - $ref: '#/components/parameters/access_token'
+        - $ref: '#/components/parameters/accessToken'
       requestBody:
         $ref: "#/components/requestBodies/SubmitChallenge"
       responses:
         '200':
+          description: Challenge result
           $ref: "#/components/responses/SubmitChallenge"
         '4xx':
+          description: Client error
           $ref: "#/components/responses/Error"
         '5xx':
+          description: Server error
           $ref: "#/components/responses/Error"
 
 
@@ -130,16 +148,16 @@ components:
       type: http
       scheme: bearer
   parameters:
-    access_token:
+    accessToken:
       required: true
-      name: access_token
+      name: accessToken
       in: path
       description: Access token for the file
       schema:
         type: string
-    update_token:
+    updateToken:
       required: true
-      name: update_token
+      name: updateToken
       in: query
       description: Update token for the file
       schema:
@@ -214,9 +232,9 @@ components:
           schema:
             type: object
             properties:
-              access_token:
+              accessToken:
                 type: string
-              update_token:
+              updateToken:
                 type: string
     GetChallenge:
       description: Challenge obtained

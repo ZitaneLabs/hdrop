@@ -1,9 +1,9 @@
 {
-	"folders": [
-		{
+    "folders": [
+        {
             "name": "root",
-			"path": "."
-		},
+            "path": "."
+        },
         {
             "name": "hdrop-shared",
             "path": "hdrop-shared",
@@ -17,21 +17,21 @@
             "path": "hdrop-server",
         },
         {
-			"name": "hdrop-server-js",
-			"path": "hdrop-server-js"
-		},
+            "name": "hdrop-server-js",
+            "path": "hdrop-server-js"
+        },
         {
-			"name": "hdrop-web-next",
-			"path": "hdrop-web-next"
-		},
-	],
-	"settings": {
-		"jest.disabledWorkspaceFolders": [
+            "name": "hdrop-web-next",
+            "path": "hdrop-web-next"
+        },
+    ],
+    "settings": {
+        "jest.disabledWorkspaceFolders": [
             "root",
             "hdrop-db",
             "hdrop-shared",
             "hdrop-server",
             "hdrop-server-js",
         ]
-	}
+    }
 }

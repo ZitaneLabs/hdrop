@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 
 export default async function authenticated(req: Request, res: Response, next: NextFunction) {
-    const { updateToken } = req.query
+    const { update_token: updateToken } = req.query
     const { accessToken } = req.params as { accessToken?: string }
 
     // Check for access token

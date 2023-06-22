@@ -115,7 +115,7 @@ export default class APIClient {
     static async deleteFile(accessToken: string, updateToken: string): Promise<void> {
         await this.sendRaw({
             method: 'DELETE',
-            url: this.buildEndpoint(['v1', 'files', accessToken], { updateToken }),
+            url: this.buildEndpoint(['v1', 'files', accessToken], { update_token: updateToken }),
         })
     }
 
@@ -149,7 +149,7 @@ export default class APIClient {
             expiry: value,
         }
         const query = {
-            updateToken,
+            update_token: updateToken,
         }
         return await this.send({
             method: 'POST',

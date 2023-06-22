@@ -38,7 +38,7 @@ paths:
           description: Server error
           $ref: "#/components/responses/Error"
 
-  /files/{accessToken}:
+  /files/{access_token}:
     get:
       summary: Access a file
       tags:
@@ -47,7 +47,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/accessToken'
+        - $ref: '#/components/parameters/AccessToken'
       responses:
         '200':
           description: File details
@@ -65,8 +65,8 @@ paths:
       operationId: deleteFile
       security: []
       parameters:
-        - $ref: "#/components/parameters/accessToken"
-        - $ref: "#/components/parameters/updateToken"
+        - $ref: "#/components/parameters/AccessToken"
+        - $ref: "#/components/parameters/UpdateToken"
       responses:
         '200':
           description: File deleted
@@ -78,7 +78,7 @@ paths:
           description: Server error
           $ref: "#/components/responses/Error"
 
-  /files/{accessToken}/expiry:
+  /files/{access_token}/expiry:
     post:
       summary: Set file expiry
       tags:
@@ -86,8 +86,8 @@ paths:
       operationId: setFileExpiry
       security: []
       parameters:
-        - $ref: "#/components/parameters/accessToken"
-        - $ref: "#/components/parameters/updateToken"
+        - $ref: "#/components/parameters/AccessToken"
+        - $ref: "#/components/parameters/UpdateToken"
       requestBody:
         $ref: "#/components/requestBodies/SetFileExpiry"
       responses:
@@ -101,7 +101,7 @@ paths:
           description: Server error
           $ref: "#/components/responses/Error"
 
-  /files/{accessToken}/challenge:
+  /files/{access_token}/challenge:
     get:
       summary: Get a challenge
       tags:
@@ -109,7 +109,7 @@ paths:
       operationId: getChallenge
       security: []
       parameters:
-        - $ref: '#/components/parameters/accessToken'
+        - $ref: '#/components/parameters/AccessToken'
       responses:
         '200':
           description: Challenge obtained
@@ -127,7 +127,7 @@ paths:
       operationId: submitChallenge
       security: []
       parameters:
-        - $ref: '#/components/parameters/accessToken'
+        - $ref: '#/components/parameters/AccessToken'
       requestBody:
         $ref: "#/components/requestBodies/SubmitChallenge"
       responses:
@@ -148,16 +148,16 @@ components:
       type: http
       scheme: bearer
   parameters:
-    accessToken:
+    AccessToken:
       required: true
-      name: accessToken
+      name: access_token
       in: path
       description: Access token for the file
       schema:
         type: string
-    updateToken:
+    UpdateToken:
       required: true
-      name: updateToken
+      name: update_token
       in: query
       description: Update token for the file
       schema:
@@ -232,9 +232,9 @@ components:
           schema:
             type: object
             properties:
-              accessToken:
+              AccessToken:
                 type: string
-              updateToken:
+              UpdateToken:
                 type: string
     GetChallenge:
       description: Challenge obtained

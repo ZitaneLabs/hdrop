@@ -3,6 +3,7 @@ import APIClient from "./ApiClient"
 
 export type DownloadPhase = "validating" | "downloading" | "decrypting" | "done"
 export type DownloadResult = {
+    data: ArrayBuffer
 }
 
 export type DownloadProgressHandler = (phase: DownloadPhase, progress: number) => void
@@ -46,9 +47,10 @@ export default class Downloader {
         })
 
         // Decrypt file
-        onProgressChange('decrypting', 0);
+        onProgressChange('decrypting', 1);
         const decryptedFile = await AesGcm.decrypt(fileBytes, derivedKey.key, aesParams)
 
-        onProgressChange('done', 0);
+        onDownloadComplete({ data: decryptedFile })
+        onProgressChange('done', 1);
     }
 }

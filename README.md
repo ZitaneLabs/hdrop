@@ -45,10 +45,14 @@ The frontend has hot reloading enabled and will react to changes.
 **Environment Variables**<br>
 No matter where you deploy, you'll need to configure the following environment variables:
 
-| Name                     | Example Value             | Description                          |
-| ------------------------ | ------------------------- | ------------------------------------ |
-| `REACT_APP_BASE_URL`     | `https://example.org`     | The URL where the frontend is hosted |
-| `REACT_APP_API_ENDPOINT` | `https://api.example.org` | The URL where the API is hosted      |
+| Name                            | Example Value           | Description                             |
+| ------------------------------- | ----------------------- | --------------------------------------- |
+| `NEXT_PUBLIC_APP_NAME`          | `hdrop`                 | Display name of the instance            |
+| `NEXT_PUBLIC_WEB_BASE_URL`      | `http://localhost:3000` | The URL where the frontend is hosted    |
+| `NEXT_PUBLIC_API_BASE_URL`      | `http://localhost:8080` | The URL where the API is hosted         |
+| `NEXT_PUBLIC_PBKDF2_ITERATIONS` | `100000`                | Number of PBKDF2 passes on the password |
+| `NEXT_PUBLIC_PASSWORD_BYTES`    | `32`                    | Number of bytes in the password         |
+| `NEXT_PUBLIC_CHALLENGE_BYTES`   | `32`                    | Number of bytes in the challenge        |
 
 #### Docker (Recommended)
 > We provide a preconfigured `Dockerfile` with nginx.

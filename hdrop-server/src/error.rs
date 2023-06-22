@@ -38,7 +38,7 @@ pub enum Error {
     #[error("Conversion to UploadedFileData failed due to PartialUploadedFileData being incomplete (Missing field: {0})")]
     FileDataConversionError(&'static str),
     #[error("Challenge failed")]
-    Challenge,
+    InvalidChallenge,
     #[error("Wrong update token")]
     UpdateToken,
     #[error("Invalid Expiry")]
@@ -70,7 +70,7 @@ impl Error {
         match self {
             Self::FileUpload { .. } => StatusCode::BAD_REQUEST,
             Self::FileDataConversionError(_) => StatusCode::BAD_REQUEST,
-            Self::Challenge => StatusCode::UNAUTHORIZED,
+            Self::InvalidChallenge => StatusCode::UNAUTHORIZED,
             Self::UpdateToken => StatusCode::UNAUTHORIZED,
             Self::InvalidExpiry => StatusCode::BAD_REQUEST,
             Self::Database(e) if e.is_not_found() => StatusCode::NOT_FOUND,
@@ -83,7 +83,7 @@ impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         let reason = match &self {
             Self::FileUpload { .. } => "File upload failed",
-            Self::Challenge => "Challenge failed",
+            Self::InvalidChallenge => "Challenge failed",
             Self::UpdateToken => "Wrong update token",
             Self::InvalidExpiry => "Invalid Expiry",
             Self::InvalidFile => "Unable to locate file data",

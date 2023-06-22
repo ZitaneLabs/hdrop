@@ -161,7 +161,7 @@ impl Database {
         Ok(responses::GetChallengeData {
             salt: file.salt,
             iv: file.iv,
-            challenge: file.fileNameData,
+            challenge: file.challengeData,
         })
     }
 

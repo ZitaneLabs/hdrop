@@ -1,5 +1,6 @@
-import { AesGcm, CryptoHelper, Pbkdf2, Sha256 } from "@/crypto"
+import { AesGcm, CryptoHelper, FILE_NAME_XOR_MASK, Pbkdf2, Sha256 } from "@/crypto"
 import { ApiClient, UploadFileData } from "./"
+import { CHALLENGE_XOR_MASK } from "@/crypto/AesGcm"
 
 export type UploadPhase = "encrypting" | "uploading" | "done"
 export type UploadResult = {
@@ -20,24 +21,26 @@ export default class Uploader {
         const derivedKey = await Pbkdf2.deriveKey(passwordString)
 
         // Generate encryption params
-        const aesParams = AesGcm.generateParams()
+        const aesBaseParams = AesGcm.generateParams()
+        const aesChallengeParams = AesGcm.xorParams(aesBaseParams, CHALLENGE_XOR_MASK)
+        const aesFileNameParams = AesGcm.xorParams(aesBaseParams, FILE_NAME_XOR_MASK)
 
         // Generate a challenge
         const challenge = CryptoHelper.generateChallenge()
-        const encryptedChallenge = await AesGcm.encrypt(challenge, derivedKey.key, aesParams)
+        const encryptedChallenge = await AesGcm.encrypt(challenge, derivedKey.key, aesChallengeParams)
         const challengeHash = await Sha256.hash(challenge)
 
         // Encrypt the file
         const fileBuffer = await file.arrayBuffer()
-        const encryptedFile = await AesGcm.encrypt(fileBuffer, derivedKey.key, aesParams)
+        const encryptedFile = await AesGcm.encrypt(fileBuffer, derivedKey.key, aesBaseParams)
 
         // Encrypt the file name
         const fileNameBuffer = new TextEncoder().encode(file.name)
-        const encryptedFileName = await AesGcm.encrypt(fileNameBuffer, derivedKey.key, aesParams)
+        const encryptedFileName = await AesGcm.encrypt(fileNameBuffer, derivedKey.key, aesFileNameParams)
 
         // Create a new UploadFileData object
         const data = new UploadFileData(
-            aesParams.iv as Uint8Array,
+            aesBaseParams.iv as Uint8Array,
             derivedKey.salt,
             encryptedFile,
             encryptedFileName,

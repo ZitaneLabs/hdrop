@@ -1,4 +1,4 @@
-import { AesGcm, Base64 } from './'
+import { Base64 } from './'
 
 export default class CryptoHelper {
     static generatePassword(): string {

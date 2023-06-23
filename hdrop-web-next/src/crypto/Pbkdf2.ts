@@ -4,7 +4,7 @@ export class DerivedKey {
 
 export default class Pbkdf2 {
     static async deriveKey(password: string, salt = crypto.getRandomValues(new Uint8Array(16))) {
-        const iterations = Number.parseInt(process.env.NEXT_PUBLIC_PBKDF2_ITERATIONS ?? '100000')
+        const iterations = Number.parseInt(process.env.NEXT_PUBLIC_PBKDF2_ITERATIONS ?? '600000')
         const textEncoder = new TextEncoder()
         const passwordBuffer = textEncoder.encode(password)
         const importedKey = await crypto.subtle.importKey('raw', passwordBuffer, 'PBKDF2', false, ['deriveKey'])

@@ -50,7 +50,7 @@ No matter where you deploy, you'll need to configure the following environment v
 | `NEXT_PUBLIC_APP_NAME`          | `hdrop`                 | Display name of the instance            |
 | `NEXT_PUBLIC_WEB_BASE_URL`      | `http://localhost:3000` | The URL where the frontend is hosted    |
 | `NEXT_PUBLIC_API_BASE_URL`      | `http://localhost:8080` | The URL where the API is hosted         |
-| `NEXT_PUBLIC_PBKDF2_ITERATIONS` | `100000`                | Number of PBKDF2 passes on the password |
+| `NEXT_PUBLIC_PBKDF2_ITERATIONS` | `600000`                | Number of PBKDF2 passes on the password |
 | `NEXT_PUBLIC_PASSWORD_BYTES`    | `32`                    | Number of bytes in the password         |
 | `NEXT_PUBLIC_CHALLENGE_BYTES`   | `32`                    | Number of bytes in the challenge        |
 

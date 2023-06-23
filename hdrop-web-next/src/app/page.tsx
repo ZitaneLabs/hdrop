@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Copy, Lock, Upload } from 'lucide-react'
 import { toast, Toaster } from 'react-hot-toast'
@@ -48,6 +48,19 @@ export default function Home() {
             })
         })
     }, [])
+
+    const onPaste = useCallback((e: ClipboardEvent) => {
+        if (e.clipboardData === null) return
+        if (e.clipboardData.files.length === 0) return
+        onDrop(Array.from(e.clipboardData.files))
+    }, [onDrop])
+
+    useEffect(() => {
+        window.addEventListener('paste', onPaste)
+        return () => {
+            window.removeEventListener('paste', onPaste)
+        }
+    })
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
 

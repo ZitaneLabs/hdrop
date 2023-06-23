@@ -141,7 +141,6 @@ paths:
           description: Server error
           $ref: "#/components/responses/Error"
 
-
 components:
   securitySchemes:
     BearerAuth:

@@ -95,6 +95,7 @@ impl IntoResponse for Error {
 
         let error = ErrorResponse::new(reason);
 
+        tracing::error!("{:?}", self);
         (self.to_statuscode(), Json(error)).into_response()
     }
 }

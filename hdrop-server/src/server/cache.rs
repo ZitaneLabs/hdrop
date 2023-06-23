@@ -14,7 +14,7 @@ pub enum CacheVariant {
     Disk(FileCache<DiskStrategy>),
     Hybrid(FileCache<HybridStrategy>),
 }
-
+// ToDo: Add more Error Tracing
 impl CacheVariant {
     pub async fn try_from_env() -> Result<Self> {
         let cache_variant: String = env::cache_strategy().unwrap_or_else(|_| "memory".to_string());

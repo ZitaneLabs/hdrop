@@ -16,11 +16,12 @@ pub struct File {
     pub updateToken: String,
     pub dataUrl: Option<String>,
     pub fileNameData: String,
-    pub fileNameHash: String,
     pub salt: String,
     pub iv: String,
     pub createdAt: DateTime<Utc>,
     pub expiresAt: DateTime<Utc>,
+    pub challengeData: String,
+    pub challengeHash: String,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Insertable, Identifiable, AsChangeset)]
@@ -35,9 +36,10 @@ pub struct InsertFile {
     pub updateToken: String,
     pub dataUrl: Option<String>,
     pub fileNameData: String,
-    pub fileNameHash: String,
     pub salt: String,
     pub iv: String,
     pub createdAt: DateTime<Utc>,
     pub expiresAt: DateTime<Utc>,
+    pub challengeData: String,
+    pub challengeHash: String,
 }

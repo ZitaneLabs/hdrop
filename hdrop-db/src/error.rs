@@ -1,4 +1,4 @@
-use diesel::ConnectionError;
+use diesel::{result::Error::NotFound, ConnectionError};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -21,6 +21,10 @@ pub enum Error {
     ),
     #[error("{0}")]
     DeadpoolInteract(#[from] deadpool_diesel::postgres::InteractError),
-    #[error("Conversion to UploadedFileData failed due to PartialUploadedFileData being incomplete (Missing field: {0})")]
-    FileDataConversionError(&'static str),
+}
+
+impl Error {
+    pub fn is_not_found(&self) -> bool {
+        matches!(self, Self::Diesel(NotFound))
+    }
 }

@@ -16,7 +16,7 @@ export default class DatabaseClient {
 
     /**
      * Default expiration time in milliseconds.
-     * 
+     *
      * @default 86400000 // 24 hours
      */
     static DEFAULT_EXPIRATION_MS: number = 24 * 60 * 60 * 1000
@@ -35,7 +35,8 @@ export default class DatabaseClient {
                 accessToken: storedFile.accessToken,
                 updateToken: storedFile.updateToken,
                 fileNameData: storedFile.fileNameData,
-                fileNameHash: storedFile.fileNameHash,
+                challengeData: storedFile.challengeData,
+                challengeHash: storedFile.challengeHash,
                 salt: storedFile.salt,
                 iv: storedFile.iv,
                 createdAt,

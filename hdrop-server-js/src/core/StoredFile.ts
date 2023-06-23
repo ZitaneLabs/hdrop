@@ -8,17 +8,19 @@ export default class StoredFile {
     updateToken: string
     fileData: Buffer
     fileNameData: string
-    fileNameHash: string
+    challengeData: string
+    challengeHash: string
     salt: string
     iv: string
 
     /**
      * Construct a new `StoredFile` instance.
      */
-    constructor({ fileData, fileNameData, fileNameHash, salt, iv }: {
+    constructor({ fileData, fileNameData, challengeData, challengeHash, salt, iv }: {
             fileData: Buffer
             fileNameData: string
-            fileNameHash: string
+            challengeData: string
+            challengeHash: string
             salt: string
             iv: string
         }) {
@@ -32,7 +34,8 @@ export default class StoredFile {
         // Store data
         this.fileData = fileData
         this.fileNameData = fileNameData
-        this.fileNameHash = fileNameHash
+        this.challengeData = challengeData
+        this.challengeHash = challengeHash
         this.salt = salt
         this.iv = iv
     }

@@ -5,7 +5,7 @@ version: '3'
 services:
   web:
     build:
-      context: ./hdrop-web
+      context: ./hdrop-web-next
       dockerfile: Dockerfile.development
     ports:
       - "3000:3000"
@@ -16,10 +16,8 @@ services:
       - REACT_APP_BASE_URL=http://localhost:3000
       - REACT_APP_API_ENDPOINT=http://localhost:8080
     volumes:
-      - ./hdrop-web:/app
+      - ./hdrop-web-next:/app
       - /app/node_modules
-    depends_on:
-      - api
   api:
     profiles: ["api-js"]
     build:
@@ -46,7 +44,6 @@ services:
       - localstack
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
-
   api_rust:
     profiles: ["api-rs"]
     build:
@@ -68,8 +65,8 @@ services:
       - S3_PUBLIC_URL=http://localhost:4566/hdrop
       - CORS_ORIGIN=*
       - CACHE_STRATEGY=memory
-      - CACHE_MEMORY_LIMIT_MB=500
-      - SINGLE_FILE_LIMIT_MB=100
+      - CACHE_MEMORY_LIMIT_MB=2000
+      - SINGLE_FILE_LIMIT_MB=500
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/hdrop
     depends_on:
       - postgres

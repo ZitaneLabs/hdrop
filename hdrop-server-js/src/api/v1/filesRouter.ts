@@ -18,10 +18,7 @@ router.post('/', upload.single('file_data'), async (req: Request, res: Response)
 
     if (fileData === undefined) {
         return res.status(400).json({
-            status: 'error',
-            data: {
-                reason: 'No file data provided'
-            }
+            reason: 'No file data provided'
         })
     }
 
@@ -30,7 +27,8 @@ router.post('/', upload.single('file_data'), async (req: Request, res: Response)
         {
             fileData: fileData.buffer,
             fileNameData: req.body.file_name_data,
-            fileNameHash: req.body.file_name_hash,
+            challengeData: req.body.challenge_data,
+            challengeHash: req.body.challenge_hash,
             salt: req.body.salt,
             iv: req.body.iv,
         }
@@ -44,11 +42,8 @@ router.post('/', upload.single('file_data'), async (req: Request, res: Response)
 
     // Send response
     res.json({
-        status: 'success',
-        data: {
-            access_token: file.accessToken,
-            update_token: file.updateToken,
-        }
+        access_token: file.accessToken,
+        update_token: file.updateToken,
     })
 })
 
@@ -61,10 +56,7 @@ router.post('/:accessToken/expiry', authenticated, async (req: Request, res: Res
     // Guard against invalid access token
     if (file === null) {
         return res.status(404).json({
-            status: 'error',
-            data: {
-                reason: 'File not found'
-            }
+            reason: 'File not found'
         })
     }
 
@@ -72,14 +64,12 @@ router.post('/:accessToken/expiry', authenticated, async (req: Request, res: Res
     await req.context.dbClient.setFileExpiry(accessToken, req.body.expiry)
 
     // Send response
-    res.json({
-        status: 'success',
-        data: {}
-    })
+    res.json({})
 })
 
-router.get('/:accessToken/raw', async (req: Request, res: Response) => {
+router.get('/:accessToken', async (req: Request, res: Response) => {
     const { accessToken } = req.params
+    const challengeHash = (req.headers.authorization ?? '').split(' ')[1]
 
     // Retrieve file
     const file = await req.context.storage.retrieveFile(accessToken)
@@ -87,10 +77,22 @@ router.get('/:accessToken/raw', async (req: Request, res: Response) => {
     // Guard against invalid access token
     if (file === null) {
         return res.status(404).json({
-            status: 'error',
-            data: {
-                reason: 'File not found'
-            }
+            reason: 'File not found'
+        })
+    }
+
+    // Authorize user
+    if (file.challengeHash !== challengeHash) {
+        return res.status(403).json({
+            reason: 'Invalid challenge'
+        })
+    }
+
+    if (file.dataUrl !== null) {
+
+        // Send response
+        return res.json({
+            file_url: file.dataUrl,
         })
     }
 
@@ -100,10 +102,7 @@ router.get('/:accessToken/raw', async (req: Request, res: Response) => {
     // Guard against expired or cache-evicted file
     if (!fileData) {
         return res.status(404).json({
-            status: 'error',
-            data: {
-                reason: 'Raw file data is not available anymore'
-            }
+            reason: 'Raw file data is not available anymore'
         })
     }
 
@@ -116,37 +115,6 @@ router.get('/:accessToken/raw', async (req: Request, res: Response) => {
     stream.pipe(res)
 })
 
-router.get('/:accessToken', async (req: Request, res: Response) => {
-    const { accessToken } = req.params
-
-    // Retrieve file
-    const file = await req.context.storage.retrieveFile(accessToken)
-
-    // Guard against invalid access token
-    if (file === null) {
-        return res.status(404).json({
-            status: 'error',
-            data: {
-                reason: 'File not found'
-            }
-        })
-    }
-
-    // Build response data
-    const data = {
-        status: 'success',
-        data: {
-            file_url: file.dataUrl,
-            file_name_data: file.fileNameData,
-            iv: file.iv,
-            salt: file.salt,
-        }
-    }
-
-    // Send response
-    res.json(data)
-})
-
 router.get('/:accessToken/challenge', async (req: Request, res: Response) => {
     const { accessToken } = req.params
 
@@ -156,21 +124,15 @@ router.get('/:accessToken/challenge', async (req: Request, res: Response) => {
     // Guard against invalid access token
     if (file === null) {
         return res.status(404).json({
-            status: 'error',
-            data: {
-                reason: 'File not found'
-            }
+            reason: 'File not found'
         })
     }
 
     // Send response
     res.json({
-        status: 'success',
-        data: {
-            challenge: file.fileNameData,
-            iv: file.iv,
-            salt: file.salt,
-        }
+        challenge: file.challengeData,
+        iv: file.iv,
+        salt: file.salt,
     })
 })
 
@@ -183,30 +145,20 @@ router.post('/:accessToken/challenge', async (req: Request, res: Response) => {
     // Guard against invalid access token
     if (file === null) {
         return res.status(404).json({
-            status: 'error',
-            data: {
-                reason: 'File not found'
-            }
+            reason: 'File not found'
         })
     }
 
     // Guard against invalid challenge
-    if (req.body.challenge !== file.fileNameHash) {
+    if (req.body.challenge !== file.challengeHash) {
         return res.status(403).json({
-            status: 'error',
-            data: {
-                reason: 'Invalid challenge'
-            }
+            reason: 'Invalid challenge'
         })
     }
 
     // Send response
     res.json({
-        status: 'success',
-        data: {
-            iv: file.iv,
-            salt: file.salt,
-        }
+        file_name_data: file.fileNameData,
     })
 })
 
@@ -219,10 +171,7 @@ router.delete('/:accessToken', authenticated, async (req: Request, res: Response
     // Guard against invalid access token
     if (file === null) {
         return res.status(404).json({
-            status: 'error',
-            data: {
-                reason: 'File not found'
-            }
+            reason: 'File not found'
         })
     }
 
@@ -230,9 +179,7 @@ router.delete('/:accessToken', authenticated, async (req: Request, res: Response
     await req.context.storage.deleteFile(accessToken)
 
     // Send response
-    res.json({
-        status: 'success',
-    })
+    res.json({})
 })
 
 export default router

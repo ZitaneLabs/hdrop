@@ -11,7 +11,9 @@ use tower_http::{
     compression::CompressionLayer,
     cors::{AllowOrigin, Any, CorsLayer},
     limit::RequestBodyLimitLayer,
+    trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer},
 };
+use tracing::Level;
 
 mod app_state;
 mod cache;
@@ -129,6 +131,11 @@ impl Server {
             .layer(RequestBodyLimitLayer::new(request_body_limit_bytes))
             // Use brotli compression if applicable
             .layer(CompressionLayer::new())
+            .layer(
+                TraceLayer::new_for_http()
+                    .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                    .on_response(DefaultOnResponse::new().level(Level::INFO)),
+            )
             // Order matters! The CORS layer must be the last layer in the middleware stack.
             .layer(
                 CorsLayer::new()

@@ -116,6 +116,7 @@ impl Server {
 
         // Define API routes
         let app = Router::new()
+            .route("/status", get(|| async { "OK" }))
             .route(
                 "/v1/files",
                 post(upload_file).layer(DefaultBodyLimit::max(request_body_limit_bytes)), // 256MB

@@ -7,22 +7,13 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.6.18", features = ["multipart", "macros", "headers"] }
-serde =  { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
-tokio-util = { version = "0.7.4", features = ["io"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 chrono = { version = "0.4", features = ["serde"] }
-pretty_env_logger = "0.4.0"
-uuid = { version = ">=0.7.0, <2.0.0", features = ["v4", "serde"] }
 futures = { version = "=0.3.25", default-features = false }
-bytes = "0.5.6"
-thiserror = "1.0"
 dotenvy = "0.15"
 serde_json = "1.0.96"
 async-trait = "0.1.68"
-anyhow = "1.0.71"
 regex = "1.8.3"
-hdrop-db = { path = "../hdrop-db" }
-hdrop-shared = { path = "../hdrop-shared" }
 tower-http = { version = "0.4.0", features = ["cors", "limit", "compression-br", "trace"] }
 bincache = { git = "https://github.com/ZitaneLabs/bincache.git", features = ["rt_tokio_1", "comp_zstd"] }
 s3 = { git = "https://github.com/ZitaneLabs/rust-s3-async.git", package="zitane-s3-async" }
@@ -30,3 +21,10 @@ metrics-exporter-prometheus = "0.12.1"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing = "0.1.37"
 metrics = "0.21.0"
+
+uuid.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+hdrop-db.workspace = true
+hdrop-shared.workspace = true

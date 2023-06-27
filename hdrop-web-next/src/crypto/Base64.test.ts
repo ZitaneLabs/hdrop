@@ -1,4 +1,5 @@
 import Base64 from "./Base64"
+import { TextEncoder } from 'util'
 
 describe('Base64', () => {
     test('encode', () => {
@@ -19,6 +20,15 @@ describe('Base64', () => {
         expect(result).toBe('')
     })
 
+    test('encode long string', () => {
+        // given
+        const bytes = new TextEncoder().encode("Hello this is a test")
+        // when
+        const result = Base64.encode(bytes)
+        // then
+        expect(result).toBe('SGVsbG8gdGhpcyBpcyBhIHRlc3Q=')
+    })
+
     test('decode', () => {
         // given
         const str = 'AAECAwQFBgc='
@@ -35,5 +45,15 @@ describe('Base64', () => {
         const result = Base64.decode(str)
         // then
         expect(result).toEqual(new Uint8Array([]))
+    })
+
+    test('decode long string', () => {
+        // given
+        const str = 'SGVsbG8gdGhpcyBpcyBhIHRlc3Q='
+        const expected = Array.from(new TextEncoder().encode("Hello this is a test"))
+        // when
+        const result = Array.from(Base64.decode(str))
+        // then
+        expect(result).toEqual(expected)
     })
 })

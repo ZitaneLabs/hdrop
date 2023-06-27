@@ -19,33 +19,6 @@ services:
       - ./hdrop-web-next:/app
       - /app/node_modules
   api:
-    profiles: ["api-js"]
-    build:
-      context: ./hdrop-server-js
-      dockerfile: Dockerfile
-    ports:
-      - "8080:80"
-    networks:
-      - hdrop
-      - backend
-    environment:
-      - PORT=80
-      - S3_ACCESS_KEY_ID=dev
-      - S3_SECRET_ACCESS_KEY=dev
-      - S3_REGION=eu-west-1
-      - S3_ENDPOINT=http://localstack:4566
-      - S3_BUCKET_NAME=hdrop
-      - S3_PUBLIC_URL=http://localhost:4566/hdrop
-      - CORS_ORIGIN=*
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/hdrop
-    platform: linux/x86_64
-    depends_on:
-      - postgres
-      - localstack
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
-  api_rust:
-    profiles: ["api-rs"]
     build:
       context: .
       dockerfile: ./hdrop-server/Dockerfile

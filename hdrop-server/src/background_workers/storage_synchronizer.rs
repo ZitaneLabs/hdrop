@@ -113,6 +113,7 @@ impl StorageSynchronizer {
             Self::synchronize(provider_sync_entry).await;
         }
 
+        tracing::warn!("Storage synchronizer stopped");
         Ok(())
     }
 
@@ -123,6 +124,7 @@ impl StorageSynchronizer {
     pub async fn synchronization_retry_worker(retry_sync_entry: ProviderSyncEntry) {
         tracing::warn!("Storage retry worker started for one file");
         for i in 0..=6u32 {
+            tracing::info!("[Attempt {i}] Retrying to sync {} (attempt {i})", retry_sync_entry.uuid);
             // Check if file is already expired
             match retry_sync_entry
                 .database

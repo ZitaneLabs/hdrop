@@ -3864,9 +3864,9 @@ react-is@^18.0.0:
   integrity sha512-xWGDIW6x921xtzPkhiULtthJHoJvBbF3q26fzloPCK0hsvxtPVelvftw3zjbHWSkR2km9Z+4uxbDDK/6Zw9B8w==
 
 react-wavify@^1.8.2:
-  version "1.8.2"
-  resolved "https://registry.yarnpkg.com/react-wavify/-/react-wavify-1.8.2.tgz#2624988a729a21808f63a85b8a2ddfc03abee59f"
-  integrity sha512-oDygUiYZUN4O5jvZK+juYYpeht/aXPvETQzXxEmLmPJ08Ab763Zs0cw4yIKG8AYmi/K5WiTb0QgogpjqtEhepw==
+  version "1.8.3"
+  resolved "https://registry.yarnpkg.com/react-wavify/-/react-wavify-1.8.3.tgz#5e78862920ff4205a5564bbc5a29cfd186b10b1d"
+  integrity sha512-SmlzjtHm6s7cs1618k63ieMkRhVg+BKbcq3SyTGJ48oRcuxgr5zPdywBnK3J4EzbpPX0dCu4PA04G80KSyDkxg==
   dependencies:
     prop-types "^15.8.1"
 

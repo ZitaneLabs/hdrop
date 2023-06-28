@@ -30,6 +30,12 @@ export default function Home() {
         }
     }, [uploadResult])
 
+    const downloadUrlWithPasswordDisplay = useMemo(() => {
+        if (downloadUrlWithPassword) {
+            return downloadUrlWithPassword.replace(/https?:[/]{2}/, '').substring(0, 32) + '...'
+        }
+    }, [downloadUrlWithPassword])
+
     const onProgressChange = (phase: UploadPhase, progress: number) => {
         setPhase(phase)
         setProgress(progress)
@@ -65,7 +71,7 @@ export default function Home() {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
 
     return (
-        <main className="flex flex-col justify-center items-center">
+        <main className="flex flex-col justify-center items-center p-2">
             <Toaster containerStyle={{ marginTop: '4rem' }} toastOptions={{
                 style: {
                     background: 'hsl(0,0%,30%)',
@@ -129,16 +135,16 @@ export default function Home() {
                             }}
                         />
                         <div className="flex flex-col gap-8 pt-8 justify-center items-center bg-[hsla(0,0%,0%,.1)] rounded-lg drop-shadow-md transition ease-out duration-[.5s] backdrop-blur-sm overflow-hidden">
-                            <div className="flex w-[calc(100%_-_4rem)] gap-4 justify-center items-center px-4 py-4 bg-[hsl(0,0%,10%)] rounded-md cursor-pointer" onClick={() => {
-                                navigator.clipboard.writeText(downloadUrl ?? '')
+                            <div className="flex w-[calc(100%_-_4rem)] gap-4 justify-center items-center px-4 py-4 bg-[hsl(0,0%,10%)] hover:bg-[hsl(0,0%,8.5%)] hover:scale-105 transition-all hover:drop-shadow-lg rounded-md cursor-pointer" onClick={() => {
+                                navigator.clipboard.writeText(downloadUrlWithPassword ?? '')
                                 toast.success('Copied to clipboard')
                             }}>
-                                <span className="font-mono">{downloadUrl?.replace(/https?:[/]{2}/, '')}</span>
+                                <span className="font-mono truncate select-none">{downloadUrlWithPasswordDisplay}</span>
                                 <Copy size={20} />
                             </div>
-                            <div className="flex w-full gap-2 px-8 py-6 bg-[hsl(0,0%,15%)]">
-                                <CopyButton value={uploadResult?.password}>Password</CopyButton>
-                                <CopyButton value={downloadUrlWithPassword}>Link with Password</CopyButton>
+                            <div className="flex w-full justify-center gap-2 px-8 py-6 bg-[hsl(0,0%,15%)]">
+                                <CopyButton value={uploadResult?.password}>Copy Password</CopyButton>
+                                <CopyButton value={downloadUrl}>Copy Link only</CopyButton>
                                 <DeleteButton
                                     accessToken={uploadResult?.accessToken ?? ''}
                                     updateToken={uploadResult?.updateToken ?? ''}>

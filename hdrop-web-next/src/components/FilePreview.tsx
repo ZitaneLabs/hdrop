@@ -54,28 +54,33 @@ export default function FilePreview({ data, fileName }: Props) {
     // No data, no preview
     if (data === undefined || fileName === null) return null
 
+    const isImage = mimePrefix === 'image'
+    const isVideo = mimePrefix === 'video'
+    const isAudio = mimePrefix === 'audio'
+    const isText = !isImage && !isVideo && !isAudio && textData !== null
+
     return (
         <div className="flex flex-col justify-center items-center gap-4 p-2 w-full h-full max-h-full mb-2 overflow-hidden">
             {/* File name */}
             <div className="truncate">{fileName}</div>
 
             {/* Image preview */}
-            {mimePrefix === 'image' && (
+            {isImage && (
                 <img className="object-scale-down rounded-md min-w-min max-w-full max-h-fit h-1/2 drop-shadow-xl" alt={fileName} src={objectUrl} />
             )}
 
             {/* Video preview */}
-            {mimePrefix === 'video' && (
+            {isVideo && (
                 <video className="object-scale-down rounded-lg min-w-min max-w-full max-h-fit h-1/2 drop-shadow-xl" src={objectUrl} controls />
             )}
 
             {/* Audio preview */}
-            {mimePrefix === 'audio' && (
+            {isAudio && (
                 <audio src={objectUrl} controls />
             )}
 
             {/* Text preview */}
-            {textData !== null && (
+            {isText && (
                 <div className="bg-[hsl(0,0%,85%)] w-full md:w-10/12 lg:w-8/12 h-4/6 rounded-md drop-shadow-xl overflow-hidden">
                     <textarea className="px-4 py-2 w-full h-full outline-none bg-[hsl(0,0%,85%)] text-black font-mono flex-grow" readOnly value={textData} />
                 </div>

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 #[async_trait]
 pub trait StorageProvider {
     // String => impl as ref str
-    /// Stores the file to the specified StorageProvider. E.g., uploads it to s3 or stores it on-premise directly on the disk.
+    /// Stores the file to the specified StorageProvider. E.g., uploads it to s3 or stores it local directly on the disk.
     async fn store_file(&mut self, ident: String, content: &[u8]) -> Result<Option<String>>;
     /// Deletes the file from the specified StorageProvider.
     async fn delete_file(&mut self, ident: String) -> Result<()>;

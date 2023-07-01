@@ -5,7 +5,7 @@ use tokio::sync::{mpsc::UnboundedSender, RwLock};
 
 use crate::{
     background_workers::storage_synchronizer::ProviderSyncEntry,
-    core::{OnPremiseProvider, S3Provider, StorageProvider},
+    core::{LocalProvider, S3Provider, StorageProvider},
     error::Error,
     Result,
 };
@@ -28,7 +28,7 @@ impl AppState {
                 Ok(Box::new(S3Provider::try_from_env()?) as Box<dyn StorageProvider + Sync + Send>)
             }
             Ok(ref provider) if provider == "local" => {
-                Ok(Box::new(OnPremiseProvider::try_from_env().await?)
+                Ok(Box::new(LocalProvider::try_from_env().await?)
                     as Box<dyn StorageProvider + Sync + Send>)
             }
             Ok(provider) => Err(Error::InvalidProvider(provider)),

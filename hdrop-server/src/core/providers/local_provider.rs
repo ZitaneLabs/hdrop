@@ -7,11 +7,11 @@ use super::provider::{Fetchtype, StorageProvider};
 use crate::{utils::mb_to_bytes, Result};
 
 #[derive(Debug)]
-pub struct OnPremiseProvider {
+pub struct LocalProvider {
     storage: Cache<String, DiskStrategy, Noop>,
 }
 
-impl OnPremiseProvider {
+impl LocalProvider {
     pub async fn try_from_env() -> Result<Self> {
         let storage_path = env::local_storage_dir().unwrap_or_else(|_| PathBuf::from("files"));
         let storage_limit_mb = env::local_storage_limit_mb().ok().map(mb_to_bytes);
@@ -26,7 +26,7 @@ impl OnPremiseProvider {
 }
 
 #[async_trait]
-impl StorageProvider for OnPremiseProvider {
+impl StorageProvider for LocalProvider {
     async fn store_file(&mut self, ident: String, content: &[u8]) -> Result<Option<String>> {
         self.storage.put(ident, content).await?;
         Ok(None)

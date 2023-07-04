@@ -21,6 +21,8 @@ metrics-exporter-prometheus = "0.12.1"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing = "0.1.37"
 metrics = "0.21.0"
+metrics-util = "0.15.0"
+quanta = "0.11.1"
 
 uuid.workspace = true
 serde.workspace = true
@@ -28,3 +30,4 @@ thiserror.workspace = true
 
 hdrop-db.workspace = true
 hdrop-shared.workspace = true
+sysinfo = "0.29.3"

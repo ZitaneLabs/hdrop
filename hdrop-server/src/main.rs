@@ -6,6 +6,8 @@ mod error;
 mod server;
 mod utils;
 
+use crate::server::start_metrics_server;
+
 pub(crate) use self::{error::Result, server::Server};
 
 // Initialize global tracing subscriber
@@ -34,5 +36,11 @@ async fn main() -> Result<()> {
     }
 
     // Start the server
-    Server::new().await?.run().await
+    // The `/metrics` endpoint should not be publicly available. If behind a reverse proxy, this
+    // can be achieved by rejecting requests to `/metrics`. In this example, a second server is
+    // started on another port to expose `/metrics`.
+    let server = Server::new().await?;
+    let (_main_server, _metrics_server) = tokio::join!(server.run(), start_metrics_server());
+
+    Ok(())
 }

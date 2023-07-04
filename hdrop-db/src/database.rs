@@ -54,6 +54,15 @@ impl Database {
             .await??)
     }
 
+    pub async fn get_file_amount(&self) -> Result<i64> {
+        Ok(self
+            .pool
+            .get()
+            .await?
+            .interact(|conn| files_table::files.count().get_result(conn))
+            .await??)
+    }
+
     pub async fn update_data_url<'a>(
         &self,
         uuid: Uuid,

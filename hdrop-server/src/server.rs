@@ -1,6 +1,7 @@
 use axum::{
     extract::DefaultBodyLimit,
     http::HeaderValue,
+    middleware::from_fn,
     routing::{get, post},
     Router,
 };
@@ -17,6 +18,7 @@ use tracing::Level;
 
 mod app_state;
 mod cache;
+mod middleware;
 mod multipart;
 mod routes;
 
@@ -25,6 +27,9 @@ pub use cache::CacheVariant;
 use routes::{
     delete_file, get_challenge, get_file, update_file_expiry, upload_file, verify_challenge,
 };
+
+pub use middleware::start_metrics_server;
+use middleware::track_metrics;
 
 use crate::{
     background_workers::{
@@ -137,6 +142,7 @@ impl Server {
                     .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
                     .on_response(DefaultOnResponse::new().level(Level::INFO)),
             )
+            .route_layer(from_fn(track_metrics))
             // Order matters! The CORS layer must be the last layer in the middleware stack.
             .layer(
                 CorsLayer::new()

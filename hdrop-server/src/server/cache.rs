@@ -1,5 +1,6 @@
 use bincache::{
-    strategies::Limits, Cache, CacheBuilder, DiskStrategy, HybridStrategy, MemoryStrategy, Noop,
+    strategies::Limits, Cache, CacheBuilder, CacheCapacity, DiskStrategy, HybridStrategy,
+    MemoryStrategy, Noop,
 };
 use hdrop_shared::env;
 use std::{borrow::Cow, path::PathBuf};
@@ -100,6 +101,14 @@ impl CacheVariant {
             CacheVariant::Disk(cache) => cache.exists(key),
             CacheVariant::Hybrid(cache) => cache.exists(key),
             CacheVariant::Memory(cache) => cache.exists(key),
+        }
+    }
+
+    pub fn capacity(&self) -> Option<CacheCapacity> {
+        match self {
+            CacheVariant::Disk(cache) => cache.capacity(),
+            CacheVariant::Hybrid(cache) => cache.capacity(),
+            CacheVariant::Memory(cache) => cache.capacity(),
         }
     }
 }

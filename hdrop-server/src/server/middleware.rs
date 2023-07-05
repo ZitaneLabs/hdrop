@@ -7,7 +7,7 @@
 //! cargo run -p example-prometheus-metrics
 //! ```
 
-use crate::core::GAUGE_NAMES;
+use crate::core::names::GAUGE_NAMES;
 use axum::{
     extract::MatchedPath, http::Request, middleware::Next, response::IntoResponse, routing::get,
     Router,
@@ -38,14 +38,18 @@ fn setup_metrics_recorder() -> PrometheusHandle {
         0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
     ];
 
-    PrometheusBuilder::new()
+    let result = PrometheusBuilder::new()
         .set_buckets_for_metric(
             Matcher::Full("http_requests_duration_seconds".to_string()),
             EXPONENTIAL_SECONDS,
         )
         .unwrap()
         .install_recorder()
-        .unwrap()
+        .unwrap();
+
+    register_metrics();
+
+    result
 }
 
 pub async fn track_metrics<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
@@ -67,8 +71,6 @@ pub async fn track_metrics<B>(req: Request<B>, next: Next<B>) -> impl IntoRespon
         ("path", path),
         ("status", status),
     ];
-
-    register_metrics();
 
     metrics::increment_counter!("http_requests_total", &labels);
     metrics::histogram!("http_requests_duration_seconds", latency, &labels);

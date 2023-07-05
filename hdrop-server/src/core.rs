@@ -9,5 +9,5 @@ pub use self::providers::{
 
 pub use self::metrics::{
     monitoring::{Status, StorageMonitoring},
-    GAUGE_NAMES,
+    names,
 };

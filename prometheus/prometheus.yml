@@ -3,11 +3,11 @@ global:
   scrape_timeout: 15s
 
 rule_files:
-  - alert.rules.yml
+- alert.rules.yml
 
 scrape_configs:
-  - job_name: hdrop-backend
-    metrics_path: /v1/metrics
-    static_configs:
-      - targets:
-        - 'api:80'
+- job_name: hdrop-backend
+  metrics_path: /metrics
+  static_configs:
+  - targets:
+    - 'api:3001'

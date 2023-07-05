@@ -31,5 +31,10 @@ RUN chmod +x entrypoint.sh
 # Install pm2
 RUN npm i -g pm2@latest
 
+# API
 EXPOSE 80
+
+# Prometheus exporter
+EXPOSE 3001
+
 ENTRYPOINT ["sh", "entrypoint.sh"]

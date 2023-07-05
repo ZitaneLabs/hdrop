@@ -25,8 +25,8 @@ pub async fn start_metrics_server() {
     let app = metrics_app();
 
     // NOTE: expose metrics enpoint on a different port
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3001));
-    tracing::debug!("listening on {}", addr);
+    let addr = SocketAddr::from(([0; 4], 3001));
+    tracing::info!("Prometheus exporter listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

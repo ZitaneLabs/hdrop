@@ -1,8 +1,10 @@
-use crate::Result;
+use crate::{core::monitoring::StorageMonitoring, Result};
 use async_trait::async_trait;
 
+/// StorageProvider trait defining all functions which a Storage needs to implemented.
+/// Each StorageProvider must also implement [StorageMonitoring]. If this is not possible, the default must be implemented.
 #[async_trait]
-pub trait StorageProvider {
+pub trait StorageProvider: StorageMonitoring {
     // String => impl as ref str
     /// Stores the file to the specified StorageProvider. E.g., uploads it to s3 or stores it local directly on the disk.
     async fn store_file(&mut self, ident: String, content: &[u8]) -> Result<Option<String>>;

@@ -7,7 +7,7 @@ mod server;
 mod utils;
 
 pub(crate) use self::{error::Result, server::Server};
-use crate::server::start_metrics_server;
+use crate::core::start_metrics_server;
 
 // Initialize global tracing subscriber
 fn setup_tracing() {

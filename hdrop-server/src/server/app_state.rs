@@ -5,7 +5,7 @@ use tokio::sync::{mpsc::UnboundedSender, RwLock};
 
 use crate::{
     background_workers::storage_synchronizer::ProviderSyncEntry,
-    core::{LocalProvider, S3Provider, StorageProvider},
+    core::{monitoring::StorageMonitoring, LocalProvider, S3Provider, StorageProvider},
     error::Error,
     Result,
 };
@@ -16,7 +16,7 @@ pub struct AppState {
     pub provider: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,
     pub database: Arc<Database>,
     pub cache: Arc<RwLock<CacheVariant>>,
-    pub provider_sync_tx: UnboundedSender<ProviderSyncEntry>,
+    provider_sync_tx: UnboundedSender<ProviderSyncEntry>,
 }
 
 impl AppState {
@@ -44,5 +44,9 @@ impl AppState {
             provider_sync_tx,
             cache,
         })
+    }
+
+    pub fn get_provider_sync_tx(&self) -> UnboundedSender<ProviderSyncEntry> {
+        self.provider_sync_tx.clone()
     }
 }

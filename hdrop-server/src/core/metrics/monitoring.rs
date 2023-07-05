@@ -30,17 +30,25 @@ impl Status {
     }
 }
 
+/// Trait defining functions to monitor storage related metrics.
 #[async_trait]
 pub trait StorageMonitoring {
-    /// Get the occupied storage space in bytes.
-    async fn used_storage(&self) -> Result<u64>;
+    /// Get the occupied storage space in bytes. Returns None if not implemented/available.
+    async fn used_storage(&self) -> Option<Result<u64>> {
+        None
+    }
 }
 
+/// Struct to monitor the cache.
 pub struct CacheMonitoring {
-    pub cache: Arc<RwLock<CacheVariant>>,
+    cache: Arc<RwLock<CacheVariant>>,
 }
 
 impl CacheMonitoring {
+    pub fn new(cache: Arc<RwLock<CacheVariant>>) -> Self {
+        Self { cache }
+    }
+
     /// Get the status of the Cache.
     pub async fn cache_status(&self) -> Option<Status> {
         let status = self.cache.read().await.capacity();
@@ -48,11 +56,16 @@ impl CacheMonitoring {
     }
 }
 
+/// Struct to monitor the database and file count within the db.
 pub struct DatabaseMonitoring {
-    pub database: Arc<Database>,
+    database: Arc<Database>,
 }
 
 impl DatabaseMonitoring {
+    pub fn new(database: Arc<Database>) -> Self {
+        Self { database }
+    }
+
     /// Determine the number of files currently stored according to the database.
     pub async fn stored_files(&self) -> Result<usize> {
         Ok(self.database.get_file_amount().await? as usize)
@@ -68,7 +81,7 @@ pub struct NetworkStatus {
 
 /// Struct to persist system monitoring.
 pub struct SystemMonitoring {
-    pub sys: System,
+    sys: System,
 }
 
 impl SystemMonitoring {
@@ -88,7 +101,7 @@ impl SystemMonitoring {
     }
 
     /// Get the usage of the server CPU
-    pub async fn cpu_status(&mut self) -> Vec<Status> {
+    pub fn cpu_status(&mut self) -> Vec<Status> {
         self.sys.refresh_cpu(); // refresh_cpu_specifics(refresh_kind)
         let mut cpus = vec![];
         for cpu in self.sys.cpus() {
@@ -103,7 +116,7 @@ impl SystemMonitoring {
 
     /// Get current network status
     /// Network octets in/out
-    pub async fn network_status(&mut self) -> Vec<NetworkStatus> {
+    pub fn network_status(&mut self) -> Vec<NetworkStatus> {
         self.sys.refresh_all();
         let mut networks = vec![];
         for (interface_name, data) in self.sys.networks() {

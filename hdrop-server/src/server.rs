@@ -18,18 +18,16 @@ use tracing::Level;
 
 mod app_state;
 mod cache;
-mod middleware;
 mod multipart;
 mod routes;
 
-use app_state::AppState;
+pub use app_state::AppState;
 pub use cache::CacheVariant;
 use routes::{
     delete_file, get_challenge, get_file, update_file_expiry, upload_file, verify_challenge,
 };
 
-pub use middleware::start_metrics_server;
-use middleware::track_metrics;
+use crate::background_workers::{metrics_middleware, MetricsUpdater};
 
 use crate::{
     background_workers::{
@@ -116,6 +114,16 @@ impl Server {
             .run(),
         );
 
+        // Start metrics updater worker
+        tokio::spawn(
+            MetricsUpdater::new(
+                self.state.provider.clone(),
+                self.state.database.clone(),
+                self.state.cache.clone(),
+            )
+            .update_metrics(),
+        );
+
         // Calculate request body limit
         let request_body_limit_bytes = mb_to_bytes(env::single_file_limit_mb().unwrap_or(100));
 
@@ -142,7 +150,7 @@ impl Server {
                     .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
                     .on_response(DefaultOnResponse::new().level(Level::INFO)),
             )
-            .route_layer(from_fn(track_metrics))
+            .route_layer(from_fn(metrics_middleware::track_requests))
             // Order matters! The CORS layer must be the last layer in the middleware stack.
             .layer(
                 CorsLayer::new()
@@ -154,7 +162,7 @@ impl Server {
         // Server configuration
         let server_host = "0.0.0.0";
         let server_port = env::port().unwrap_or(8080);
-        let server_addr = format!("{server_host}:{server_port}");
+        let server_addr = format!("{server_host}:{server_port}"); // Todo: Refactor as in middleware.rs
         let socket_addr = SocketAddr::from_str(&server_addr)?;
 
         tracing::info!("Starting server on {server_addr}");

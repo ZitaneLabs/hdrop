@@ -1,6 +1,8 @@
-pub const GAUGE_NAMES: [&str; 2] = [
+pub const GAUGE_NAMES: [&str; 4] = [
     network::HTTP_REQUESTS_TOTAL,
     network::HTTP_REQUESTS_DURATION_SECONDS,
+    storage::USED_STORAGE_B,
+    storage::DATABASE_FILE_COUNT,
 ];
 
 /// Server requests, latency

@@ -4,7 +4,7 @@ use regex::Regex;
 use s3::{creds::Credentials, region::Region, Bucket};
 
 use super::provider::{Fetchtype, StorageProvider};
-use crate::Result;
+use crate::{core::monitoring::StorageMonitoring, Result};
 
 #[derive(Debug)]
 pub struct S3Provider {
@@ -72,3 +72,5 @@ impl StorageProvider for S3Provider {
         Ok(self.bucket.object_exists(s3_path).await?)
     }
 }
+
+impl StorageMonitoring for S3Provider {}

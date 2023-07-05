@@ -7,7 +7,4 @@ pub use self::providers::{
     s3_provider::S3Provider,
 };
 
-pub use self::metrics::{
-    monitoring::{Status, StorageMonitoring},
-    names,
-};
+pub use self::metrics::{monitoring, names, start_metrics_server};

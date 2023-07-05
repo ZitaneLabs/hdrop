@@ -7,10 +7,12 @@
 //! cargo run -p example-prometheus-metrics
 //! ```
 
+use crate::core::GAUGE_NAMES;
 use axum::{
     extract::MatchedPath, http::Request, middleware::Next, response::IntoResponse, routing::get,
     Router,
 };
+use metrics::register_gauge;
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
 use std::{future::ready, net::SocketAddr, time::Instant};
 
@@ -66,8 +68,16 @@ pub async fn track_metrics<B>(req: Request<B>, next: Next<B>) -> impl IntoRespon
         ("status", status),
     ];
 
+    register_metrics();
+
     metrics::increment_counter!("http_requests_total", &labels);
     metrics::histogram!("http_requests_duration_seconds", latency, &labels);
 
     response
+}
+
+fn register_metrics() {
+    for name in GAUGE_NAMES {
+        register_gauge!(name);
+    }
 }

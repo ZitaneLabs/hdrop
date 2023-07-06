@@ -1,6 +1,8 @@
 <h1><img src="./hdrop-web-next/public/logo512.png" width="32" height="32" />&nbsp;hdrop</h1>
 
 **Simple, self-hosted encrypted file transfer.**
+## Preview
+![hdrop](https://github.com/ZitaneLabs/hdrop/assets/107320179/b88ee1a8-219e-4659-bbd5-03782ca61f17)
 
 ## Features
 
@@ -14,13 +16,14 @@
 
 ## Docs
 
-| Name                   | Link                              |
-| ---------------------- | --------------------------------- |
+| Name                   | Link                                  |
+| ---------------------- | ---------------------------------     |
 | Deployment             | [deployment.md](./docs/deployment.md) |
-| Security               | [security.md](./docs/security.md) |
-| API Spec v1 (OpenAPI)  | [api_v1.yml](./docs/api_v1.yml)     |
-| Full Feature List      | [features.md](./docs/features.md) |
-| Changelog              | [changelog.md](./docs/changelog.md) |
+| Security               | [security.md](./docs/security.md)     |
+| API Spec v1 (OpenAPI)  | [api_v1.yml](./docs/api_v1.yml)       |
+| Metrics                | [metrics.md](./docs/metrics.md)       |
+| Full Feature List      | [features.md](./docs/features.md)     |
+| Changelog              | [changelog.md](./docs/changelog.md)   |
 
 
 ## Development

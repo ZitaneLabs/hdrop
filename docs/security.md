@@ -15,7 +15,7 @@ hdrop exclusively uses `WebCrypto` APIs provided by the browser for all cryptogr
 ### File Encryption (Client)
 
 1. Generate a random initialization vector `IV` with a size of 12 bytes
-   - The frontend provides **two** static XOR masks to generate different IVs for the file name and the challenge (based on the random IV).
+   - The frontend provides **two** static XOR masks to generate different IVs for the file name and the challenge (based on the random IV).[^1]
    - Producing IV, Name_IV, Challenge_IV
 3. Encrypt file data `Fd` using `AES-256-GCM-ENC(IV, K, Fd)`
    - Producing encrypted file data `EFd`
@@ -51,7 +51,7 @@ hdrop exclusively uses `WebCrypto` APIs provided by the browser for all cryptogr
 | Access Token `Ta` | `no`    | `Used for file retrival by third parties`       |
 | Update Token `Tu` | `yes`   | `Used for authenticating the original uploader` |
 
-## File Manipulation
+### File Manipulation
 > Update expiry and manual deletion can only be done by the owner (original uploader).
 
 ### Update expiry time
@@ -95,3 +95,5 @@ hdrop exclusively uses `WebCrypto` APIs provided by the browser for all cryptogr
 #### Notes
 
 The client can - given the right access token - always request the encrypted file challenge. The challenge is mainly a solution to improve UX by avoiding having to download the entirety of encrypted file contents before attempting decryption. It also has the added benefit of completely denying access to the encrypted file data and name for people without the right password.
+
+[^1]: The GCM mode of operation should **never** reuse the same IV to encrypt other related data/messages. Therefore two XOR masks are provided instead of generating three different IVs. This ensures 100% that the IVs for data, name and challenge are all different. The XOR masks are located in the frontend to avoid storing two additional rows for the IVs in the backend database.

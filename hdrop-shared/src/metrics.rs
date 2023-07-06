@@ -3,9 +3,7 @@ use async_trait::async_trait;
 /// Trait to define an update metrics function
 #[async_trait]
 pub trait UpdateMetrics {
-    async fn update_metrics(&self) {
-
-    }
+    async fn update_metrics(&self) {}
 }
 
 pub mod names {
@@ -37,7 +35,6 @@ pub mod names {
 
     pub mod system {
         pub const AVG_CPU_USAGE: &str = "avg_cpu_usage";
-        pub const RAM_USAGE: &str = "ram_usage";
+        pub const RAM_USAGE_B: &str = "ram_usage_bytes";
     }
-
 }

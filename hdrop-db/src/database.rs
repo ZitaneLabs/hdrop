@@ -1,10 +1,13 @@
+use async_trait::async_trait;
 use chrono::Utc;
 use deadpool_diesel::postgres::{Manager, Pool};
 use diesel::prelude::*;
-use hdrop_shared::{responses, metrics::{UpdateMetrics, names}};
+use hdrop_shared::{
+    metrics::{names, UpdateMetrics},
+    responses,
+};
 use std::borrow::Cow;
 use uuid::Uuid;
-use async_trait::async_trait;
 
 use crate::{
     error::Result,
@@ -29,8 +32,7 @@ impl Database {
     }
 
     pub async fn insert_file(&self, file: InsertFile) -> Result<File> {
-        let r =
-        Ok(self
+        let r = Ok(self
             .pool
             .get()
             .await?
@@ -254,10 +256,10 @@ impl Database {
 impl UpdateMetrics for Database {
     /// Monitor the database file count.
     async fn update_metrics(&self) {
-            // Determine the number of files currently stored according to the database.
-            let file_count = self.get_file_rows().await.unwrap_or(0);
+        // Determine the number of files currently stored according to the database.
+        let file_count = self.get_file_rows().await.unwrap_or(0);
 
-            // Update file count gauge
-            metrics::gauge!(names::storage::DATABASE_FILE_COUNT, file_count as f64);
+        // Update file count gauge
+        metrics::gauge!(names::storage::DATABASE_FILE_COUNT, file_count as f64);
     }
 }

@@ -18,7 +18,7 @@ impl MetricsUpdater {
             // Update RAM
             let ram_status = self.system.ram_status();
 
-            metrics::gauge!(names::system::RAM_USAGE, ram_status.used() as f64);
+            metrics::gauge!(names::system::RAM_USAGE_B, ram_status.used() as f64);
 
             // Update CPU
             let cpu_status = self.system.cpu_status();

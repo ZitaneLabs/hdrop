@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 use bincache::{Cache, CacheBuilder, DiskStrategy, Noop};
-use hdrop_shared::env;
+use hdrop_shared::{
+    env,
+    metrics::{names, UpdateMetrics},
+};
 use std::path::PathBuf;
 
 use super::provider::{Fetchtype, StorageProvider};
@@ -31,11 +34,15 @@ impl LocalProvider {
 impl StorageProvider for LocalProvider {
     async fn store_file(&mut self, ident: String, content: &[u8]) -> Result<Option<String>> {
         self.storage.put(ident, content).await?;
+        // Action-based update of metrics due to write operation
+        self.update_metrics().await;
         Ok(None)
     }
 
     async fn delete_file(&mut self, ident: String) -> Result<()> {
         self.storage.delete(ident).await?;
+        // Action-based update of metrics due to write operation
+        self.update_metrics().await;
         Ok(())
     }
 
@@ -85,5 +92,15 @@ impl StorageMonitoring for LocalProvider {
 
             Some(Ok(used_storage))
         }
+    }
+}
+
+#[async_trait]
+impl UpdateMetrics for LocalProvider {
+    async fn update_metrics(&self) {
+        let used_storage = self.used_storage().await.and_then(|s| s.ok()).unwrap_or(0);
+
+        // Update storage gauge
+        metrics::gauge!(names::storage::USED_STORAGE_B, used_storage as f64);
     }
 }

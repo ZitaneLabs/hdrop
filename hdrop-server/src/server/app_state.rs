@@ -5,7 +5,7 @@ use tokio::sync::{mpsc::UnboundedSender, RwLock};
 
 use crate::{
     background_workers::storage_synchronizer::ProviderSyncEntry,
-    core::{monitoring::StorageMonitoring, LocalProvider, S3Provider, StorageProvider},
+    core::{LocalProvider, S3Provider, StorageProvider},
     error::Error,
     Result,
 };

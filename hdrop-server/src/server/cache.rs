@@ -1,8 +1,12 @@
+use async_trait::async_trait;
 use bincache::{
     strategies::Limits, Cache, CacheBuilder, CacheCapacity, DiskStrategy, HybridStrategy,
     MemoryStrategy, Noop,
 };
-use hdrop_shared::env;
+use hdrop_shared::{
+    env,
+    metrics::{names, UpdateMetrics},
+};
 use std::{borrow::Cow, path::PathBuf};
 use uuid::Uuid;
 
@@ -56,16 +60,16 @@ impl CacheVariant {
             CacheVariant::Hybrid(cache) => cache.put(key, value).await,
             CacheVariant::Memory(cache) => cache.put(key, value).await,
         };
-        {
-            match &result {
-                Err(bincache::Error::LimitExceeded { limit_kind }) => {
-                    tracing::error!("Cache limit exceeded: {limit_kind}");
+        let result = match &result {
+            Err(bincache::Error::LimitExceeded { limit_kind }) => {
+                tracing::error!("Cache limit exceeded: {limit_kind}");
 
-                    Ok(result?)
-                }
-                _ => Ok(result?),
+                Ok(result?)
             }
-        }
+            _ => Ok(result?),
+        };
+        self.update_metrics().await;
+        result
     }
 
     pub async fn get(&self, key: Uuid) -> Result<Cow<'_, [u8]>> {
@@ -77,11 +81,13 @@ impl CacheVariant {
     }
 
     pub async fn delete(&mut self, key: Uuid) -> Result<()> {
-        match self {
+        let result = match self {
             CacheVariant::Disk(cache) => Ok(cache.delete(key).await?),
             CacheVariant::Hybrid(cache) => Ok(cache.delete(key).await?),
             CacheVariant::Memory(cache) => Ok(cache.delete(key).await?),
-        }
+        };
+        self.update_metrics().await;
+        result
     }
 
     pub fn key_from_str(key: &str) -> Option<Uuid> {
@@ -109,6 +115,25 @@ impl CacheVariant {
             CacheVariant::Disk(cache) => cache.capacity(),
             CacheVariant::Hybrid(cache) => cache.capacity(),
             CacheVariant::Memory(cache) => cache.capacity(),
+        }
+    }
+}
+
+#[async_trait]
+impl UpdateMetrics for CacheVariant {
+    /// Monitor the cache capacity.
+    async fn update_metrics(&self) {
+        if let Some(capacity) = self.capacity() {
+            // Update cache total capacity gauge
+            metrics::gauge!(
+                names::storage::CACHE_TOTAL_CAPACITY_B,
+                capacity.total() as f64
+            );
+            // Update cache used capacity gauge
+            metrics::gauge!(
+                names::storage::CACHE_USED_CAPACITY_B,
+                capacity.used() as f64
+            );
         }
     }
 }

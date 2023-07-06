@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use hdrop_shared::env;
+use hdrop_shared::{env, metrics::UpdateMetrics};
 use regex::Regex;
 use s3::{creds::Credentials, region::Region, Bucket};
 
@@ -74,3 +74,5 @@ impl StorageProvider for S3Provider {
 }
 
 impl StorageMonitoring for S3Provider {}
+
+impl UpdateMetrics for S3Provider {}

@@ -10,6 +10,8 @@ members = [
 thiserror = "1.0"
 serde =  { version = "1", features = ["derive"] }
 uuid = { version = ">=0.7.0, <2.0.0", features = ["v4", "serde"] }
+async-trait = "0.1.68"
+metrics = "0.21.0"
 
 hdrop-db = { path = "hdrop-db" }
 hdrop-shared = {path = "hdrop-shared"}

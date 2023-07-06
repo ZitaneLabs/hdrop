@@ -1,9 +1,10 @@
 use chrono::Utc;
 use deadpool_diesel::postgres::{Manager, Pool};
 use diesel::prelude::*;
-use hdrop_shared::responses;
+use hdrop_shared::{responses, metrics::{UpdateMetrics, names}};
 use std::borrow::Cow;
 use uuid::Uuid;
+use async_trait::async_trait;
 
 use crate::{
     error::Result,
@@ -28,6 +29,7 @@ impl Database {
     }
 
     pub async fn insert_file(&self, file: InsertFile) -> Result<File> {
+        let r =
         Ok(self
             .pool
             .get()
@@ -37,7 +39,10 @@ impl Database {
                     .values(file)
                     .get_result::<File>(conn)
             })
-            .await??)
+            .await??);
+        // Action-based update of metrics
+        self.update_metrics().await;
+        r
     }
 
     pub async fn update_file(&self, file: File) -> Result<()> {
@@ -54,7 +59,7 @@ impl Database {
             .await??)
     }
 
-    pub async fn get_file_amount(&self) -> Result<i64> {
+    pub async fn get_file_rows(&self) -> Result<i64> {
         Ok(self
             .pool
             .get()
@@ -147,7 +152,7 @@ impl Database {
         })
     }
 
-    pub async fn flush(&self) -> Result<Vec<Uuid>> {
+    pub async fn get_files_to_flush(&self) -> Result<Vec<Uuid>> {
         Ok(self
             .pool
             .get()
@@ -175,7 +180,7 @@ impl Database {
     }
 
     pub async fn delete_file(&self, file: File) -> Result<File> {
-        Ok(self
+        let r = Ok(self
             .pool
             .get()
             .await?
@@ -183,7 +188,10 @@ impl Database {
                 diesel::delete(files_table::files.filter(files_table::uuid.eq(&file.uuid)))
                     .get_result(conn)
             })
-            .await??)
+            .await??);
+        // Action-based update of metrics
+        self.update_metrics().await;
+        r
     }
 
     pub async fn delete_file_by_uuid(&self, uuid: Uuid) -> Result<()> {
@@ -239,5 +247,17 @@ impl Database {
 
     pub fn generate_update_token() -> String {
         TokenGenerator::generate_token(UPDATE_TOKEN_LENGTH)
+    }
+}
+
+#[async_trait]
+impl UpdateMetrics for Database {
+    /// Monitor the database file count.
+    async fn update_metrics(&self) {
+            // Determine the number of files currently stored according to the database.
+            let file_count = self.get_file_rows().await.unwrap_or(0);
+
+            // Update file count gauge
+            metrics::gauge!(names::storage::DATABASE_FILE_COUNT, file_count as f64);
     }
 }

@@ -12,7 +12,6 @@ chrono = { version = "0.4", features = ["serde"] }
 futures = { version = "=0.3.25", default-features = false }
 dotenvy = "0.15"
 serde_json = "1.0.96"
-async-trait = "0.1.68"
 regex = "1.8.3"
 tower-http = { version = "0.4.0", features = ["cors", "limit", "compression-br", "trace"] }
 bincache = { git = "https://github.com/ZitaneLabs/bincache.git", features = ["rt_tokio_1", "comp_zstd"] }
@@ -20,13 +19,14 @@ s3 = { git = "https://github.com/ZitaneLabs/rust-s3-async.git", package="zitane-
 metrics-exporter-prometheus = "0.12.1"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing = "0.1.37"
-metrics = "0.21.0"
 metrics-util = "0.15.0"
 quanta = "0.11.1"
 
 uuid.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+async-trait.workspace = true
+metrics.workspace = true
 
 hdrop-db.workspace = true
 hdrop-shared.workspace = true

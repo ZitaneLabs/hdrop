@@ -1,9 +1,6 @@
-use crate::{server::CacheVariant, Result};
+use crate::Result;
 use async_trait::async_trait;
-use hdrop_db::Database;
-use std::sync::Arc;
-use sysinfo::{CpuExt, NetworkExt, RefreshKind, System, SystemExt};
-use tokio::sync::RwLock;
+use sysinfo::{CpuExt, NetworkExt, System, SystemExt};
 
 /// Agnostic status struct for any limited resource.
 pub struct Status {
@@ -28,6 +25,16 @@ impl Status {
     pub fn used(&self) -> usize {
         self.used_amount
     }
+
+    /// Get the capacity utilization as a value between 0 and 1.
+    pub fn utilization(&self) -> f64 {
+        self.used_amount as f64 / self.total_amount as f64
+    }
+
+    /// Get the capacity utilization as a value between 0% and 100%.
+    pub fn utilization_percentage(&self) -> f64 {
+        self.utilization() * 100.00
+    }
 }
 
 /// Trait defining functions to monitor storage related metrics.
@@ -39,44 +46,25 @@ pub trait StorageMonitoring {
     }
 }
 
-/// Struct to monitor the cache.
-pub struct CacheMonitoring {
-    cache: Arc<RwLock<CacheVariant>>,
-}
-
-impl CacheMonitoring {
-    pub fn new(cache: Arc<RwLock<CacheVariant>>) -> Self {
-        Self { cache }
-    }
-
-    /// Get the status of the Cache.
-    pub async fn cache_status(&self) -> Option<Status> {
-        let status = self.cache.read().await.capacity();
-        status.map(|capacity| Status::new(capacity.total(), capacity.used()))
-    }
-}
-
-/// Struct to monitor the database and file count within the db.
-pub struct DatabaseMonitoring {
-    database: Arc<Database>,
-}
-
-impl DatabaseMonitoring {
-    pub fn new(database: Arc<Database>) -> Self {
-        Self { database }
-    }
-
-    /// Determine the number of files currently stored according to the database.
-    pub async fn stored_files(&self) -> Result<usize> {
-        Ok(self.database.get_file_amount().await? as usize)
-    }
-}
-
 /// Struct for network interfaces with outgoing and incoming data (octets).
 pub struct NetworkStatus {
-    pub interface: String,
-    pub data_received: usize,
-    pub data_transmitted: usize,
+    interface: String,
+    data_received: usize,
+    data_transmitted: usize,
+}
+
+impl NetworkStatus {
+    pub fn interface(&self) -> String {
+        self.interface.clone()
+    }
+
+    pub fn received(&self) -> usize {
+        self.data_received
+    }
+
+    pub fn transmitted(&self) -> usize {
+        self.data_transmitted
+    }
 }
 
 /// Struct to persist system monitoring.

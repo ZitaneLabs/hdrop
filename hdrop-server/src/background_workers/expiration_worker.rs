@@ -27,7 +27,7 @@ impl ExpirationWorker {
 
     pub async fn get_expired_files(&self) -> Vec<Uuid> {
         self.database
-            .flush()
+            .get_files_to_flush()
             .await
             .unwrap_or_else(|_| Vec::with_capacity(0))
     }

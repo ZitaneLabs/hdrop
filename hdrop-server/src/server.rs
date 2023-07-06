@@ -5,7 +5,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use hdrop_shared::env;
+use hdrop_shared::{env, metrics::UpdateMetrics};
 use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 use tower_http::{
@@ -94,7 +94,16 @@ impl Server {
         })
     }
 
-    /// Run the server.
+    /// Run the main server.
+    /// The order of execution must be maintained.
+    ///
+    /// 1. Upon running the server the cache will get recovered.
+    ///
+    /// 2. Background workers will start for storage synchronization and expiration workers.
+    ///
+    /// 3. Metrics will be initialized.
+    ///
+    /// 4. Lastly, the server will be initialized and started.
     pub async fn run(self) -> Result<()> {
         // Recover cache from last session
         self.recover_cache().await;
@@ -114,15 +123,18 @@ impl Server {
             .run(),
         );
 
-        // Start metrics updater worker
-        tokio::spawn(
-            MetricsUpdater::new(
-                self.state.provider.clone(),
-                self.state.database.clone(),
-                self.state.cache.clone(),
-            )
-            .update_metrics(),
-        );
+        // Init metrics after start
+        // Update cache metrics
+        self.state.cache.read().await.update_metrics().await;
+
+        // Update db metrics
+        self.state.database.update_metrics().await;
+
+        // Update storage metrics
+        self.state.provider.read().await.update_metrics().await;
+
+        // Start metrics update worker for time-based updates of system gauges
+        tokio::spawn(MetricsUpdater::new().update_metrics());
 
         // Calculate request body limit
         let request_body_limit_bytes = mb_to_bytes(env::single_file_limit_mb().unwrap_or(100));

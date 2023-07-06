@@ -1,60 +1,51 @@
-use crate::{
-    core::{
-        monitoring::{CacheMonitoring, DatabaseMonitoring, SystemMonitoring},
-        names::{network, storage, system},
-        LocalProvider, StorageProvider,
-    },
-    server::{AppState, CacheVariant},
-};
-use hdrop_db::Database;
-use std::{sync::Arc, time::Duration};
-use tokio::sync::RwLock;
-
+use crate::core::monitoring::SystemMonitoring;
+use hdrop_shared::metrics::names;
+use std::time::Duration;
 pub struct MetricsUpdater {
-    storage: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,
-    cache: CacheMonitoring,
-    database: DatabaseMonitoring,
     system: SystemMonitoring,
 }
 
 impl MetricsUpdater {
-    pub fn new(
-        provider: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,
-        database: Arc<Database>,
-        cache: Arc<RwLock<CacheVariant>>,
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
-            storage: provider,
-            cache: CacheMonitoring::new(cache),
-            database: DatabaseMonitoring::new(database),
             system: SystemMonitoring::new(),
         }
     }
 
-    /// Update all metrics except for the self updating ones (requests)
+    /// Time-based update of all metrics except for the self updating ones (requests)
     pub async fn update_metrics(mut self) {
         loop {
-            // Update Storage
-            let provider = self.storage.read().await;
-            let used_storage = provider
-                .used_storage()
-                .await
-                .map(|s| s.ok())
-                .flatten()
-                .unwrap_or_else(|| 0);
-            // Update number of files stored
-            let stored_files = self.database.stored_files().await.ok().unwrap_or_else(|| 0);
-            // Update system
+            // Update RAM
             let ram_status = self.system.ram_status();
-            let cpu_status = self.system.cpu_status();
-            let network_status = self.system.network_status();
-            // Update Cache
-            let cache_status = self.cache.cache_status().await;
 
-            // Update Gauges
-            // Update storage gauge
-            metrics::gauge!(storage::USED_STORAGE_B, used_storage as f64);
-            metrics::gauge!(storage::DATABASE_FILE_COUNT, stored_files as f64);
+            metrics::gauge!(names::system::RAM_USAGE, ram_status.used() as f64);
+
+            // Update CPU
+            let cpu_status = self.system.cpu_status();
+            let len = cpu_status.len() as f64;
+            let mut added_up_usage = 0.;
+            for cpu in cpu_status {
+                added_up_usage += cpu.utilization();
+            }
+
+            let average = added_up_usage / len;
+
+            metrics::gauge!(names::system::AVG_CPU_USAGE, average);
+
+            // Update Network
+            let mut network_status = self.system.network_status().into_iter();
+            let (received, transmitted) = match network_status.next() {
+                Some(network) => (network.received(), network.transmitted()),
+                None => (0, 0),
+            };
+
+            metrics::gauge!(names::network::NETWORK_OCTETS_RECEIVED, received as f64);
+
+            metrics::gauge!(
+                names::network::NETWORK_OCTETS_TRANSMITTED,
+                transmitted as f64
+            );
+
             tokio::time::sleep(Duration::from_secs(60)).await;
         }
     }

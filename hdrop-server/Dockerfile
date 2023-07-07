@@ -22,7 +22,7 @@ COPY hdrop-shared ./hdrop-shared
 COPY hdrop-server ./hdrop-server
 
 # Build server
-RUN cargo build --release
+RUN cargo build --release --locked -p hdrop-server
 
 # Copy entrypoint script
 COPY hdrop-server/infra/entrypoint.sh ./

@@ -53,6 +53,7 @@ impl MetricsUpdater {
 
 pub mod metrics_middleware {
     use axum::{extract::MatchedPath, http::Request, middleware::Next, response::IntoResponse};
+    use hdrop_shared::metrics::names;
     use std::time::Instant;
 
     /// Middleware which is plugged in to track everything related to requests.
@@ -76,8 +77,8 @@ pub mod metrics_middleware {
             ("status", status),
         ];
 
-        metrics::increment_counter!("http_requests_total", &labels);
-        metrics::histogram!("http_requests_duration_seconds", latency, &labels);
+        metrics::increment_counter!(names::network::HTTP_REQUESTS_TOTAL, &labels);
+        metrics::histogram!(names::network::HTTP_REQUESTS_DURATION_SECONDS, latency, &labels);
 
         response
     }

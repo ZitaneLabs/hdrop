@@ -7,13 +7,19 @@ pub trait UpdateMetrics {
 }
 
 pub mod names {
-    pub const GAUGE_NAMES: [&str; 6] = [
-        network::HTTP_REQUESTS_TOTAL,
-        network::HTTP_REQUESTS_DURATION_SECONDS,
+    pub const GAUGE_NAMES: [&str; 4] = [
         storage::USED_STORAGE_B,
         storage::CACHE_TOTAL_CAPACITY_B,
         storage::CACHE_USED_CAPACITY_B,
         storage::DATABASE_FILE_COUNT,
+    ];
+
+    pub const HISTOGRAM_NAMES: [&str; 1] = [
+        network::HTTP_REQUESTS_DURATION_SECONDS,
+    ];
+
+    pub const COUNTER_NAMES: [&str; 1] = [
+        network::HTTP_REQUESTS_TOTAL,
     ];
 
     /// Server requests, latency

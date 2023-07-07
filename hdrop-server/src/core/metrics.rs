@@ -3,7 +3,7 @@ pub mod monitoring;
 
 use axum::{routing::get, Router};
 use hdrop_shared::metrics::names;
-use metrics::register_gauge;
+use metrics::{register_gauge, register_histogram, register_counter};
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
 use std::{future::ready, net::SocketAddr};
 
@@ -29,7 +29,7 @@ impl PrometheusMetricsServer {
 
         let result = PrometheusBuilder::new()
             .set_buckets_for_metric(
-                Matcher::Full("http_requests_duration_seconds".to_string()),
+                Matcher::Full(names::network::HTTP_REQUESTS_DURATION_SECONDS.to_string()),
                 EXPONENTIAL_SECONDS,
             )
             .unwrap()
@@ -45,6 +45,12 @@ impl PrometheusMetricsServer {
     fn register_metrics(&self) {
         for name in names::GAUGE_NAMES {
             register_gauge!(name);
+        }
+        for name in names::HISTOGRAM_NAMES {
+            register_histogram!(name);
+        }
+        for name in names::COUNTER_NAMES {
+            register_counter!(name);
         }
     }
 

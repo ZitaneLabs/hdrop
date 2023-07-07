@@ -132,7 +132,8 @@ impl UpdateMetrics for CacheVariant {
             // Update cache used capacity gauge
             metrics::gauge!(
                 names::storage::CACHE_USED_CAPACITY_B,
-                capacity.used() as f64
+                capacity.used() as f64,
+                "total_capacity" => capacity.total().to_string()
             );
         }
     }

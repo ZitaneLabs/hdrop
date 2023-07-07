@@ -14,13 +14,9 @@ pub mod names {
         storage::DATABASE_FILE_COUNT,
     ];
 
-    pub const HISTOGRAM_NAMES: [&str; 1] = [
-        network::HTTP_REQUESTS_DURATION_SECONDS,
-    ];
+    pub const HISTOGRAM_NAMES: [&str; 1] = [network::HTTP_REQUESTS_DURATION_SECONDS];
 
-    pub const COUNTER_NAMES: [&str; 1] = [
-        network::HTTP_REQUESTS_TOTAL,
-    ];
+    pub const COUNTER_NAMES: [&str; 1] = [network::HTTP_REQUESTS_TOTAL];
 
     /// Server requests, latency
     /// Network interface

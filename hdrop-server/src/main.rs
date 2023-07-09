@@ -5,8 +5,10 @@ mod core;
 mod error;
 mod server;
 mod utils;
-pub(crate) use self::{error::Result, server::Server};
-use crate::core::PrometheusMetricsServer;
+pub(crate) use self::{
+    error::Result,
+    server::{hdrop_server::Server, prometheus_metrics_server::PrometheusMetricsServer},
+};
 
 // Initialize global tracing subscriber
 fn setup_tracing() {

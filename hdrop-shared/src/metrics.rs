@@ -3,6 +3,7 @@ use async_trait::async_trait;
 /// Trait to define an update metrics function
 #[async_trait]
 pub trait UpdateMetrics {
+    /// Update all related metrics. Does nothing if not implemented/available.
     async fn update_metrics(&self) {}
 }
 

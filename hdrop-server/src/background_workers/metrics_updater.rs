@@ -1,14 +1,14 @@
-use crate::core::monitoring::SystemMonitoring;
+use crate::core::monitoring::SystemMetrics;
 use hdrop_shared::metrics::names;
-use std::time::Duration;
+
 pub struct MetricsUpdater {
-    system: SystemMonitoring,
+    system: SystemMetrics,
 }
 
 impl MetricsUpdater {
     pub fn new() -> Self {
         Self {
-            system: SystemMonitoring::new(),
+            system: SystemMetrics::new(),
         }
     }
 
@@ -31,22 +31,6 @@ impl MetricsUpdater {
             let average = added_up_usage / len;
 
             metrics::gauge!(names::system::AVG_CPU_USAGE, average);
-
-            // Update Network
-            let mut network_status = self.system.network_status().into_iter();
-            let (received, transmitted) = match network_status.next() {
-                Some(network) => (network.received(), network.transmitted()),
-                None => (0, 0),
-            };
-
-            metrics::gauge!(names::network::NETWORK_OCTETS_RECEIVED, received as f64);
-
-            metrics::gauge!(
-                names::network::NETWORK_OCTETS_TRANSMITTED,
-                transmitted as f64
-            );
-
-            tokio::time::sleep(Duration::from_secs(60)).await;
         }
     }
 }

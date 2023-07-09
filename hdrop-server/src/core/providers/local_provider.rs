@@ -7,7 +7,7 @@ use hdrop_shared::{
 use std::path::PathBuf;
 
 use super::provider::{Fetchtype, StorageProvider};
-use crate::{core::monitoring::StorageMonitoring, error::Error, utils::mb_to_bytes, Result};
+use crate::{error::Error, utils::mb_to_bytes, Result};
 
 #[derive(Debug)]
 pub struct LocalProvider {
@@ -57,48 +57,54 @@ impl StorageProvider for LocalProvider {
 }
 
 #[async_trait]
-impl StorageMonitoring for LocalProvider {
-    async fn used_storage(&self) -> Option<Result<u64>> {
-        use tokio::fs::read_dir;
-
-        let upload_dir =
-            read_dir(env::local_storage_dir().unwrap_or_else(|_| PathBuf::from("files"))).await;
-
-        let mut upload_dir = match upload_dir {
-            Ok(read_dir) => read_dir,
-            Err(e) => return Some(Err(Error::Io(e))),
-        };
-
-        {
-            let mut used_storage = 0;
-
-            while let Some(dir_entry) = match upload_dir.next_entry().await {
-                Ok(dir_entry) => dir_entry,
-                Err(e) => return Some(Err(Error::Io(e))),
-            } {
-                let file = match dir_entry.metadata().await {
-                    Ok(metadata) => metadata,
-                    Err(e) => return Some(Err(Error::Io(e))),
-                };
-                let file_size = if file.is_file() {
-                    file.len()
-                } else {
-                    tracing::warn!("Subfolder found in upload directory. You should check this manually. Possible recovery folder from bincache or someone changed the upload directory");
-                    0
-                };
-
-                used_storage += file_size;
-            }
-
-            Some(Ok(used_storage))
-        }
-    }
-}
-
-#[async_trait]
 impl UpdateMetrics for LocalProvider {
     async fn update_metrics(&self) {
-        let used_storage = self.used_storage().await.and_then(|s| s.ok()).unwrap_or(0);
+        async fn used_storage() -> Option<Result<u64>> {
+            use tokio::fs::read_dir;
+
+            let upload_dir =
+                read_dir(env::local_storage_dir().unwrap_or_else(|_| PathBuf::from("files"))).await;
+
+            let mut upload_dir = match upload_dir {
+                Ok(read_dir) => read_dir,
+                Err(e) => {
+                    tracing::error!("Io Error: {}", e);
+                    return Some(Err(Error::Io(e)));
+                }
+            };
+
+            {
+                let mut used_storage = 0;
+
+                while let Some(dir_entry) = match upload_dir.next_entry().await {
+                    Ok(dir_entry) => dir_entry,
+                    Err(e) => {
+                        tracing::error!("Io Error: {}", e);
+                        return Some(Err(Error::Io(e)));
+                    }
+                } {
+                    let file = match dir_entry.metadata().await {
+                        Ok(metadata) => metadata,
+                        Err(e) => {
+                            tracing::error!("Io Error: {}", e);
+                            return Some(Err(Error::Io(e)));
+                        }
+                    };
+                    let file_size = if file.is_file() {
+                        file.len()
+                    } else {
+                        tracing::warn!("Subfolder found in upload directory. You should check this manually. Possible recovery folder from bincache or someone changed the upload directory");
+                        0
+                    };
+
+                    used_storage += file_size;
+                }
+
+                Some(Ok(used_storage))
+            }
+        }
+
+        let used_storage = used_storage().await.and_then(|s| s.ok()).unwrap_or(0);
 
         // Update storage gauge
         metrics::gauge!(names::storage::USED_STORAGE_B, used_storage as f64);

@@ -10,7 +10,7 @@ use crate::{
     Result,
 };
 
-use super::CacheVariant;
+use super::cache::CacheVariant;
 
 pub struct AppState {
     pub provider: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,

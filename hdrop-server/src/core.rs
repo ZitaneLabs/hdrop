@@ -7,4 +7,4 @@ pub use self::providers::{
     s3_provider::S3Provider,
 };
 
-pub use self::metrics::{monitoring, PrometheusMetricsServer};
+pub use self::metrics::monitoring;

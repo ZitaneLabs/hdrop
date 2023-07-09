@@ -5,6 +5,7 @@ use bincache::Error as BincacheError;
 use hdrop_shared::ErrorResponse;
 use regex::Error as RegexError;
 use s3::{creds::error::CredentialsError, error::S3Error};
+use std::io::Error as StdError;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -32,6 +33,9 @@ pub enum Error {
     InvalidHeaderValue(#[from] axum::http::header::InvalidHeaderValue),
     #[error("Invalid CORS origin: {0}")]
     InvalidCorsOrigin(String),
+    // Local
+    #[error("I/O Error: {0}")]
+    Io(#[from] StdError),
     // Webserver
     #[error("{0}")]
     Multipart(#[from] MultipartError),

@@ -22,7 +22,7 @@ COPY hdrop-shared ./hdrop-shared
 COPY hdrop-server ./hdrop-server
 
 # Build server
-RUN cargo build --release
+RUN cargo build --release --locked -p hdrop-server
 
 # Copy entrypoint script
 COPY hdrop-server/infra/entrypoint.sh ./
@@ -31,5 +31,10 @@ RUN chmod +x entrypoint.sh
 # Install pm2
 RUN npm i -g pm2@latest
 
+# API
 EXPOSE 80
+
+# Prometheus exporter
+EXPOSE 3001
+
 ENTRYPOINT ["sh", "entrypoint.sh"]

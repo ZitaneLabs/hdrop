@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use hdrop_shared::env;
+use hdrop_shared::{env, metrics::UpdateMetrics};
 use regex::Regex;
 use s3::{creds::Credentials, region::Region, Bucket};
 
@@ -72,3 +72,5 @@ impl StorageProvider for S3Provider {
         Ok(self.bucket.object_exists(s3_path).await?)
     }
 }
+
+impl UpdateMetrics for S3Provider {}

@@ -13,5 +13,7 @@ deadpool = { version = "0.9.5", features = ["rt_tokio_1"] }
 uuid.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+async-trait.workspace = true
+metrics.workspace = true
 
 hdrop-shared.workspace = true

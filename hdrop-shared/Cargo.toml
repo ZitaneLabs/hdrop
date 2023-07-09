@@ -9,3 +9,4 @@ paste = "1.0.12"
 
 serde.workspace = true
 thiserror.workspace = true
+async-trait.workspace = true

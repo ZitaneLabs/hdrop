@@ -1,4 +1,5 @@
 pub mod env;
+pub mod metrics;
 pub mod requests;
 pub mod responses;
 

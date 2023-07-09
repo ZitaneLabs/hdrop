@@ -1,6 +1,6 @@
 use super::{
+    app_state::AppState,
     multipart::{PartialUploadedFile, UploadedFile},
-    AppState,
 };
 use axum::{
     extract::{Multipart, Path, Query, State},
@@ -84,7 +84,7 @@ pub async fn upload_file(
 
     // Send file for upload, db update & cache clearance to storage synchronization thread
     state
-        .provider_sync_tx
+        .get_provider_sync_tx()
         .send(provider_sync_entry)
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         .expect("Unable to send data to the storage synchronizer");

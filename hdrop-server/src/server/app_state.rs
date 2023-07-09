@@ -10,13 +10,13 @@ use crate::{
     Result,
 };
 
-use super::CacheVariant;
+use super::cache::CacheVariant;
 
 pub struct AppState {
     pub provider: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,
     pub database: Arc<Database>,
     pub cache: Arc<RwLock<CacheVariant>>,
-    pub provider_sync_tx: UnboundedSender<ProviderSyncEntry>,
+    provider_sync_tx: UnboundedSender<ProviderSyncEntry>,
 }
 
 impl AppState {
@@ -44,5 +44,9 @@ impl AppState {
             provider_sync_tx,
             cache,
         })
+    }
+
+    pub fn get_provider_sync_tx(&self) -> UnboundedSender<ProviderSyncEntry> {
+        self.provider_sync_tx.clone()
     }
 }

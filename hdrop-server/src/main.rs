@@ -5,8 +5,10 @@ mod core;
 mod error;
 mod server;
 mod utils;
-
-pub(crate) use self::{error::Result, server::Server};
+pub(crate) use self::{
+    error::Result,
+    server::{hdrop_server::Server, prometheus_metrics_server::PrometheusMetricsServer},
+};
 
 // Initialize global tracing subscriber
 fn setup_tracing() {
@@ -33,6 +35,10 @@ async fn main() -> Result<()> {
         }
     }
 
-    // Start the server
-    Server::new().await?.run().await
+    // Start the main and metrics server
+    let server = Server::new().await?;
+    let metrics = PrometheusMetricsServer::new();
+    let (_main_server, _metrics_server) = tokio::join!(server.run(), metrics.run());
+
+    Ok(())
 }

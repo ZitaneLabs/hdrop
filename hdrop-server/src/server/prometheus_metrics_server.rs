@@ -1,8 +1,9 @@
+use std::{future::ready, net::SocketAddr};
+
 use axum::{routing::get, Router};
 use hdrop_shared::metrics::names;
 use metrics::{register_counter, register_gauge, register_histogram};
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
-use std::{future::ready, net::SocketAddr};
 
 pub struct PrometheusMetricsServer {}
 

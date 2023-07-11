@@ -1,5 +1,6 @@
-use crate::core::monitoring::SystemMetrics;
 use hdrop_shared::metrics::names;
+
+use crate::core::monitoring::SystemMetrics;
 
 pub struct MetricsUpdater {
     system: SystemMetrics,
@@ -36,9 +37,10 @@ impl MetricsUpdater {
 }
 
 pub mod metrics_middleware {
+    use std::time::Instant;
+
     use axum::{extract::MatchedPath, http::Request, middleware::Next, response::IntoResponse};
     use hdrop_shared::metrics::names;
-    use std::time::Instant;
 
     /// Middleware which is plugged in to track everything related to requests.
     pub async fn track_requests<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {

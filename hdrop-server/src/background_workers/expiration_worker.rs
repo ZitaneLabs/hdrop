@@ -1,5 +1,6 @@
-use hdrop_db::Database;
 use std::{sync::Arc, time::Duration};
+
+use hdrop_db::Database;
 use tokio::sync::RwLock;
 use tracing::instrument;
 use uuid::Uuid;

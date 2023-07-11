@@ -2,6 +2,7 @@ use sha3::{Digest, Sha3_256};
 use uuid::Uuid;
 
 pub const UPDATE_TOKEN_LENGTH: usize = 8;
+
 /// Access- and Update token generator.
 #[derive(Debug)]
 pub struct TokenGenerator {

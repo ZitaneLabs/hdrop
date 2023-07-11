@@ -1,11 +1,10 @@
-use std::net::AddrParseError;
+use std::{io::Error as StdError, net::AddrParseError};
 
 use axum::{extract::multipart::MultipartError, http::StatusCode, response::IntoResponse, Json};
 use bincache::Error as BincacheError;
 use hdrop_shared::ErrorResponse;
 use regex::Error as RegexError;
 use s3::{creds::error::CredentialsError, error::S3Error};
-use std::io::Error as StdError;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;

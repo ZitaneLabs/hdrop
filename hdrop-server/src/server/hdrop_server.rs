@@ -1,3 +1,5 @@
+use std::{net::SocketAddr, str::FromStr, sync::Arc};
+
 use axum::{
     extract::DefaultBodyLimit,
     http::HeaderValue,
@@ -6,7 +8,6 @@ use axum::{
     Router,
 };
 use hdrop_shared::{env, metrics::UpdateMetrics};
-use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 use tower_http::{
     compression::CompressionLayer,
@@ -16,17 +17,23 @@ use tower_http::{
 };
 use tracing::Level;
 
-use super::app_state::AppState;
-use super::routes::{
-    delete_file, get_challenge, get_file, update_file_expiry, upload_file, verify_challenge,
+use super::{
+    app_state::AppState,
+    routes::{
+        delete_file,
+        get_challenge,
+        get_file,
+        update_file_expiry,
+        upload_file,
+        verify_challenge,
+    },
 };
-
-use crate::background_workers::{metrics_middleware, MetricsUpdater};
-
 use crate::{
     background_workers::{
         expiration_worker::ExpirationWorker,
+        metrics_middleware,
         storage_synchronizer::{ProviderSyncEntry, StorageSynchronizer},
+        MetricsUpdater,
     },
     error::{Error, Result},
     utils::mb_to_bytes,
@@ -166,18 +173,15 @@ impl Server {
             );
 
         // Server configuration
-        let server_host = "0.0.0.0";
-        let server_port = env::port().unwrap_or(8080);
-        let server_addr = format!("{server_host}:{server_port}"); // Todo: Refactor as in middleware.rs
-        let socket_addr = SocketAddr::from_str(&server_addr)?;
+        let addr = SocketAddr::from(([0; 4], env::port().unwrap_or(8080)));
 
-        tracing::info!("Starting server on {server_addr}");
+        tracing::info!("Starting server on {addr}");
 
         // Start the server
-        axum::Server::bind(&socket_addr)
+        axum::Server::bind(&addr)
             .serve(app.into_make_service())
             .await
-            .unwrap_or_else(|err| panic!("Server failed to start on {server_addr}: {err:?}"));
+            .unwrap_or_else(|err| panic!("Server failed to start on {addr}: {err:?}"));
 
         Ok(())
     }

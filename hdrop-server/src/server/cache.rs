@@ -1,13 +1,20 @@
+use std::{borrow::Cow, path::PathBuf};
+
 use async_trait::async_trait;
 use bincache::{
-    strategies::Limits, Cache, CacheBuilder, CacheCapacity, DiskStrategy, HybridStrategy,
-    MemoryStrategy, Noop,
+    strategies::Limits,
+    Cache,
+    CacheBuilder,
+    CacheCapacity,
+    DiskStrategy,
+    HybridStrategy,
+    MemoryStrategy,
+    Noop,
 };
 use hdrop_shared::{
     env,
     metrics::{names, UpdateMetrics},
 };
-use std::{borrow::Cow, path::PathBuf};
 use uuid::Uuid;
 
 use crate::{utils::mb_to_bytes, Result};

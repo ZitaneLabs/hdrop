@@ -1,16 +1,16 @@
+use std::sync::Arc;
+
 use hdrop_db::Database;
 use hdrop_shared::env;
-use std::sync::Arc;
 use tokio::sync::{mpsc::UnboundedSender, RwLock};
 
+use super::cache::CacheVariant;
 use crate::{
     background_workers::storage_synchronizer::ProviderSyncEntry,
     core::{LocalProvider, S3Provider, StorageProvider},
     error::Error,
     Result,
 };
-
-use super::cache::CacheVariant;
 
 pub struct AppState {
     pub provider: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,

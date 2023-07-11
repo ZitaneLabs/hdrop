@@ -1,10 +1,11 @@
+use std::path::PathBuf;
+
 use async_trait::async_trait;
 use bincache::{Cache, CacheBuilder, DiskStrategy, Noop};
 use hdrop_shared::{
     env,
     metrics::{names, UpdateMetrics},
 };
-use std::path::PathBuf;
 
 use super::provider::{Fetchtype, StorageProvider};
 use crate::{error::Error, utils::mb_to_bytes, Result};

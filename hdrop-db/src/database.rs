@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use async_trait::async_trait;
 use chrono::Utc;
 use deadpool_diesel::postgres::{Manager, Pool};
@@ -6,12 +8,11 @@ use hdrop_shared::{
     metrics::{names, UpdateMetrics},
     responses,
 };
-use std::borrow::Cow;
 use uuid::Uuid;
 
 use crate::{
     error::Result,
-    models::*,
+    models::{File, InsertFile},
     schema::files::dsl as files_table,
     utils::{TokenGenerator, UPDATE_TOKEN_LENGTH},
 };

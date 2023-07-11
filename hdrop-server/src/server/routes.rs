@@ -1,13 +1,12 @@
-use super::{
-    app_state::AppState,
-    multipart::{PartialUploadedFile, UploadedFile},
-};
+use std::sync::Arc;
+
 use axum::{
     extract::{Multipart, Path, Query, State},
     headers::{authorization::Bearer, Authorization},
     http::StatusCode,
     response::IntoResponse,
-    Json, TypedHeader,
+    Json,
+    TypedHeader,
 };
 use chrono::Utc;
 use hdrop_db::{Database, File, InsertFile};
@@ -15,12 +14,16 @@ use hdrop_shared::{
     requests as request,
     responses::{FileMetaData, GetChallengeData, UploadFileData, VerifyChallengeData},
 };
-use std::sync::Arc;
 use uuid::Uuid;
 
+use super::{
+    app_state::AppState,
+    multipart::{PartialUploadedFile, UploadedFile},
+};
 use crate::{
     background_workers::{
-        expiration_worker::ExpirationWorker, storage_synchronizer::ProviderSyncEntry,
+        expiration_worker::ExpirationWorker,
+        storage_synchronizer::ProviderSyncEntry,
     },
     core::Fetchtype,
     error::Error,

@@ -1,6 +1,7 @@
-use crate::Result;
 use async_trait::async_trait;
 use hdrop_shared::metrics::UpdateMetrics;
+
+use crate::Result;
 
 /// StorageProvider trait defining all functions which a Storage needs to implemented.
 /// Each StorageProvider must also implement [StorageMetrics]. If this is not possible, the default must be implemented.

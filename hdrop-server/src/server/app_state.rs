@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hdrop_db::Database;
 use hdrop_shared::env;
-use tokio::sync::{mpsc::UnboundedSender, RwLock};
+use tokio::sync::{mpsc::Sender, RwLock};
 
 use super::cache::CacheVariant;
 use crate::{
@@ -16,11 +16,11 @@ pub struct AppState {
     pub provider: Arc<RwLock<Box<dyn StorageProvider + Sync + Send>>>,
     pub database: Arc<Database>,
     pub cache: Arc<RwLock<CacheVariant>>,
-    provider_sync_tx: UnboundedSender<ProviderSyncEntry>,
+    provider_sync_tx: Sender<ProviderSyncEntry>,
 }
 
 impl AppState {
-    pub async fn new(provider_sync_tx: UnboundedSender<ProviderSyncEntry>) -> Result<Self> {
+    pub async fn new(provider_sync_tx: Sender<ProviderSyncEntry>) -> Result<Self> {
         let provider: Box<dyn StorageProvider + Sync + Send> = match env::storage_provider()
             .map(|s| s.to_lowercase())
         {
@@ -46,7 +46,7 @@ impl AppState {
         })
     }
 
-    pub fn get_provider_sync_tx(&self) -> UnboundedSender<ProviderSyncEntry> {
+    pub fn get_provider_sync_tx(&self) -> Sender<ProviderSyncEntry> {
         self.provider_sync_tx.clone()
     }
 }

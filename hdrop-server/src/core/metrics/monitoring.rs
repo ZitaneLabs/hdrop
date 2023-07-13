@@ -15,6 +15,7 @@ impl Status {
     }
 
     /// Get the total capacity.
+    #[allow(dead_code)]
     pub fn total(&self) -> usize {
         self.total_amount
     }

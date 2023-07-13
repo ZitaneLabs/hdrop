@@ -14,7 +14,7 @@ impl MetricsUpdater {
     }
 
     /// Time-based update of all metrics except for the self updating ones (requests)
-    pub async fn update_metrics(mut self) {
+    pub async fn run(mut self) {
         loop {
             // Update RAM
             let ram_status = self.system.ram_status();

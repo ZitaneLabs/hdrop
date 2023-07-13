@@ -89,6 +89,7 @@ pub async fn upload_file(
     state
         .get_provider_sync_tx()
         .send(provider_sync_entry)
+        .await
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         .expect("Unable to send data to the storage synchronizer");
 
@@ -109,7 +110,7 @@ pub async fn get_file(
         .get_verification_data(&access_token)
         .await?
         .challenge_hash
-        .unwrap_or("".to_string());
+        .unwrap_or(String::default());
 
     if bearer.token() != challenge_hash {
         return Err(Error::InvalidChallenge);

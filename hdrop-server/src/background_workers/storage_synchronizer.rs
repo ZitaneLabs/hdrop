@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use axum::body::Bytes;
 use chrono::Utc;
 use hdrop_db::Database;
-use tokio::sync::{mpsc::UnboundedReceiver, RwLock};
+use tokio::sync::{mpsc::Receiver, RwLock};
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -18,11 +18,11 @@ pub struct ProviderSyncEntry {
 }
 
 pub struct StorageSynchronizer {
-    pub rx: UnboundedReceiver<ProviderSyncEntry>,
+    pub rx: Receiver<ProviderSyncEntry>,
 }
 
 impl StorageSynchronizer {
-    pub fn new(rx: UnboundedReceiver<ProviderSyncEntry>) -> Self {
+    pub fn new(rx: Receiver<ProviderSyncEntry>) -> Self {
         Self { rx }
     }
 

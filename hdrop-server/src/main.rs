@@ -36,9 +36,8 @@ async fn main() -> Result<()> {
     }
 
     // Start the main and metrics server
-    let server = Server::new().await?;
-    let metrics = PrometheusMetricsServer::new();
-    let (_main_server, _metrics_server) = tokio::join!(server.run(), metrics.run());
+    tokio::spawn(PrometheusMetricsServer::default().run());
+    Server::new().await?.run().await?;
 
     Ok(())
 }

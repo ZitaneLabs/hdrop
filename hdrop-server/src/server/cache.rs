@@ -26,7 +26,7 @@ pub enum CacheVariant {
     Disk(FileCache<DiskStrategy>),
     Hybrid(FileCache<HybridStrategy>),
 }
-// ToDo: Add more Error Tracing
+
 impl CacheVariant {
     pub async fn try_from_env() -> Result<Self> {
         let cache_variant: String = env::cache_strategy().unwrap_or_else(|_| "memory".to_string());
@@ -57,10 +57,14 @@ impl CacheVariant {
                         .await?,
                 ))
             }
-            _ => Err(crate::error::Error::Strategy),
+            strategy => {
+                tracing::error!("Invalid cache strategy: {strategy}");
+                Err(crate::error::Error::Strategy)
+            }
         }
     }
 
+    #[tracing::instrument(skip_all, level = "trace")]
     pub async fn put(&mut self, key: Uuid, value: Vec<u8>) -> Result<()> {
         let result = match self {
             CacheVariant::Disk(cache) => cache.put(key, value).await,
@@ -70,43 +74,43 @@ impl CacheVariant {
         let result = match &result {
             Err(bincache::Error::LimitExceeded { limit_kind }) => {
                 tracing::error!("Cache limit exceeded: {limit_kind}");
-
-                Ok(result?)
+                result
             }
-            _ => Ok(result?),
+            _ => result,
         };
         self.update_metrics().await;
-        result
+        Ok(result?)
     }
 
+    #[tracing::instrument(skip_all, level = "trace")]
     pub async fn get(&self, key: Uuid) -> Result<Cow<'_, [u8]>> {
-        match self {
-            CacheVariant::Disk(cache) => Ok(cache.get(key).await?),
-            CacheVariant::Hybrid(cache) => Ok(cache.get(key).await?),
-            CacheVariant::Memory(cache) => Ok(cache.get(key).await?),
-        }
+        Ok(match self {
+            CacheVariant::Disk(cache) => cache.get(key).await,
+            CacheVariant::Hybrid(cache) => cache.get(key).await,
+            CacheVariant::Memory(cache) => cache.get(key).await,
+        }?)
     }
 
+    #[tracing::instrument(skip_all, level = "trace")]
     pub async fn delete(&mut self, key: Uuid) -> Result<()> {
-        let result = match self {
-            CacheVariant::Disk(cache) => Ok(cache.delete(key).await?),
-            CacheVariant::Hybrid(cache) => Ok(cache.delete(key).await?),
-            CacheVariant::Memory(cache) => Ok(cache.delete(key).await?),
-        };
-        self.update_metrics().await;
-        result
-    }
-
-    pub fn key_from_str(key: &str) -> Option<Uuid> {
-        Uuid::parse_str(key).ok()
-    }
-
-    pub async fn recover(&mut self) -> Result<usize> {
         match self {
+            CacheVariant::Disk(cache) => cache.delete(key).await,
+            CacheVariant::Hybrid(cache) => cache.delete(key).await,
+            CacheVariant::Memory(cache) => cache.delete(key).await,
+        }?;
+        self.update_metrics().await;
+        Ok(())
+    }
+
+    #[tracing::instrument(skip_all, level = "trace")]
+    pub async fn recover(&mut self) -> Result<usize> {
+        let result = match self {
             CacheVariant::Hybrid(cache) => Ok(cache.recover(Self::key_from_str).await?),
             CacheVariant::Disk(_) => Err(crate::error::Error::NoRecover),
             CacheVariant::Memory(_) => Err(crate::error::Error::NoRecover),
-        }
+        }?;
+        self.update_metrics().await;
+        Ok(result)
     }
 
     pub fn exists(&self, key: Uuid) -> bool {
@@ -123,6 +127,10 @@ impl CacheVariant {
             CacheVariant::Hybrid(cache) => cache.capacity(),
             CacheVariant::Memory(cache) => cache.capacity(),
         }
+    }
+
+    fn key_from_str(key: &str) -> Option<Uuid> {
+        Uuid::parse_str(key).ok()
     }
 }
 

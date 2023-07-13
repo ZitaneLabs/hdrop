@@ -46,7 +46,9 @@ impl PartialUploadedFile {
                 "challenge_hash" => {
                     partial_data.challenge_hash = field.text().await.ok();
                 }
-                _ => (),
+                field => {
+                    tracing::debug!("Unknown field: {field}")
+                }
             }
         }
 

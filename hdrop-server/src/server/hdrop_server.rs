@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, str::FromStr, sync::Arc};
+use std::{net::SocketAddr, sync::Arc};
 
 use axum::{
     extract::DefaultBodyLimit,
@@ -8,7 +8,7 @@ use axum::{
     Router,
 };
 use hdrop_shared::{env, metrics::UpdateMetrics};
-use tokio::sync::mpsc::{self, UnboundedReceiver};
+use tokio::sync::mpsc::{channel, Receiver};
 use tower_http::{
     compression::CompressionLayer,
     cors::{AllowOrigin, Any, CorsLayer},
@@ -39,9 +39,13 @@ use crate::{
     utils::mb_to_bytes,
 };
 
+/// Size of the provider synchronization channel.
+/// When the channel is full, the handler will block instead of accumulating unbounded memory.
+const PROVIDER_SYNC_CHANNEL_SIZE: usize = 512;
+
 pub struct Server {
     state: Arc<AppState>,
-    provider_sync_rx: UnboundedReceiver<ProviderSyncEntry>,
+    provider_sync_rx: Receiver<ProviderSyncEntry>,
 }
 
 impl Server {
@@ -86,7 +90,7 @@ impl Server {
     /// Create a new [Server] instance.
     pub async fn new() -> Result<Self> {
         // Initialize app state
-        let (provider_sync_tx, provider_sync_rx) = mpsc::unbounded_channel();
+        let (provider_sync_tx, provider_sync_rx) = channel(PROVIDER_SYNC_CHANNEL_SIZE);
         let state = Arc::new(AppState::new(provider_sync_tx).await?);
 
         Ok(Self {
@@ -98,12 +102,10 @@ impl Server {
     /// Run the main server.
     /// The order of execution must be maintained.
     ///
+    /// The following steps will be executed:
     /// 1. Upon running the server the cache will get recovered.
-    ///
     /// 2. Background workers will start for storage synchronization and expiration workers.
-    ///
     /// 3. Metrics will be initialized.
-    ///
     /// 4. Lastly, the server will be initialized and started.
     pub async fn run(self) -> Result<()> {
         // Recover cache from last session
@@ -135,7 +137,7 @@ impl Server {
         self.state.provider.read().await.update_metrics().await;
 
         // Start metrics update worker for time-based updates of system gauges
-        tokio::spawn(MetricsUpdater::new().update_metrics());
+        tokio::spawn(MetricsUpdater::new().run());
 
         // Calculate request body limit
         let request_body_limit_bytes = mb_to_bytes(env::single_file_limit_mb().unwrap_or(100));

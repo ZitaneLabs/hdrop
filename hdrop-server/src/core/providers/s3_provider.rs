@@ -54,7 +54,6 @@ impl StorageProvider for S3Provider {
     async fn delete_file(&mut self, ident: String) -> Result<()> {
         let s3_path = ident.as_str();
 
-        // ToDo: Add tracing at failable calls like below throughout the code
         let _response_data = self.bucket.delete_object(s3_path).await?;
 
         Ok(())

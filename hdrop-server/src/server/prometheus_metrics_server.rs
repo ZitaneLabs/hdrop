@@ -5,15 +5,12 @@ use hdrop_shared::metrics::names;
 use metrics::{register_counter, register_gauge, register_histogram};
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
 
-pub struct PrometheusMetricsServer {}
+#[derive(Debug, Default)]
+pub struct PrometheusMetricsServer;
 
 impl PrometheusMetricsServer {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     /// Metrics Recorder.
-    fn metrics_app(&self) -> Router {
+    fn metrics_router(&self) -> Router {
         let recorder_handle = self.setup_metrics_recorder();
         Router::new().route("/metrics", get(move || ready(recorder_handle.render())))
     }
@@ -53,14 +50,19 @@ impl PrometheusMetricsServer {
     }
 
     /// Run the metrics server.
-    pub async fn run(&self) {
-        let app = self.metrics_app();
-
+    pub async fn run(self) {
+        let app = self.metrics_router();
         let addr = SocketAddr::from(([0; 4], 3001));
+
+        // Start the server
         tracing::info!("Prometheus exporter listening on {}", addr);
-        axum::Server::bind(&addr)
+        let server_result = axum::Server::bind(&addr)
             .serve(app.into_make_service())
-            .await
-            .unwrap()
+            .await;
+
+        // If the server fails to start, log the error
+        if let Err(err) = server_result {
+            tracing::error!("Prometheus exporter failed to start: {}", err);
+        }
     }
 }

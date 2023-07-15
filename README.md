@@ -1,4 +1,6 @@
-<h1><img src="./hdrop-web-next/public/logo512.png" width="32" height="32" />&nbsp;hdrop</h1>
+# hdrop
+
+<img align="right" width="64" src="./hdrop-web-next/public/logo512.png" />
 
 **Simple, self-hosted encrypted file transfer.**
 

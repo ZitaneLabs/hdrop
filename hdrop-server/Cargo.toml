@@ -13,7 +13,7 @@ dotenvy = "0.15"
 regex = "1.9"
 tower-http = { version = "0.4", features = ["cors", "limit", "compression-br", "trace"] }
 bincache = { git = "https://github.com/ZitaneLabs/bincache.git", features = ["rt_tokio_1", "comp_zstd"] }
-s3 = { package = "zitane-s3-async" }
+s3 = { version = "0.37", package = "zitane-s3-async" }
 metrics-exporter-prometheus = "0.12.1"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing = "0.1.37"

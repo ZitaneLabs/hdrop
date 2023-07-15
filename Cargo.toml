@@ -1,13 +1,16 @@
 [workspace]
-
 members = [
     "hdrop-db",
     "hdrop-server",
     "hdrop-shared"
 ]
 
+[workspace.package]
+license = "AGPL-3.0-or-later"
+
 [workspace.dependencies]
 thiserror = "1.0"
+chrono = { version = "0.4", default-features = false, features = ["std", "serde"] }
 serde =  { version = "1", features = ["derive"] }
 uuid = { version = ">=0.7.0, <2.0.0", features = ["v4", "serde"] }
 async-trait = "0.1.68"

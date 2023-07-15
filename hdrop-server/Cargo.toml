@@ -2,26 +2,23 @@
 name = "hdrop-server"
 version = "0.1.0"
 edition = "2021"
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 axum = { version = "0.6.18", features = ["multipart", "macros", "headers"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-chrono = { version = "0.4", features = ["serde"] }
-futures = { version = "=0.3.25", default-features = false }
 dotenvy = "0.15"
-serde_json = "1.0.96"
-regex = "1.8.3"
-tower-http = { version = "0.4.0", features = ["cors", "limit", "compression-br", "trace"] }
+regex = "1.9"
+tower-http = { version = "0.4", features = ["cors", "limit", "compression-br", "trace"] }
 bincache = { git = "https://github.com/ZitaneLabs/bincache.git", features = ["rt_tokio_1", "comp_zstd"] }
-s3 = { git = "https://github.com/ZitaneLabs/rust-s3-async.git", package="zitane-s3-async" }
+s3 = { package = "zitane-s3-async" }
 metrics-exporter-prometheus = "0.12.1"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing = "0.1.37"
-metrics-util = "0.15.0"
-quanta = "0.11.1"
 
+chrono.workspace = true
 uuid.workspace = true
 serde.workspace = true
 thiserror.workspace = true

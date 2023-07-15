@@ -1,5 +1,5 @@
 # Metrics
-> Prometheus metrics are exposed on the `/v1/metrics` endpoint.
+> Prometheus metrics are exposed on the `/metrics` endpoint.
 
 | Metric                           | Type        | Description                                              |
 | -------------------------------- | ----------- | -------------------------------------------------------- |

@@ -12,7 +12,7 @@ import { Switch, Match as UntypedMatch, PasswordField, FilePreview } from "@/com
 const Match = UntypedMatch<DownloadPhase | null>
 
 export default function DownloadFilePage() {
-    const { accessToken } = useParams()
+    const { accessToken } = useParams() as { accessToken: string }
 
     // State
     const [hashPassword, setHashPassword] = useState<string | null | undefined>(undefined)
@@ -29,7 +29,10 @@ export default function DownloadFilePage() {
 
     // Try to get password from url fragment
     useEffect(() => {
-        if (window.location.hash.length === 0) return
+        if (window.location.hash.length === 0) {
+            setHashPassword(null)
+            return
+        }
         setHashPassword(window.location.hash.slice(1))
     }, [])
 

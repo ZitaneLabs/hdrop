@@ -1,10 +1,9 @@
 <h1><img src="./hdrop-web-next/public/logo512.png" width="32" height="32" />&nbsp;hdrop</h1>
 
 **Simple, self-hosted encrypted file transfer.**
-## Preview
-![hdrop](https://github.com/ZitaneLabs/hdrop/assets/107320179/b88ee1a8-219e-4659-bbd5-03782ca61f17)
 
 ## Features
+<img align="right" width="200" src="https://github.com/ZitaneLabs/hdrop/assets/107320179/b88ee1a8-219e-4659-bbd5-03782ca61f17" />
 
 - Easy to self-host
 - Modern UI/UX

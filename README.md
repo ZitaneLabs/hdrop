@@ -17,7 +17,7 @@
 
 ## Documentation
 
-We are migrating our docs to [the wiki](./wiki).  
+We are migrating our docs to [the wiki](https://github.com/ZitaneLabs/hdrop/wiki).  
 You will find extensive and up-to-date documentation there.
 
 | Name                  | Link                                  |

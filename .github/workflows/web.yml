@@ -1,0 +1,39 @@
+name: web
+
+on:
+  pull_request:
+  push:
+    branches:
+      - development
+      - production
+
+jobs:
+  test:
+    runs-on: [ubuntu-latest]
+    strategy:
+      matrix:
+        node: [16, 18, 20]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install dependencies
+        run: yarn
+        working-directory: ./hdrop-web-next
+      - name: Test
+        run: yarn test
+        working-directory: ./hdrop-web-next
+      - name: Lint
+        run: yarn lint
+        working-directory: ./hdrop-web-next
+  license-check:
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: yarn
+        working-directory: ./hdrop-web-next
+      - name: Check licenses
+        run: ./check_licenses.sh
+        working-directory: ./hdrop-web-next

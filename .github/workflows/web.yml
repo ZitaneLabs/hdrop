@@ -20,7 +20,10 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Install dependencies
         run: yarn
+        working-directory: ./hdrop-web-next
       - name: Test
         run: yarn test
+        working-directory: ./hdrop-web-next
       - name: Lint
         run: yarn lint
+        working-directory: ./hdrop-web-next

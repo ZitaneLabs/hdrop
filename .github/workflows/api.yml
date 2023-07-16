@@ -31,3 +31,8 @@ jobs:
       - run: rustup component add clippy
       - name: cargo clippy
         run: cargo clippy
+  deny:
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: EmbarkStudios/cargo-deny-action@v1

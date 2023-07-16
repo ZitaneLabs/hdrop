@@ -27,3 +27,13 @@ jobs:
       - name: Lint
         run: yarn lint
         working-directory: ./hdrop-web-next
+  license-check:
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: yarn
+        working-directory: ./hdrop-web-next
+      - name: Check licenses
+        run: ./check_licenses.sh
+        working-directory: ./hdrop-web-next

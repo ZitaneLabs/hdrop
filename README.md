@@ -1,4 +1,13 @@
 # hdrop
+![Backed by Zitane Labs][badge_zitane]
+![Powered by Rust][badge_rust]
+![License: AGPL 3.0][badge_license]
+![Github CI][github_ci]
+
+[badge_zitane]: https://badgers.space/badge/Backed%20by/Zitane%20Labs/pink
+[badge_rust]: https://badgers.space/badge/Powered%20by/Rust/orange
+[badge_license]: https://badgers.space/github/license/ZitaneLabs/hdrop
+[github_ci]: https://badgers.space/github/checks/zitanelabs/hdrop
 
 <img align="right" width="64" src="./hdrop-web-next/public/logo512.png" />
 

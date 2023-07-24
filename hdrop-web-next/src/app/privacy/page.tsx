@@ -1,6 +1,6 @@
 export default function PrivacyPage() {
     return (
-        <main className="flex flex-col items-center">
+        <main className="flex flex-col items-center justify-center h-full overflow-auto">
             <p className="overflow-auto p-4 bg-[hsla(0,0%,0%,.1)] rounded-md lg:max-w-4xl mx-2">
             <h2 className="text-xl font-bold">Open Source</h2>
                 <p>

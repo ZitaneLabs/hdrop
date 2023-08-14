@@ -8,7 +8,7 @@ describe('Base64', () => {
         // when
         const result = Base64.encode(bytes)
         // then
-        expect(result).toBe('AAECAwQFBgc=')
+        expect(result).toBe('AAECAwQFBgc')
     })
 
     test('encode zero bytes', () => {
@@ -26,10 +26,19 @@ describe('Base64', () => {
         // when
         const result = Base64.encode(bytes)
         // then
-        expect(result).toBe('SGVsbG8gdGhpcyBpcyBhIHRlc3Q=')
+        expect(result).toBe('SGVsbG8gdGhpcyBpcyBhIHRlc3Q')
     })
 
     test('decode', () => {
+        // given
+        const str = 'AAECAwQFBgc'
+        // when
+        const result = Base64.decode(str)
+        // then
+        expect(result).toEqual(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]))
+    })
+
+    test('decode with padding', () => {
         // given
         const str = 'AAECAwQFBgc='
         // when
@@ -49,7 +58,7 @@ describe('Base64', () => {
 
     test('decode long string', () => {
         // given
-        const str = 'SGVsbG8gdGhpcyBpcyBhIHRlc3Q='
+        const str = 'SGVsbG8gdGhpcyBpcyBhIHRlc3Q'
         const expected = Array.from(new TextEncoder().encode("Hello this is a test"))
         // when
         const result = Array.from(Base64.decode(str))

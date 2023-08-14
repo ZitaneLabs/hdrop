@@ -29,28 +29,34 @@ export default class Base64 {
         return byte;
     }
 
+    private static determineMissingOctetCount(len: number): number {
+        const remainder = len % 4
+        if (remainder === 1) {
+            throw new Error("Unable to parse base64 string.")
+        }
+        const lut = {
+            0: 0,
+            2: 2,
+            3: 1,
+        } as Record<number, number>
+        return lut[remainder]
+    }
+
     /** Decode a base64 string into a byte array. */
     static decode(str: string): Uint8Array {
         str = Base64.fromDisplay(str)
-        if (str.length % 4 !== 0) {
-            throw new Error("Unable to parse base64 string.")
-        }
-        const index = str.indexOf("=")
-        if (index !== -1 && index < str.length - 2) {
-            throw new Error("Unable to parse base64 string.")
-        }
-        const missingOctets = str.endsWith("==") ? 2 : str.endsWith("=") ? 1 : 0
-        const n = str.length
+        const missingOctets = this.determineMissingOctetCount(str.length)
+        const n = str.length + missingOctets
         const result = new Uint8Array(3 * (n / 4))
         for (let i = 0, j = 0; i < n; i += 4, j += 3) {
             const buffer =
                 (Base64.decodeChar(str.charCodeAt(i)) << 18) |
                 (Base64.decodeChar(str.charCodeAt(i + 1)) << 12) |
-                (Base64.decodeChar(str.charCodeAt(i + 2)) << 6) |
-                (Base64.decodeChar(str.charCodeAt(i + 3)))
+                (i + 2 < n ? Base64.decodeChar(str.charCodeAt(i + 2)) << 6 : 0) |
+                (i + 3 < n ? Base64.decodeChar(str.charCodeAt(i + 3)) : 0)
             result[j] = buffer >> 16
-            result[j + 1] = (buffer >> 8) & 0xFF
-            result[j + 2] = buffer & 0xFF
+            if (i + 2 < n) result[j + 1] = (buffer >> 8) & 0xFF
+            if (i + 3 < n) result[j + 2] = buffer & 0xFF
         }
         return result.subarray(0, result.length - missingOctets)
     }
@@ -67,19 +73,17 @@ export default class Base64 {
         if (i === l + 1) { // 1 octet yet to write
             result += ALPHABET[bytes[i - 2] >> 2]
             result += ALPHABET[(bytes[i - 2] & 0x03) << 4]
-            result += "=="
         }
         if (i === l) { // 2 octets yet to write
             result += ALPHABET[bytes[i - 2] >> 2]
             result += ALPHABET[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)]
             result += ALPHABET[(bytes[i - 1] & 0x0F) << 2]
-            result += "="
         }
         return Base64.toDisplay(result)
     }
 
     private static fromDisplay(text: string): string {
-        return text.replaceAll('-', '+').replaceAll('_', '/')
+        return text.replaceAll('-', '+').replaceAll('_', '/').replaceAll('=', '')
     }
 
     private static toDisplay(base64: string): string {

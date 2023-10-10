@@ -36,13 +36,13 @@ impl CacheVariant {
 
         match cache_variant.to_lowercase().as_ref() {
             "memory" => Ok(CacheVariant::Memory(
-                CacheBuilder::default()
+                CacheBuilder
                     .with_strategy(MemoryStrategy::new(memory_byte_limit, None))
                     .build()
                     .await?,
             )),
             "disk" => Ok(CacheVariant::Disk(
-                CacheBuilder::default()
+                CacheBuilder
                     .with_strategy(DiskStrategy::new(cache_dir, disk_byte_limit, None))
                     .build()
                     .await?,
@@ -51,7 +51,7 @@ impl CacheVariant {
                 let memory_limits = Limits::new(memory_byte_limit, None);
                 let disk_limits = Limits::new(disk_byte_limit, None);
                 Ok(CacheVariant::Hybrid(
-                    CacheBuilder::default()
+                    CacheBuilder
                         .with_strategy(HybridStrategy::new(cache_dir, memory_limits, disk_limits))
                         .build()
                         .await?,

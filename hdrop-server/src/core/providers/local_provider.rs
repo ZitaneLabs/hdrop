@@ -20,7 +20,7 @@ impl LocalProvider {
         let storage_path = env::local_storage_dir().unwrap_or_else(|_| PathBuf::from("files"));
         let storage_limit_mb = env::local_storage_limit_mb().ok().map(mb_to_bytes);
 
-        let mut cache = CacheBuilder::default()
+        let mut cache = CacheBuilder
             .with_strategy(DiskStrategy::new(storage_path, storage_limit_mb, None))
             .build()
             .await?;

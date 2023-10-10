@@ -28,7 +28,6 @@ default = "deny"
 
 [bans]
 skip = [
-    { name = "syn", version = "1" }
 ]
 
 [sources]

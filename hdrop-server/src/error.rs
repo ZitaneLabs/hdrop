@@ -39,7 +39,7 @@ pub enum Error {
     #[error("{0}")]
     Multipart(#[from] MultipartError),
     #[error("Conversion to UploadedFileData failed due to PartialUploadedFileData being incomplete (Missing field: {0})")]
-    FileDataConversionError(&'static str),
+    FileDataConversion(&'static str),
     #[error("Challenge failed")]
     InvalidChallenge,
     #[error("Wrong update token")]
@@ -72,7 +72,7 @@ impl Error {
     pub fn to_statuscode(&self) -> StatusCode {
         match self {
             Self::FileUpload { .. } => StatusCode::BAD_REQUEST,
-            Self::FileDataConversionError(_) => StatusCode::BAD_REQUEST,
+            Self::FileDataConversion(_) => StatusCode::BAD_REQUEST,
             Self::InvalidChallenge => StatusCode::UNAUTHORIZED,
             Self::UpdateToken => StatusCode::UNAUTHORIZED,
             Self::InvalidExpiry => StatusCode::BAD_REQUEST,

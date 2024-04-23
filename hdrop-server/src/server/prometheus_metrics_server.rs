@@ -2,7 +2,6 @@ use std::{future::ready, net::SocketAddr};
 
 use axum::{routing::get, Router};
 use hdrop_shared::metrics::names;
-use metrics::{register_counter, register_gauge, register_histogram};
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
 
 #[derive(Debug, Default)]
@@ -39,13 +38,13 @@ impl PrometheusMetricsServer {
     /// Register all gauges from names module.
     fn register_metrics(&self) {
         for name in names::GAUGE_NAMES {
-            register_gauge!(name);
+            metrics::gauge!(name);
         }
         for name in names::HISTOGRAM_NAMES {
-            register_histogram!(name);
+            metrics::histogram!(name);
         }
         for name in names::COUNTER_NAMES {
-            register_counter!(name);
+            metrics::counter!(name);
         }
     }
 

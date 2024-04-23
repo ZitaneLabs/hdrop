@@ -142,13 +142,11 @@ impl UpdateMetrics for CacheVariant {
             // Update cache total capacity gauge
             metrics::gauge!(
                 names::storage::CACHE_TOTAL_CAPACITY_B,
-                capacity.total() as f64
-            );
+            ).set(capacity.total() as f64);
             // Update cache used capacity gauge
             metrics::gauge!(
                 names::storage::CACHE_USED_CAPACITY_B,
-                capacity.used() as f64
-            );
+            ).set(capacity.used() as f64);
         }
     }
 }

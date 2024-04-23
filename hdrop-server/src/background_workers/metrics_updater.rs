@@ -19,7 +19,7 @@ impl MetricsUpdater {
             // Update RAM
             let ram_status = self.system.ram_status();
 
-            metrics::gauge!(names::system::RAM_USAGE_B, ram_status.used() as f64);
+            metrics::gauge!(names::system::RAM_USAGE_B).set(ram_status.used() as f64);
 
             // Update CPU
             let cpu_status = self.system.cpu_status();
@@ -31,7 +31,7 @@ impl MetricsUpdater {
 
             let average = added_up_usage / len;
 
-            metrics::gauge!(names::system::AVG_CPU_USAGE, average);
+            metrics::gauge!(names::system::AVG_CPU_USAGE).set(average);
         }
     }
 }
@@ -63,12 +63,11 @@ pub mod metrics_middleware {
             ("status", status),
         ];
 
-        metrics::increment_counter!(names::network::HTTP_REQUESTS_TOTAL, &labels);
+        metrics::counter!(names::network::HTTP_REQUESTS_TOTAL, &labels).increment(1);
         metrics::histogram!(
             names::network::HTTP_REQUESTS_DURATION_SECONDS,
-            latency,
             &labels
-        );
+        ).record(latency);
 
         response
     }

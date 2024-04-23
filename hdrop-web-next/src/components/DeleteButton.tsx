@@ -2,7 +2,6 @@ import { ReactNode } from 'react'
 import { Trash } from 'lucide-react'
 import { ApiClient } from '@/api'
 import { toast } from 'react-hot-toast'
-import { useRouter } from 'next/navigation'
 
 type Props = {
     accessToken: string
@@ -11,8 +10,6 @@ type Props = {
 }
 
 export default function DeleteButton({ accessToken, updateToken, children }: Props) {
-    const router = useRouter()
-
     const onClick = () => {
         toast.promise(
             ApiClient.deleteFile(accessToken, updateToken).then(() => {

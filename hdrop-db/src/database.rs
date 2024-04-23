@@ -261,6 +261,6 @@ impl UpdateMetrics for Database {
         let file_count = self.get_file_rows().await.unwrap_or(0);
 
         // Update file count gauge
-        metrics::gauge!(names::storage::DATABASE_FILE_COUNT, file_count as f64);
+        metrics::gauge!(names::storage::DATABASE_FILE_COUNT).set(file_count as f64);
     }
 }

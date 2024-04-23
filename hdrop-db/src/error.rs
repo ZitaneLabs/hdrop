@@ -11,7 +11,7 @@ pub enum Error {
     #[error("{0}")]
     Diesel(#[from] diesel::result::Error),
     #[error("{0}")]
-    DeadpoolBuild(#[from] deadpool::managed::BuildError<deadpool_diesel::Error>),
+    DeadpoolBuild(#[from] deadpool::managed::BuildError),
     #[error("{0}")]
     DeadpoolPool(
         #[from]

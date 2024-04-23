@@ -64,10 +64,8 @@ pub mod metrics_middleware {
         ];
 
         metrics::counter!(names::network::HTTP_REQUESTS_TOTAL, &labels).increment(1);
-        metrics::histogram!(
-            names::network::HTTP_REQUESTS_DURATION_SECONDS,
-            &labels
-        ).record(latency);
+        metrics::histogram!(names::network::HTTP_REQUESTS_DURATION_SECONDS, &labels)
+            .record(latency);
 
         response
     }

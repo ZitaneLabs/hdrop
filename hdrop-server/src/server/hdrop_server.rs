@@ -8,7 +8,10 @@ use axum::{
     Router,
 };
 use hdrop_shared::{env, metrics::UpdateMetrics};
-use tokio::sync::mpsc::{channel, Receiver};
+use tokio::{
+    net::TcpListener,
+    sync::mpsc::{channel, Receiver},
+};
 use tower_http::{
     compression::CompressionLayer,
     cors::{AllowOrigin, Any, CorsLayer},
@@ -180,8 +183,8 @@ impl Server {
         tracing::info!("Starting server on {addr}");
 
         // Start the server
-        axum::Server::bind(&addr)
-            .serve(app.into_make_service())
+        let listener = TcpListener::bind(&addr).await?;
+        axum::serve(listener, app.into_make_service())
             .await
             .unwrap_or_else(|err| panic!("Server failed to start on {addr}: {err:?}"));
 

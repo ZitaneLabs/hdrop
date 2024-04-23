@@ -3,6 +3,7 @@ use std::{future::ready, net::SocketAddr};
 use axum::{routing::get, Router};
 use hdrop_shared::metrics::names;
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
+use tokio::net::TcpListener;
 
 #[derive(Debug, Default)]
 pub struct PrometheusMetricsServer;
@@ -53,14 +54,24 @@ impl PrometheusMetricsServer {
         let app = self.metrics_router();
         let addr = SocketAddr::from(([0; 4], 3001));
 
-        // Start the server
-        tracing::info!("Prometheus exporter listening on {}", addr);
-        let server_result = axum::Server::bind(&addr)
-            .serve(app.into_make_service())
-            .await;
+        // Bind the listener to the address
+        let listener = match TcpListener::bind(&addr).await {
+            Ok(listener) => {
+                tracing::info!("Prometheus exporter listening on {}", addr);
+                listener
+            }
+            Err(err) => {
+                tracing::error!("Prometheus exporter failed to start: {}", err);
+                tracing::error!(
+                    "Failed to bind Prometheus TCP listener to address: {}",
+                    addr
+                );
+                return;
+            }
+        };
 
-        // If the server fails to start, log the error
-        if let Err(err) = server_result {
+        // Start the server and log any errors
+        if let Err(err) = axum::serve(listener, app.into_make_service()).await {
             tracing::error!("Prometheus exporter failed to start: {}", err);
         }
     }

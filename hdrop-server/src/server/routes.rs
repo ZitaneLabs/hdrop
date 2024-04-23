@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Multipart, Path, Query, State},
-    headers::{authorization::Bearer, Authorization},
     http::StatusCode,
     response::IntoResponse,
     Json,
+};
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
 use chrono::Utc;

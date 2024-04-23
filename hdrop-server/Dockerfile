@@ -7,7 +7,7 @@ FROM rust:latest
 WORKDIR /app
 
 # Install node
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_21.x | bash -
 RUN apt -y install nodejs
 
 # Install dependencies

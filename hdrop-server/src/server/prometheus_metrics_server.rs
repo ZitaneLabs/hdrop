@@ -71,7 +71,7 @@ impl PrometheusMetricsServer {
         };
 
         // Start the server and log any errors
-        if let Err(err) = axum::serve(listener, app.into_make_service()).await {
+        if let Err(err) = axum::serve(listener, app).await {
             tracing::error!("Prometheus exporter failed to start: {}", err);
         }
     }

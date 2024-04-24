@@ -184,7 +184,7 @@ impl Server {
 
         // Start the server
         let listener = TcpListener::bind(&addr).await?;
-        axum::serve(listener, app.into_make_service())
+        axum::serve(listener, app)
             .await
             .unwrap_or_else(|err| panic!("Server failed to start on {addr}: {err:?}"));
 

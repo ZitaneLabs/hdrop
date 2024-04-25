@@ -19,7 +19,7 @@ impl MetricsUpdater {
             // Update RAM
             let ram_status = self.system.ram_status();
 
-            metrics::gauge!(names::system::RAM_USAGE_B, ram_status.used() as f64);
+            metrics::gauge!(names::system::RAM_USAGE_B).set(ram_status.used() as f64);
 
             // Update CPU
             let cpu_status = self.system.cpu_status();
@@ -31,7 +31,7 @@ impl MetricsUpdater {
 
             let average = added_up_usage / len;
 
-            metrics::gauge!(names::system::AVG_CPU_USAGE, average);
+            metrics::gauge!(names::system::AVG_CPU_USAGE).set(average);
         }
     }
 }
@@ -39,11 +39,17 @@ impl MetricsUpdater {
 pub mod metrics_middleware {
     use std::time::Instant;
 
-    use axum::{extract::MatchedPath, http::Request, middleware::Next, response::IntoResponse};
+    use axum::{
+        body::Body,
+        extract::MatchedPath,
+        http::Request,
+        middleware::Next,
+        response::IntoResponse,
+    };
     use hdrop_shared::metrics::names;
 
     /// Middleware which is plugged in to track everything related to requests.
-    pub async fn track_requests<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
+    pub async fn track_requests(req: Request<Body>, next: Next) -> impl IntoResponse {
         let start = Instant::now();
         let path = if let Some(matched_path) = req.extensions().get::<MatchedPath>() {
             matched_path.as_str().to_owned()
@@ -63,12 +69,9 @@ pub mod metrics_middleware {
             ("status", status),
         ];
 
-        metrics::increment_counter!(names::network::HTTP_REQUESTS_TOTAL, &labels);
-        metrics::histogram!(
-            names::network::HTTP_REQUESTS_DURATION_SECONDS,
-            latency,
-            &labels
-        );
+        metrics::counter!(names::network::HTTP_REQUESTS_TOTAL, &labels).increment(1);
+        metrics::histogram!(names::network::HTTP_REQUESTS_DURATION_SECONDS, &labels)
+            .record(latency);
 
         response
     }

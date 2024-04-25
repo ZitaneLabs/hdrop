@@ -140,15 +140,9 @@ impl UpdateMetrics for CacheVariant {
     async fn update_metrics(&self) {
         if let Some(capacity) = self.capacity() {
             // Update cache total capacity gauge
-            metrics::gauge!(
-                names::storage::CACHE_TOTAL_CAPACITY_B,
-                capacity.total() as f64
-            );
+            metrics::gauge!(names::storage::CACHE_TOTAL_CAPACITY_B,).set(capacity.total() as f64);
             // Update cache used capacity gauge
-            metrics::gauge!(
-                names::storage::CACHE_USED_CAPACITY_B,
-                capacity.used() as f64
-            );
+            metrics::gauge!(names::storage::CACHE_USED_CAPACITY_B,).set(capacity.used() as f64);
         }
     }
 }

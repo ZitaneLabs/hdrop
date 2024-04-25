@@ -76,20 +76,20 @@ impl TryFrom<PartialUploadedFile> for UploadedFile {
         }
 
         Ok(Self {
-            iv: data.iv.ok_or(Error::FileDataConversionError("iv"))?,
-            salt: data.salt.ok_or(Error::FileDataConversionError("salt"))?,
+            iv: data.iv.ok_or(Error::FileDataConversion("iv"))?,
+            salt: data.salt.ok_or(Error::FileDataConversion("salt"))?,
             file_data: data
                 .file_data
-                .ok_or(Error::FileDataConversionError("file_data"))?,
+                .ok_or(Error::FileDataConversion("file_data"))?,
             file_name_data: data
                 .file_name_data
-                .ok_or(Error::FileDataConversionError("file_name_data"))?,
+                .ok_or(Error::FileDataConversion("file_name_data"))?,
             challenge_data: data
                 .challenge_data
-                .ok_or(Error::FileDataConversionError("file_name_hash"))?,
+                .ok_or(Error::FileDataConversion("file_name_hash"))?,
             challenge_hash: data
                 .challenge_hash
-                .ok_or(Error::FileDataConversionError("file_name_hash"))?,
+                .ok_or(Error::FileDataConversion("file_name_hash"))?,
         })
     }
 }

@@ -1,4 +1,4 @@
-use sysinfo::{CpuExt, System, SystemExt};
+use sysinfo::System;
 
 /// Agnostic status struct for any limited resource.
 pub struct Status {

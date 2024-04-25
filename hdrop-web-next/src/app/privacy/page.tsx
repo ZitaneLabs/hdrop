@@ -1,8 +1,8 @@
 export default function PrivacyPage() {
     return (
         <main className="flex flex-col items-center justify-center h-full overflow-auto">
-            <p className="overflow-auto p-4 bg-[hsla(0,0%,0%,.1)] rounded-md lg:max-w-4xl mx-2">
-            <h2 className="text-xl font-bold">Open Source</h2>
+            <div className="overflow-auto p-4 bg-[hsla(0,0%,0%,.1)] rounded-md lg:max-w-4xl mx-2">
+                <h2 className="text-xl font-bold">Open Source</h2>
                 <p>
                     hdrop is developed in the open on <a className="underline underline-offset-2" href="https://github.com/ZitaneLabs/hdrop" target="_blank">github.com/ZitaneLabs/hdrop</a>. Feel free to contribute!
                 </p>
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
                 <p>
                     The full details of our security model can be found in the <a className="underline underline-offset-2" href="https://github.com/ZitaneLabs/hdrop" target="_blank">GitHub repository</a>.
                 </p>
-            </p>
+            </div>
         </main>
     )
 }

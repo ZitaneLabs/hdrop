@@ -1,18 +1,15 @@
-all-features = false
-no-default-features = false
+[graph]
+all-features = true
 
 [advisories]
+version = 2
 db-urls = ["https://github.com/rustsec/advisory-db"]
-vulnerability = "deny"
-unmaintained = "warn"
-yanked = "warn"
-notice = "warn"
 ignore = [
     # "RUSTSEC-0000-0000"
 ]
 
 [licenses]
-unlicensed = "deny"
+version = 2
 allow = [
     "MIT",
     "Apache-2.0",
@@ -22,18 +19,17 @@ allow = [
     "MPL-2.0", # dependencies of zitane-s3-async
     "CC0-1.0",
 ]
-copyleft = "deny"
-allow-osi-fsf-free = "neither"
-default = "deny"
 
 [bans]
 skip = [
 ]
 
 [sources]
-unknown-registry = "warn"
-unknown-git = "warn"
+unknown-registry = "deny"
+unknown-git = "deny"
 allow-registry = [
     "https://github.com/rust-lang/crates.io-index"
 ]
-allow-git = []
+allow-git = [
+    "https://github.com/ZitaneLabs/bincache.git"
+]

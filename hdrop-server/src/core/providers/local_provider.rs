@@ -108,6 +108,6 @@ impl UpdateMetrics for LocalProvider {
         let used_storage = used_storage().await.and_then(|s| s.ok()).unwrap_or(0);
 
         // Update storage gauge
-        metrics::gauge!(names::storage::USED_STORAGE_B, used_storage as f64);
+        metrics::gauge!(names::storage::USED_STORAGE_B).set(used_storage as f64);
     }
 }

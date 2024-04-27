@@ -178,7 +178,7 @@ impl Server {
             );
 
         // Server configuration
-        let addr = SocketAddr::from(([0; 4], env::port().unwrap_or(8080)));
+        let addr = SocketAddr::from(([0; 4], env::hdrop_port().unwrap_or(8080)));
 
         tracing::info!("Starting server on {addr}");
 

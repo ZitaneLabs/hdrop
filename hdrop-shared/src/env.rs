@@ -44,7 +44,8 @@ macro_rules! env_get {
 }
 
 // Server
-env_get!(port => u16);
+env_get!(hdrop_port => u16);
+env_get!(prometheus_port => u16);
 env_get!(cors_origin);
 env_get!(single_file_limit_mb => usize);
 env_get!(storage_provider);

@@ -43,29 +43,46 @@ macro_rules! env_get {
     };
 }
 
+macro_rules! map_env {
+    ($($name:ident => $type:ty),* $(,)?) => {
+        const ENV_VARS_BACKEND: &[&str] = &[$(stringify!($name),)*];
+        $(
+            env_get!($name => $type);
+        )*
+    };
+}
+
+// Generate the environment variables metadata and fetch functions
+map_env!(
 // Server
-env_get!(port => u16);
-env_get!(cors_origin);
-env_get!(single_file_limit_mb => usize);
-env_get!(storage_provider);
-
+hdrop_port => u16,
+prometheus_port => u16,
+cors_origin => String,
+single_file_limit_mb => usize,
+storage_provider => String,
 // Database
-env_get!(database_url);
-
+database_url => String,
 // Cache
-env_get!(cache_strategy);
-env_get!(cache_memory_limit_mb => usize);
-env_get!(cache_disk_limit_mb => usize);
-env_get!(cache_dir => PathBuf);
-
+cache_strategy => String,
+cache_memory_limit_mb => usize,
+cache_disk_limit_mb => usize,
+cache_dir => PathBuf,
 // S3 Provider
-env_get!(s3_region);
-env_get!(s3_endpoint);
-env_get!(s3_access_key_id);
-env_get!(s3_secret_access_key);
-env_get!(s3_bucket_name);
-env_get!(s3_public_url);
-
+s3_region => String,
+s3_endpoint => String,
+s3_access_key_id => String,
+s3_secret_access_key => String,
+s3_bucket_name => String,
+s3_public_url => String,
 // Local Provider
-env_get!(local_storage_dir => PathBuf);
-env_get!(local_storage_limit_mb => usize);
+local_storage_dir => PathBuf,
+local_storage_limit_mb => usize,
+);
+
+/// Get a list of all environment variables used in the hdrop backend.
+pub fn get_env_vars() -> Vec<String> {
+    ENV_VARS_BACKEND
+        .iter()
+        .map(|&var| var.to_uppercase())
+        .collect()
+}

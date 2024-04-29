@@ -13,7 +13,8 @@ popd
 
 cargo build --release -p hdrop-server
 export RUST_BACKTRACE=1
-export PORT=8080
+export HDROP_PORT=8080
+export PROMETHEUS_PORT=3001
 export CORS_ORIGIN="*"
 export S3_ACCESS_KEY_ID="dev"
 export S3_BUCKET_NAME="hdrop"

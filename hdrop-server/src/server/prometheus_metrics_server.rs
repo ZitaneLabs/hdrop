@@ -1,7 +1,7 @@
 use std::{future::ready, net::SocketAddr};
 
 use axum::{routing::get, Router};
-use hdrop_shared::metrics::names;
+use hdrop_shared::{env, metrics::names};
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
 use tokio::net::TcpListener;
 
@@ -52,7 +52,7 @@ impl PrometheusMetricsServer {
     /// Run the metrics server.
     pub async fn run(self) {
         let app = self.metrics_router();
-        let addr = SocketAddr::from(([0; 4], 3001));
+        let addr = SocketAddr::from(([0; 4], env::prometheus_port().unwrap_or(3001)));
 
         // Bind the listener to the address
         let listener = match TcpListener::bind(&addr).await {

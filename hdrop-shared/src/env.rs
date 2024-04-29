@@ -43,7 +43,7 @@ macro_rules! env_get {
     };
 }
 
-macro_rules! env_and_const {
+macro_rules! map_env {
     ($($name:ident => $type:ty),* $(,)?) => {
         const ENV_VARS_BACKEND: &[&str] = &[$(stringify!($name),)*];
         $(
@@ -53,7 +53,7 @@ macro_rules! env_and_const {
 }
 
 // Generate the environment variables metadata and fetch functions
-env_and_const!(
+map_env!(
 // Server
 hdrop_port => u16,
 prometheus_port => u16,

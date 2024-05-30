@@ -12,10 +12,18 @@ axum-extra = { version = "0.9.3", features = ["typed-header", "tracing"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 dotenvy = "0.15"
 regex = "1.10"
-tower-http = { version = "0.5", features = ["cors", "limit", "compression-br", "trace"] }
-bincache = { git = "https://github.com/ZitaneLabs/bincache.git", features = ["rt_tokio_1", "comp_zstd"] }
+tower-http = { version = "0.5", features = [
+    "cors",
+    "limit",
+    "compression-br",
+    "trace",
+] }
+bincache = { git = "https://github.com/ZitaneLabs/bincache.git", features = [
+    "rt_tokio_1",
+    "comp_zstd",
+] }
 s3 = { version = "0.37", package = "zitane-s3-async" }
-metrics-exporter-prometheus = "0.14"
+metrics-exporter-prometheus = "0.15"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing = "0.1.40"
 sysinfo = "0.30"

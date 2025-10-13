@@ -1,4 +1,4 @@
-FROM node:21-alpine AS base
+FROM node:24-alpine AS base
 
 #
 # Build env
@@ -57,5 +57,5 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
 
 EXPOSE 80
-ENV PORT 80
+ENV PORT=80
 CMD ["node", "server.js"]

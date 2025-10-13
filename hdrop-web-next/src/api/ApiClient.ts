@@ -13,7 +13,7 @@ import {
  *
  * @type {string}
  */
-const HOMEPAGE = process.env.NEXT_PUBLIC_WEB_BASE_URL!
+const HOMEPAGE: string = process.env.NEXT_PUBLIC_WEB_BASE_URL!
 
 /**
  * Base URL of the API

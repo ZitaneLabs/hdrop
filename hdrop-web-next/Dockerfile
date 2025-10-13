@@ -1,4 +1,4 @@
-FROM node:21-alpine AS base
+FROM node:24-alpine AS base
 
 #
 # Build env
@@ -10,9 +10,9 @@ WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 
 COPY package.json ./
+COPY package-lock.json ./
 COPY tsconfig.json ./
-COPY yarn.lock ./
-RUN yarn --frozen-lockfile
+RUN npm ci
 
 ARG NEXT_PUBLIC_APP_NAME
 ARG NEXT_PUBLIC_WEB_BASE_URL
@@ -35,7 +35,7 @@ COPY src ./src
 COPY next.config.js ./
 COPY postcss.config.js ./
 COPY tailwind.config.js ./
-RUN yarn build
+RUN npm run build
 
 #
 # Production env
@@ -57,5 +57,5 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
 
 EXPOSE 80
-ENV PORT 80
+ENV PORT=80
 CMD ["node", "server.js"]

@@ -1,7 +1,6 @@
 # This is for local development only.
 # DO NOT deploy this on a production server!
 
-version: '3'
 services:
   web:
     build:
@@ -13,8 +12,8 @@ services:
       - hdrop
     environment:
       - CHOKIDAR_USEPOLLING=true
-      - REACT_APP_BASE_URL=http://localhost:3000
-      - REACT_APP_API_ENDPOINT=http://localhost:8080
+      - NEXT_PUBLIC_WEB_BASE_URL=http://localhost:3000
+      - NEXT_PUBLIC_API_ENDPOINT=http://api:8080
     volumes:
       - ./hdrop-web-next:/app
       - /app/node_modules

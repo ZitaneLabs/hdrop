@@ -2,15 +2,15 @@
 # Build env
 #
 
-FROM node:21-alpine
+FROM node:24-alpine
 
 WORKDIR /app
-ENV PATH /app/node_modules/.bin:$PATH
+ENV PATH=/app/node_modules/.bin:$PATH
 
 COPY package.json ./
+COPY package-lock.json ./
 COPY tsconfig.json ./
-COPY yarn.lock ./
-RUN yarn --frozen-lockfile
+RUN npm ci
 
 COPY public ./public
 COPY src ./src
@@ -18,4 +18,4 @@ COPY src ./src
 COPY .env.local ./
 
 EXPOSE 3000
-CMD ["yarn", "dev"]
+CMD ["npm", "run", "dev"]

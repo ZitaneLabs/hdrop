@@ -19,20 +19,20 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Install dependencies
-        run: yarn
+        run: npm ci
         working-directory: ./hdrop-web-next
       - name: Test
-        run: yarn test
+        run: npm run test
         working-directory: ./hdrop-web-next
       - name: Lint
-        run: yarn lint
+        run: npm run lint
         working-directory: ./hdrop-web-next
   license-check:
     runs-on: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
-        run: yarn
+        run: npm ci
         working-directory: ./hdrop-web-next
       - name: Check licenses
         run: ./check_licenses.sh

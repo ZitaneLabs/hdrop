@@ -17,22 +17,52 @@ env:
 
 jobs:
   rustfmt:
-    runs-on: [ubuntu-latest]
+    name: Rustfmt
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: rustup toolchain install nightly --profile minimal
-      - run: rustup component add --toolchain nightly rustfmt
-      - run: cargo +nightly fmt --all --check
+      - uses: actions/checkout@v5
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Add rustfmt component
+        run: rustup component add rustfmt --toolchain nightly
+
+      - name: Check formatting
+        run: cargo +nightly fmt --all --check
+
   clippy:
-    runs-on: [ubuntu-latest]
+    name: Clippy Lints
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: rustup toolchain install stable --profile minimal
-      - run: rustup component add clippy
-      - name: cargo clippy
-        run: cargo clippy
+      - uses: actions/checkout@v5
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features #-- -D warnings
+
   deny:
-    runs-on: [ubuntu-latest]
+    name: Cargo Deny
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: EmbarkStudios/cargo-deny-action@v1
+      - uses: actions/checkout@v5
+
+      - name: Run cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          rust-version: "1.90.0"

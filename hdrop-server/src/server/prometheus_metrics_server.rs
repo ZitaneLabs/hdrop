@@ -39,13 +39,13 @@ impl PrometheusMetricsServer {
     /// Register all gauges from names module.
     fn register_metrics(&self) {
         for name in names::GAUGE_NAMES {
-            metrics::gauge!(name);
+            _ = metrics::gauge!(name);
         }
         for name in names::HISTOGRAM_NAMES {
-            metrics::histogram!(name);
+            _ = metrics::histogram!(name);
         }
         for name in names::COUNTER_NAMES {
-            metrics::counter!(name);
+            _ = metrics::counter!(name);
         }
     }
 

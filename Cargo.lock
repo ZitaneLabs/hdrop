@@ -988,7 +988,7 @@ dependencies = [
  "metrics",
  "serde",
  "sha3",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "uuid",
 ]
 
@@ -1009,7 +1009,7 @@ dependencies = [
  "regex",
  "serde",
  "sysinfo",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tokio",
  "tower-http",
  "tracing",
@@ -1026,7 +1026,7 @@ dependencies = [
  "once_cell",
  "paste",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
 ]
 
 [[package]]

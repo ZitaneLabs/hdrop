@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 use paste::paste;
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -14,7 +14,7 @@ pub enum EnvError {
 macro_rules! env_get {
     ($name:ident) => {
         paste! {
-            static [<$name:upper _CELL>]: OnceCell<Result<String, EnvError>> = OnceCell::new();
+            static [<$name:upper _CELL>]: OnceLock<Result<String, EnvError>> = OnceLock::new();
 
             #[doc ="Get the value of the '" $name:upper "' environment variable."]
             pub fn [<$name>]() -> Result<String, EnvError> {
@@ -28,7 +28,7 @@ macro_rules! env_get {
 
     ($name:ident => $target_type:ty) => {
         paste! {
-            static [<$name:upper _CELL>]: OnceCell<Result<$target_type, EnvError>> = OnceCell::new();
+            static [<$name:upper _CELL>]: OnceLock<Result<$target_type, EnvError>> = OnceLock::new();
 
             #[doc ="Get the value of the '" $name:upper "' environment variable."]
             pub fn [<$name>]() -> Result<$target_type, EnvError> {

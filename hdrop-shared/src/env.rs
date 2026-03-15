@@ -1,6 +1,5 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::OnceLock};
 
-use std::sync::OnceLock;
 use paste::paste;
 
 #[derive(Debug, Clone, thiserror::Error)]

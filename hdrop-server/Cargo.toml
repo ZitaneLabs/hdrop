@@ -11,7 +11,7 @@ axum = { version = "0.7", features = ["multipart", "macros"] }
 axum-extra = { version = "0.9.3", features = ["typed-header", "tracing"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 dotenvy = "0.15"
-regex = "1.10"
+regex = "1.12.3"
 tower-http = { version = "0.5", features = [
     "cors",
     "limit",

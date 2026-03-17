@@ -6,9 +6,10 @@ FROM rust:latest
 
 WORKDIR /app
 
-# Install node
-RUN curl -sL https://deb.nodesource.com/setup_21.x | bash -
-RUN apt -y install nodejs
+# Install Node.js runtime for pm2.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends nodejs npm \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
 RUN cargo install --locked diesel_cli --no-default-features --features postgres

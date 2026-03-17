@@ -68,7 +68,6 @@ export default class APIClient {
             url: this.buildEndpoint(['v1', 'files']),
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'multipart/form-data'
             },
             onUploadProgress(progressEvent) {
                 if (progressEvent.total === undefined) return;

@@ -18,7 +18,7 @@ tower-http = { version = "0.5", features = [
     "compression-br",
     "trace",
 ] }
-bincache = { git = "https://github.com/ZitaneLabs/bincache.git", features = [
+bincache = { version = "0.5.1", features = [
     "rt_tokio_1",
     "comp_zstd",
 ] }

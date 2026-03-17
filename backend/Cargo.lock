@@ -259,7 +259,8 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 [[package]]
 name = "bincache"
 version = "0.5.1"
-source = "git+https://github.com/ZitaneLabs/bincache.git#ab4673629e139db0878c5d94a3b89258f78c6080"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba78ebd89c3ffe1b3ca975f6fb41abe0f8cda79f76d08dcadb2f31dba38c8fc1"
 dependencies = [
  "async-compression",
  "async-trait",
@@ -1247,7 +1248,7 @@ dependencies = [
  "hyper 1.7.0",
  "libc",
  "pin-project-lite",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "tokio",
  "tower-service",
  "tracing",

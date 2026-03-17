@@ -17,7 +17,9 @@ make vps-install
 ```
 
 During install, enable `IPv6-only compatibility mode` when your VPS has no IPv4.
-This sets `VPS_IPV6_ONLY=1` and enables a build overlay that uses host-network builds.
+This sets `VPS_IPV6_ONLY=1` and enables an IPv6 overlay:
+- host-network builds for better package install reliability
+- IPv6-enabled runtime Docker networks
 
 3. Start services:
 
@@ -73,10 +75,43 @@ Use this when domain/DNS is not ready yet.
 
 If your VPS has only IPv6 connectivity:
 
-1. Run `make vps-install` and answer `yes` for `IPv6-only compatibility mode`.
-2. Prefer domain mode with a public `AAAA` record pointing to the VPS.
-3. Start with `make vps-up`.
-4. If you see `Temporary failure resolving 'deb.debian.org'`, verify Docker daemon IPv6/DNS configuration on the host, then retry.
+1. Run host-side IPv6 setup first:
+
+```bash
+make vps-ipv6
+```
+
+This script configures DNS for:
+- Cloudflare (`2606:4700:4700::1111`, `2606:4700:4700::1001`)
+- Google fallback (`2001:4860:4860::8888`, `2001:4860:4860::8844`)
+and configures Docker DNS automatically for your host:
+- prefers host `systemd-resolved` stub (`127.0.0.53`) when available
+- otherwise uses `/run/systemd/resolve/resolv.conf` nameservers
+
+If you previously used fixed IPv6 subnets and see
+`invalid pool request: Pool overlap with other one on this address space`,
+remove old project networks and start again:
+
+```bash
+make vps-down
+docker network rm infra_hdrop infra_backend 2>/dev/null || true
+make vps-up
+```
+
+2. Run `make vps-install` and answer `yes` for `IPv6-only compatibility mode`.
+3. Prefer domain mode with a public `AAAA` record pointing to the VPS.
+4. Start with `make vps-up`.
+
+If you re-ran install and changed `POSTGRES_PASSWORD` on an existing `postgres_data`
+volume, API startup can fail with `password authentication failed for user`.
+Either restore the old password in `config/vps.compose.env`, or reinitialize the
+database volume (data-destructive):
+
+```bash
+make vps-down
+docker volume rm infra_postgres_data
+make vps-up
+```
 
 ## Cloud-native Local
 

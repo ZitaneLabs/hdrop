@@ -31,6 +31,7 @@
 One host, one compose stack, local disk storage, optional automatic TLS via Caddy.
 
 ```bash
+make vps-ipv6   # run this first on IPv6-only VPS hosts
 make vps-install
 make vps-up
 ```

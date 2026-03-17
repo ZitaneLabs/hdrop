@@ -18,7 +18,9 @@ read_env_var_from_file() {
   local line
   local value
 
-  line="$(grep -E "^[[:space:]]*${key}[[:space:]]*=" "$file" | tail -n 1 || true)"
+  [[ -f "$file" ]] || return 1
+
+  line="$(grep -E "^[[:space:]]*${key}[[:space:]]*=" "$file" 2>/dev/null | tail -n 1 || true)"
   [[ -n "$line" ]] || return 1
 
   value="${line#*=}"
@@ -62,6 +64,17 @@ require_cmd() {
 
 has_docker_daemon_access() {
   docker info >/dev/null 2>&1
+}
+
+docker_ipv6_status() {
+  docker info 2>/dev/null | awk -F': ' '
+    /^[[:space:]]*IPv6:/ {
+      value = tolower($2)
+      gsub(/[[:space:]]+$/, "", value)
+      print value
+      exit
+    }
+  '
 }
 
 is_user_listed_in_docker_group() {

@@ -1,5 +1,5 @@
 .PHONY: local-up local-down local-logs db-migrate api-dev \
-	vps-install vps-up vps-down vps-logs vps-smoke vps-upstall \
+	vps-install vps-ipv6 vps-up vps-down vps-logs vps-smoke vps-upstall \
 	staging-up staging-down staging-smoke \
 	deploy-build deploy-publish deploy-release \
 	ci-api ci-web
@@ -21,6 +21,9 @@ api-dev:
 
 vps-install:
 	./scripts/vps-install.sh
+
+vps-ipv6:
+	./scripts/vps-ipv6.sh
 
 vps-up:
 	./scripts/vps-up.sh

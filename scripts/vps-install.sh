@@ -150,7 +150,7 @@ case "${ipv6_mode_answer}" in
 esac
 
 if [[ "${vps_ipv6_only}" -eq 1 ]]; then
-  docker_ipv6="$(docker info --format '{{.IPv6}}' 2>/dev/null || true)"
+  docker_ipv6="$(docker_ipv6_status || true)"
   if [[ "${docker_ipv6}" != "true" ]]; then
     echo "Warning: Docker daemon reports IPv6='${docker_ipv6:-unknown}'."
     echo "The generated config will enable host-network builds for better IPv6-only compatibility."
@@ -167,8 +167,14 @@ cache_disk_limit_mb="$(prompt_with_default "Cache disk limit MB" "2000")"
 cache_dir="$(prompt_with_default "Cache directory" "/tmp/hdrop-cache")"
 
 db_user="$(prompt_with_default "Postgres user" "hdrop")"
-default_db_password="$(generate_password)"
-read -r -p "Postgres password [generated]: " db_password
+existing_db_password="$(read_env_var_from_file "${CONFIG_FILE}" "POSTGRES_PASSWORD" || true)"
+if [[ -n "${existing_db_password}" ]]; then
+  default_db_password="${existing_db_password}"
+  read -r -p "Postgres password [existing config value]: " db_password
+else
+  default_db_password="$(generate_password)"
+  read -r -p "Postgres password [generated]: " db_password
+fi
 if [[ -z "${db_password}" ]]; then
   db_password="${default_db_password}"
 fi

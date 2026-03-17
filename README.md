@@ -53,6 +53,11 @@ Existing local, staging, and production image workflows remain available:
 - `make deploy-publish`
 - `make deploy-release`
 
+Frontend env note: `NEXT_PUBLIC_*` values are read when the local Next.js dev
+container starts, but they are baked into the web image for `staging`, `vps`,
+and `prod`. After changing them in those flows, rerun the relevant build/deploy
+command. See `docs/env-reference.md` and `docs/operations.md`.
+
 ## Documentation
 
 We are migrating our docs to [the wiki](https://github.com/ZitaneLabs/hdrop/wiki).  

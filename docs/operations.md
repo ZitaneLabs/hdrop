@@ -113,24 +113,38 @@ docker volume rm infra_postgres_data
 make vps-up
 ```
 
+## Frontend Env Update Rules
+
+`NEXT_PUBLIC_*` values are workflow-specific:
+
+- `local`: the Next.js dev container reads them when it starts. After changing
+  `config/local.compose.env`, rerun `make local-up`.
+- `staging`: the web image bakes them in during `make staging-up`. After
+  changing `config/staging.compose.env`, rerun `make staging-up`.
+- `vps`: the web image bakes them in during `make vps-up` or `make vps-upstall`.
+  After changing `config/vps.compose.env`, rerun one of those commands.
+- `prod`: the web image bakes them in during `make deploy-build`. Changing
+  `config/prod.compose.env` alone will not change browser behavior until you
+  rebuild and then publish/release the web image.
+
 ## Cloud-native Local
 
 ```bash
 cp config/local.compose.env.example config/local.compose.env
 cp config/local.api.env.example config/local.api.env
-cp config/local.web.env.example config/local.web.env
 make local-up
 make db-migrate
 make local-logs
 make local-down
 ```
 
+`config/local.api.env` is only needed for `make db-migrate` and `make api-dev`.
+The compose-driven local web flow does not use a separate frontend env file.
+
 ## Cloud-native Staging (local/CI simulation)
 
 ```bash
 cp config/staging.compose.env.example config/staging.compose.env
-cp config/staging.api.env.example config/staging.api.env
-cp config/staging.web.env.example config/staging.web.env
 make staging-up
 make staging-smoke
 make staging-down
@@ -140,8 +154,6 @@ make staging-down
 
 ```bash
 cp config/prod.compose.env.example config/prod.compose.env
-cp config/prod.api.env.example config/prod.api.env
-cp config/prod.web.env.example config/prod.web.env
 make deploy-build
 make deploy-publish
 make deploy-release

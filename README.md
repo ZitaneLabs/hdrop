@@ -9,7 +9,7 @@
 [badge_license]: https://badgers.space/github/license/ZitaneLabs/hdrop
 [github_ci]: https://badgers.space/github/checks/zitanelabs/hdrop
 
-<img align="right" width="64" src="./hdrop-web-next/public/logo512.png" />
+<img align="right" width="64" src="./frontend/hdrop-web-next/public/logo512.png" />
 
 **Simple, self-hosted encrypted file transfer.**
 

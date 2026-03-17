@@ -1,32 +1,32 @@
 {
-    "folders": [
-        {
-            "name": "root",
-            "path": "."
-        },
-        {
-            "name": "hdrop-shared",
-            "path": "/backend/hdrop-shared",
-        },
-        {
-            "name": "hdrop-db",
-            "path": "/backend/hdrop-db",
-        },
-        {
-            "name": "hdrop-server",
-            "path": "/backend/hdrop-server",
-        },
-        {
-            "name": "hdrop-web-next",
-            "path": "/backend/hdrop-web-next"
-        },
-    ],
-    "settings": {
-        "jest.disabledWorkspaceFolders": [
-            "root",
-            "hdrop-db",
-            "hdrop-shared",
-            "hdrop-server",
-        ]
+  "folders": [
+    {
+      "name": "root",
+      "path": "."
+    },
+    {
+      "name": "hdrop-shared",
+      "path": "backend/hdrop-shared"
+    },
+    {
+      "name": "hdrop-db",
+      "path": "backend/hdrop-db"
+    },
+    {
+      "name": "hdrop-server",
+      "path": "backend/hdrop-server"
+    },
+    {
+      "name": "hdrop-web-next",
+      "path": "frontend/hdrop-web-next"
     }
+  ],
+  "settings": {
+    "jest.disabledWorkspaceFolders": [
+      "root",
+      "hdrop-db",
+      "hdrop-shared",
+      "hdrop-server"
+    ]
+  }
 }

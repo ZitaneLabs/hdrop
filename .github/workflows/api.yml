@@ -30,6 +30,7 @@ jobs:
 
       - name: Check formatting
         run: cargo +nightly fmt --all --check
+        working-directory: ./backend
 
   clippy:
     name: Clippy Lints
@@ -55,6 +56,7 @@ jobs:
 
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features #-- -D warnings
+        working-directory: ./backend
 
   deny:
     name: Cargo Deny
@@ -65,4 +67,5 @@ jobs:
       - name: Run cargo-deny
         uses: EmbarkStudios/cargo-deny-action@v2
         with:
+          manifest-path: backend/Cargo.toml
           rust-version: "1.90.0"

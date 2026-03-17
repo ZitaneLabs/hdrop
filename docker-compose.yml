@@ -4,7 +4,7 @@
 services:
   web:
     build:
-      context: ./hdrop-web-next
+      context: ./frontend/hdrop-web-next
       dockerfile: Dockerfile.development
     ports:
       - "3000:3000"
@@ -15,11 +15,11 @@ services:
       - NEXT_PUBLIC_WEB_BASE_URL=http://localhost:3000
       - NEXT_PUBLIC_API_ENDPOINT=http://api:8080
     volumes:
-      - ./hdrop-web-next:/app
+      - ./frontend/hdrop-web-next:/app
       - /app/node_modules
   api:
     build:
-      context: .
+      context: ./backend
       dockerfile: ./hdrop-server/Dockerfile
     ports:
       - "8080:80"

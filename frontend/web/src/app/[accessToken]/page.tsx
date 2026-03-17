@@ -27,13 +27,11 @@ export default function DownloadFilePage() {
         return hashPassword ?? userPassword
     }, [hashPassword, userPassword])
 
-    // Try to get password from url fragment
+    // Read URL fragment only after hydration to avoid SSR/client mismatch.
     useEffect(() => {
-        if (window.location.hash.length === 0) {
-            setHashPassword(null)
-            return
-        }
-        setHashPassword(window.location.hash.slice(1))
+        const hash = window.location.hash.slice(1)
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setHashPassword(hash.length > 0 ? hash : null)
     }, [])
 
     // Start download when password is set

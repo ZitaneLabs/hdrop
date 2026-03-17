@@ -24,15 +24,20 @@ type MatchProps<T> = {
     active?: boolean
 }
 
-export function Match<T>({ on, when = true, children, active: baseActive = false }: MatchProps<T>) {
+export function Match<T>({ when = true, children, active: baseActive = false }: MatchProps<T>) {
     const active = baseActive && when
-    const baseClassName = "absolute w-full h-full flex flex-col justify-center items-center transition-all duration-500"
+    const baseClassName = "absolute w-full h-full flex flex-col justify-center items-center transition-opacity duration-500"
     const activeClassName = ""
-    const inactiveClassName = "opacity-0 pointer-events-none"
+    const inactiveClassName = ""
     const className = [baseClassName, active ? activeClassName : inactiveClassName].join(" ")
+    const style = {
+        opacity: active ? 1 : 0,
+        visibility: active ? "visible" : "hidden",
+        pointerEvents: active ? "auto" : "none",
+    } as const
 
     return (
-        <div className={className}>
+        <div className={className} style={style}>
             {children}
         </div>
     )

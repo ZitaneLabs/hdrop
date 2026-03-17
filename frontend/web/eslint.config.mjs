@@ -1,28 +1,13 @@
 import { defineConfig } from "eslint/config";
 import jest from "eslint-plugin-jest";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypeScript from "eslint-config-next/typescript";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-    baseDirectory: __dirname,
-    recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all
-});
-
-export default defineConfig([{
-    extends: compat.extends("next/core-web-vitals", "plugin:jest/recommended"),
-
-    plugins: {
-        jest,
+export default defineConfig([
+    ...nextCoreWebVitals,
+    ...nextTypeScript,
+    {
+        ...jest.configs["flat/recommended"],
+        files: ["**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     },
-
-    languageOptions: {
-        globals: {
-            ...jest.environments.globals.globals,
-        },
-    },
-}]);
+]);

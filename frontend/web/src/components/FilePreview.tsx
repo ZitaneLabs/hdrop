@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
 import mime from 'mime/lite'
 
 type Props = {
@@ -11,8 +11,16 @@ type Props = {
 }
 
 export default function FilePreview({ data, fileName }: Props) {
-    const [objectUrl, setObjectUrl] = useState('')
-    const [mimeType, setMimeType] = useState('')
+    const mimeType = useMemo(() => {
+        if (fileName === null) return 'application/octet-stream'
+        return mime.getType(fileName.toLowerCase()) ?? 'application/octet-stream'
+    }, [fileName])
+
+    const objectUrl = useMemo(() => {
+        if (data === undefined || fileName === null) return null
+        const blob = new Blob([data], { type: mimeType })
+        return URL.createObjectURL(blob)
+    }, [data, fileName, mimeType])
 
     // Get mime type prefix (e.g. 'image', 'video', 'audio', etc.)
     const mimePrefix = useMemo(() => mimeType.split('/')[0], [mimeType])
@@ -32,27 +40,17 @@ export default function FilePreview({ data, fileName }: Props) {
         }
     }, [data])
 
-    // Prepare preview
+    // Revoke object URL when it changes or component unmounts
     useEffect(() => {
-        if (data === undefined || fileName === null) return
-
-        // Detect and set mime type
-        const mimeType = mime.getType(fileName.toLowerCase()) ?? 'application/octet-stream'
-        setMimeType(mimeType)
-
-        // Create object url
-        const blob = new Blob([data], { type: mimeType })
-        const objectUrl = URL.createObjectURL(blob)
-        setObjectUrl(objectUrl)
-
-        // Revoke object url when component unmounts
+        if (objectUrl === null) return
         return () => {
             URL.revokeObjectURL(objectUrl)
         }
-    }, [data, fileName])
+    }, [objectUrl])
 
     // No data, no preview
     if (data === undefined || fileName === null) return null
+    const previewUrl = objectUrl ?? ''
 
     const isImage = mimePrefix === 'image'
     const isVideo = mimePrefix === 'video'
@@ -66,17 +64,17 @@ export default function FilePreview({ data, fileName }: Props) {
 
             {/* Image preview */}
             {isImage && (
-                <img className="object-scale-down rounded-md min-w-min max-w-full max-h-fit h-1/2 drop-shadow-xl" alt={fileName} src={objectUrl} />
+                <img className="object-scale-down rounded-md min-w-min max-w-full max-h-fit h-1/2 drop-shadow-xl" alt={fileName} src={previewUrl} />
             )}
 
             {/* Video preview */}
             {isVideo && (
-                <video className="object-scale-down rounded-lg min-w-min max-w-full max-h-fit h-1/2 drop-shadow-xl" src={objectUrl} controls />
+                <video className="object-scale-down rounded-lg min-w-min max-w-full max-h-fit h-1/2 drop-shadow-xl" src={previewUrl} controls />
             )}
 
             {/* Audio preview */}
             {isAudio && (
-                <audio src={objectUrl} controls />
+                <audio src={previewUrl} controls />
             )}
 
             {/* Text preview */}
@@ -88,7 +86,7 @@ export default function FilePreview({ data, fileName }: Props) {
 
             {/* Download button */}
             <div className="mt-2 px-16 py-4 bg-[hsl(0,0%,30%)] hover:bg-[hsl(0,0%,35%)] rounded-md cursor-pointer">
-                <a href={objectUrl} download={fileName}>Download file</a>
+                <a href={previewUrl} download={fileName}>Download file</a>
             </div>
         </div>
     )

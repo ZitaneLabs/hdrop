@@ -64,7 +64,8 @@ export default class Base64 {
 
     /** Encode a byte array into a base64 string. */
     static encode(bytes: Uint8Array): string {
-        let result = '', i, l = bytes.length
+        let result = '', i
+        const l = bytes.length
         for (i = 2; i < l; i += 3) {
             result += ALPHABET[bytes[i - 2] >> 2]
             result += ALPHABET[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)]

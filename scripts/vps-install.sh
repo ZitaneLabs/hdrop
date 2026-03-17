@@ -37,6 +37,41 @@ require_no_whitespace() {
   fi
 }
 
+sanitize_host_input() {
+  local host="$1"
+  host="${host#http://}"
+  host="${host#https://}"
+  host="${host%%/*}"
+  echo "$host"
+}
+
+is_ipv6_literal() {
+  local host="$1"
+  local colons
+  host="${host#[}"
+  host="${host%]}"
+  colons="${host//[^:]}"
+  [[ "${#colons}" -ge 2 ]]
+}
+
+normalize_url_host() {
+  local host="$1"
+
+  if is_ipv6_literal "$host"; then
+    host="${host#[}"
+    host="${host%]}"
+    echo "[${host}]"
+    return
+  fi
+
+  if [[ "$host" == *:* ]]; then
+    echo "Error: host '${host}' appears to include a port. Use host/IP only." >&2
+    exit 1
+  fi
+
+  echo "$host"
+}
+
 prompt_with_default() {
   local prompt="$1"
   local default_value="$2"
@@ -97,6 +132,31 @@ if [[ "${mode}" != "1" && "${mode}" != "2" ]]; then
   exit 1
 fi
 
+ipv6_mode_answer="$(prompt_with_default "Enable IPv6-only compatibility mode? (y/N)" "N")"
+ipv6_mode_answer="${ipv6_mode_answer,,}"
+case "${ipv6_mode_answer}" in
+  y|yes)
+    vps_ipv6_only=1
+    vps_build_network="host"
+    ;;
+  n|no|"")
+    vps_ipv6_only=0
+    vps_build_network="default"
+    ;;
+  *)
+    echo "Error: please answer y/yes or n/no for IPv6-only compatibility mode." >&2
+    exit 1
+    ;;
+esac
+
+if [[ "${vps_ipv6_only}" -eq 1 ]]; then
+  docker_ipv6="$(docker info --format '{{.IPv6}}' 2>/dev/null || true)"
+  if [[ "${docker_ipv6}" != "true" ]]; then
+    echo "Warning: Docker daemon reports IPv6='${docker_ipv6:-unknown}'."
+    echo "The generated config will enable host-network builds for better IPv6-only compatibility."
+  fi
+fi
+
 app_name="$(prompt_with_default "App display name" "hdrop")"
 storage_dir="$(prompt_with_default "Container storage path" "/var/lib/hdrop/storage")"
 local_storage_limit_mb="$(prompt_with_default "Local storage limit MB (empty=unlimited)" "")"
@@ -123,6 +183,7 @@ require_no_whitespace "Postgres database" "${db_name}"
 
 domain=""
 server_ip=""
+server_url_host=""
 site_address=""
 acme_email=""
 web_base_url=""
@@ -133,9 +194,7 @@ smoke_api_status_url=""
 
 if [[ "${mode}" == "1" ]]; then
   domain="$(prompt_required "Domain (example.com)")"
-  domain="${domain#http://}"
-  domain="${domain#https://}"
-  domain="${domain%%/*}"
+  domain="$(sanitize_host_input "${domain}")"
   require_no_whitespace "Domain" "${domain}"
 
   if [[ ! "${domain}" =~ ^[A-Za-z0-9.-]+$ ]]; then
@@ -157,12 +216,14 @@ if [[ "${mode}" == "1" ]]; then
   smoke_api_status_url="${api_base_url}/status"
 else
   server_ip="$(prompt_required "Server IP or hostname")"
+  server_ip="$(sanitize_host_input "${server_ip}")"
   require_no_whitespace "Server IP or hostname" "${server_ip}"
+  server_url_host="$(normalize_url_host "${server_ip}")"
   site_address=":80"
   acme_email="admin@example.invalid"
-  web_base_url="http://${server_ip}"
-  api_base_url="http://${server_ip}/api"
-  cors_origin="http://${server_ip}"
+  web_base_url="http://${server_url_host}"
+  api_base_url="http://${server_url_host}/api"
+  cors_origin="http://${server_url_host}"
   smoke_web_url="${web_base_url}"
   smoke_api_status_url="${api_base_url}/status"
 fi
@@ -177,6 +238,8 @@ CADDY_IMAGE=caddy:2-alpine
 HTTP_PORT=80
 HTTPS_PORT=443
 PROMETHEUS_PORT=9090
+VPS_IPV6_ONLY=${vps_ipv6_only}
+VPS_BUILD_NETWORK=${vps_build_network}
 
 SITE_ADDRESS=${site_address}
 ACME_EMAIL=${acme_email}

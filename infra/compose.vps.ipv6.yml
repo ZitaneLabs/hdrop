@@ -1,0 +1,14 @@
+# IPv6-only VPS overlay.
+#
+# This overlay is auto-included by scripts/common.sh when VPS_IPV6_ONLY is truthy
+# in config/vps.compose.env. It switches Docker build networking to host mode,
+# which avoids bridge DNS issues often seen on IPv6-only hosts.
+
+services:
+  web:
+    build:
+      network: "${VPS_BUILD_NETWORK:-host}"
+
+  api:
+    build:
+      network: "${VPS_BUILD_NETWORK:-host}"

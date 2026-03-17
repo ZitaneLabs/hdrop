@@ -16,6 +16,9 @@ This path is intended for self-hosters running on one VPS.
 make vps-install
 ```
 
+During install, enable `IPv6-only compatibility mode` when your VPS has no IPv4.
+This sets `VPS_IPV6_ONLY=1` and enables a build overlay that uses host-network builds.
+
 3. Start services:
 
 ```bash
@@ -65,6 +68,15 @@ Use this when domain/DNS is not ready yet.
    - `CORS_ORIGIN=https://<your-domain>`
    - `ACME_EMAIL=<you@example.com>`
 5. Run `make vps-upstall` to switch to domain + TLS.
+
+## Single VPS (IPv6-only Hosts)
+
+If your VPS has only IPv6 connectivity:
+
+1. Run `make vps-install` and answer `yes` for `IPv6-only compatibility mode`.
+2. Prefer domain mode with a public `AAAA` record pointing to the VPS.
+3. Start with `make vps-up`.
+4. If you see `Temporary failure resolving 'deb.debian.org'`, verify Docker daemon IPv6/DNS configuration on the host, then retry.
 
 ## Cloud-native Local
 

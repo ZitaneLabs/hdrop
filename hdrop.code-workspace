@@ -6,19 +6,19 @@
         },
         {
             "name": "hdrop-shared",
-            "path": "hdrop-shared",
+            "path": "/backend/hdrop-shared",
         },
         {
             "name": "hdrop-db",
-            "path": "hdrop-db",
+            "path": "/backend/hdrop-db",
         },
         {
             "name": "hdrop-server",
-            "path": "hdrop-server",
+            "path": "/backend/hdrop-server",
         },
         {
             "name": "hdrop-web-next",
-            "path": "hdrop-web-next"
+            "path": "/backend/hdrop-web-next"
         },
     ],
     "settings": {

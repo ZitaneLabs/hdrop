@@ -37,7 +37,7 @@ services:
       SINGLE_FILE_LIMIT_MB: "${SINGLE_FILE_LIMIT_MB:-500}"
       DATABASE_URL: "${DATABASE_URL:-postgres://postgres:postgres@postgres:5432/hdrop}"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
+      test: ["CMD", "curl", "-f", "http://localhost:${HDROP_PORT:-80}/status"]
 
   postgres:
     image: "${POSTGRES_IMAGE:-postgres:15-alpine}"

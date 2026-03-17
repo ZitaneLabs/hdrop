@@ -1,0 +1,10 @@
+# Frontend Docker build context
+
+node_modules
+.next
+coverage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env.local
+.env.*.local

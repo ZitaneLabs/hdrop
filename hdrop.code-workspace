@@ -17,8 +17,8 @@
       "path": "backend/hdrop-server"
     },
     {
-      "name": "hdrop-web-next",
-      "path": "frontend/hdrop-web-next"
+      "name": "web",
+      "path": "frontend/web"
     }
   ],
   "settings": {

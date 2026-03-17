@@ -1,0 +1,40 @@
+# Staging compose overlay for CI/local simulation.
+
+services:
+  web:
+    build:
+      context: ../frontend/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_NAME: "${NEXT_PUBLIC_APP_NAME:-hdrop}"
+        NEXT_PUBLIC_WEB_BASE_URL: "${NEXT_PUBLIC_WEB_BASE_URL:-https://staging.example.com}"
+        NEXT_PUBLIC_API_BASE_URL: "${NEXT_PUBLIC_API_BASE_URL:-https://api-staging.example.com}"
+        NEXT_PUBLIC_PBKDF2_ITERATIONS: "${NEXT_PUBLIC_PBKDF2_ITERATIONS:-600000}"
+        NEXT_PUBLIC_PASSWORD_BYTES: "${NEXT_PUBLIC_PASSWORD_BYTES:-32}"
+        NEXT_PUBLIC_CHALLENGE_BYTES: "${NEXT_PUBLIC_CHALLENGE_BYTES:-32}"
+    image: "${WEB_IMAGE:-hdrop-web:staging}"
+    ports:
+      - "${WEB_PORT:-3000}:80"
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: ./hdrop-server/Dockerfile
+    image: "${API_IMAGE:-hdrop-api:staging}"
+    ports:
+      - "${API_PORT:-8080}:80"
+
+  postgres:
+    profiles:
+      - local-only
+
+  localstack:
+    profiles:
+      - local-only
+
+  prometheus:
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus.alert.rules.yml:/etc/prometheus/alert.rules.yml:ro

@@ -1,0 +1,7 @@
+# Backend Docker build context
+
+target
+**/target
+.env
+.env.*
+!.env.example

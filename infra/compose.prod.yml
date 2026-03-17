@@ -1,0 +1,30 @@
+# Production compose overlay using pre-built images.
+
+services:
+  web:
+    image: "${WEB_IMAGE:?WEB_IMAGE must be set}"
+    ports:
+      - "${WEB_PORT:-80}:80"
+    restart: unless-stopped
+
+  api:
+    image: "${API_IMAGE:?API_IMAGE must be set}"
+    ports:
+      - "${API_PORT:-8080}:80"
+    restart: unless-stopped
+
+  postgres:
+    profiles:
+      - local-only
+
+  localstack:
+    profiles:
+      - local-only
+
+  prometheus:
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus.alert.rules.yml:/etc/prometheus/alert.rules.yml:ro

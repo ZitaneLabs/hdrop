@@ -1,0 +1,40 @@
+# Local development compose overlay.
+
+services:
+  web:
+    build:
+      context: ../frontend/web
+      dockerfile: Dockerfile.development
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ../frontend/web:/app
+      - /app/node_modules
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: ./hdrop-server/Dockerfile
+    ports:
+      - "${API_PORT:-8080}:80"
+    depends_on:
+      - postgres
+      - localstack
+
+  localstack:
+    ports:
+      - "${LOCALSTACK_PORT:-4566}:4566"
+      - "${LOCALSTACK_EDGE_PORT:-4567}:4567"
+    volumes:
+      - ./localstack-init-bucket.sh:/etc/localstack/init/ready.d/10-create-hdrop-bucket.sh:ro
+
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  prometheus:
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus.alert.rules.yml:/etc/prometheus/alert.rules.yml:ro

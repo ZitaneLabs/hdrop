@@ -11,3 +11,7 @@ target
 
 # VS Code
 .vscode/
+
+# Runtime config files (track only .example templates)
+config/*.env
+!config/*.env.example

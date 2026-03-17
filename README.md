@@ -9,7 +9,7 @@
 [badge_license]: https://badgers.space/github/license/ZitaneLabs/hdrop
 [github_ci]: https://badgers.space/github/checks/zitanelabs/hdrop
 
-<img align="right" width="64" src="./frontend/hdrop-web-next/public/logo512.png" />
+<img align="right" width="64" src="./frontend/web/public/logo512.png" />
 
 **Simple, self-hosted encrypted file transfer.**
 
@@ -24,6 +24,21 @@
 - No user accounts
 - Metrics included
 
+## Quick Start
+
+```bash
+make local-up
+```
+
+Useful commands:
+
+- `make local-down`
+- `make local-logs`
+- `make db-migrate`
+- `make api-dev`
+- `make ci-api`
+- `make ci-web`
+
 ## Documentation
 
 We are migrating our docs to [the wiki](https://github.com/ZitaneLabs/hdrop/wiki).  
@@ -34,6 +49,7 @@ You will find extensive and up-to-date documentation there.
 | License               | [LICENSE](./LICENSE)                  |
 | Security              | [security.md](./docs/security.md)     |
 | API Spec v1 (OpenAPI) | [api_v1.yml](./docs/api_v1.yml)       |
+| Operations            | [operations.md](./docs/operations.md) |
 | Changelog             | [changelog.md](./docs/changelog.md)   |
 
 ## License

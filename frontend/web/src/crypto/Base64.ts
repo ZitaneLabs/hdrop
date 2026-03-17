@@ -43,7 +43,7 @@ export default class Base64 {
     }
 
     /** Decode a base64 string into a byte array. */
-    static decode(str: string): Uint8Array {
+    static decode(str: string): Uint8Array<ArrayBuffer> {
         str = Base64.fromDisplay(str)
         const missingOctets = this.determineMissingOctetCount(str.length)
         const n = str.length + missingOctets
@@ -58,7 +58,8 @@ export default class Base64 {
             if (i + 2 < n) result[j + 1] = (buffer >> 8) & 0xFF
             if (i + 3 < n) result[j + 2] = buffer & 0xFF
         }
-        return result.subarray(0, result.length - missingOctets)
+        const decoded = result.subarray(0, result.length - missingOctets)
+        return Uint8Array.from(decoded)
     }
 
     /** Encode a byte array into a base64 string. */

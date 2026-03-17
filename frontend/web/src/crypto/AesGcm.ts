@@ -16,13 +16,15 @@ export class AesBundle {
     constructor(public readonly iv: Uint8Array, public readonly data: ArrayBuffer) {}
 }
 
+type CompatibleBufferSource = ArrayBufferLike | ArrayBufferView<ArrayBufferLike>
+
 export default class AesGcm {
     /** Generate AES-GCM parameters. */
     static generateParams(): AesGcmParams {
         const iv = crypto.getRandomValues(new Uint8Array(12))
         return {
             name: 'AES-GCM',
-            iv,
+            iv: iv as BufferSource,
             tagLength: 128,
         }
     }
@@ -31,7 +33,7 @@ export default class AesGcm {
     static restoreParams(iv: Uint8Array): AesGcmParams {
         return {
             name: 'AES-GCM',
-            iv,
+            iv: iv as BufferSource,
             tagLength: 128,
         }
     }
@@ -44,7 +46,7 @@ export default class AesGcm {
         const iv = AesGcm.xorIv(params.iv as Uint8Array, mask)
         return {
             name: 'AES-GCM',
-            iv,
+            iv: iv as BufferSource,
             tagLength: 128,
         }
     }
@@ -60,19 +62,19 @@ export default class AesGcm {
         return result
     }
 
-    static async encrypt(data: BufferSource, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
+    static async encrypt(data: CompatibleBufferSource, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
         return await crypto.subtle.encrypt(
             params,
             key,
-            data
+            data as BufferSource
         )
     }
 
-    static async decrypt(data: BufferSource, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
+    static async decrypt(data: CompatibleBufferSource, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
         return await crypto.subtle.decrypt(
             params,
             key,
-            data
+            data as BufferSource
         )
     }
 }

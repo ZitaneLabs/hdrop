@@ -1,0 +1,84 @@
+# Single VPS compose overlay.
+
+services:
+  caddy:
+    image: "${CADDY_IMAGE:-caddy:2-alpine}"
+    networks:
+      - hdrop
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      SITE_ADDRESS: "${SITE_ADDRESS:-example.com}"
+      ACME_EMAIL: "${ACME_EMAIL:-you@example.com}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  web:
+    build:
+      context: ../frontend/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_NAME: "${NEXT_PUBLIC_APP_NAME:-hdrop}"
+        NEXT_PUBLIC_WEB_BASE_URL: "${NEXT_PUBLIC_WEB_BASE_URL:-https://example.com}"
+        NEXT_PUBLIC_API_BASE_URL: "${NEXT_PUBLIC_API_BASE_URL:-https://example.com/api}"
+        NEXT_PUBLIC_PBKDF2_ITERATIONS: "${NEXT_PUBLIC_PBKDF2_ITERATIONS:-600000}"
+        NEXT_PUBLIC_PASSWORD_BYTES: "${NEXT_PUBLIC_PASSWORD_BYTES:-32}"
+        NEXT_PUBLIC_CHALLENGE_BYTES: "${NEXT_PUBLIC_CHALLENGE_BYTES:-32}"
+    image: "${WEB_IMAGE:-hdrop-web:vps}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: ./hdrop-server/Dockerfile
+    image: "${API_IMAGE:-hdrop-api:vps}"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - hdrop_storage:${LOCAL_STORAGE_DIR:-/var/lib/hdrop/storage}
+
+  postgres:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-hdrop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  localstack:
+    profiles:
+      - local-only
+
+  prometheus:
+    profiles:
+      - monitoring
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus.alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  hdrop_storage:

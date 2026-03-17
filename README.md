@@ -24,20 +24,33 @@
 - No user accounts
 - Metrics included
 
-## Quick Start
+## Deployment Paths
+
+### Single VPS (recommended for self-hosters)
+
+One host, one compose stack, local disk storage, optional automatic TLS via Caddy.
 
 ```bash
-make local-up
+make vps-install
+make vps-up
 ```
 
-Useful commands:
+Optional:
 
-- `make local-down`
-- `make local-logs`
-- `make db-migrate`
-- `make api-dev`
-- `make ci-api`
-- `make ci-web`
+- `make vps-up -- --with-monitoring`
+- `make vps-smoke`
+- `make vps-down`
+- `make vps-upstall`
+
+### Cloud-native / multi-node
+
+Existing local, staging, and production image workflows remain available:
+
+- `make local-up`
+- `make staging-up`
+- `make deploy-build`
+- `make deploy-publish`
+- `make deploy-release`
 
 ## Documentation
 
@@ -50,7 +63,13 @@ You will find extensive and up-to-date documentation there.
 | Security              | [security.md](./docs/security.md)     |
 | API Spec v1 (OpenAPI) | [api_v1.yml](./docs/api_v1.yml)       |
 | Operations            | [operations.md](./docs/operations.md) |
+| Environment Reference | [env-reference.md](./docs/env-reference.md) |
 | Changelog             | [changelog.md](./docs/changelog.md)   |
+
+## Installer Note
+
+The separate `hdrop-installer` repository is currently treated as a prototype reference.
+The supported install path for this repository is now in-repo via `make vps-install`.
 
 ## License
 

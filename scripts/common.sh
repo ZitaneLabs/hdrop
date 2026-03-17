@@ -12,6 +12,21 @@ require_cmd() {
   fi
 }
 
+has_docker_daemon_access() {
+  docker info >/dev/null 2>&1
+}
+
+is_user_listed_in_docker_group() {
+  local group_line
+  local members
+
+  group_line="$(getent group docker 2>/dev/null || true)"
+  [[ -n "$group_line" ]] || return 1
+
+  members="${group_line##*:}"
+  [[ ",${members}," == *",${USER},"* ]]
+}
+
 resolve_config_file() {
   local name="$1"
   local file="${ROOT_DIR}/config/${name}"
@@ -47,12 +62,41 @@ compose_for_env() {
   shift
 
   local env_file
+  local compose_args
+  local command_line
+  local arg
+
   env_file="$(resolve_config_file "${env}.compose.env")"
 
   require_cmd docker
-  docker compose \
+  compose_args=(
     -f "${ROOT_DIR}/infra/compose.base.yml" \
     -f "${ROOT_DIR}/infra/compose.${env}.yml" \
     --env-file "$env_file" \
     "$@"
+  )
+
+  if has_docker_daemon_access; then
+    docker compose "${compose_args[@]}"
+    return
+  fi
+
+  # Fallback for shells that have not picked up group membership yet.
+  if command -v sg >/dev/null 2>&1 && is_user_listed_in_docker_group; then
+    command_line="docker compose"
+    for arg in "${compose_args[@]}"; do
+      command_line+=" $(printf '%q' "$arg")"
+    done
+    sg docker -c "$command_line"
+    return
+  fi
+
+  cat <<'EOF' >&2
+Error: cannot access Docker daemon.
+Try one of:
+1. Start a new shell session after adding your user to the `docker` group.
+2. Run `sudo usermod -aG docker $USER` and log out/in.
+3. Run this command through `sg docker -c '<command>'`.
+EOF
+  exit 1
 }

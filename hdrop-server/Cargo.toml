@@ -7,12 +7,12 @@ license.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = { version = "0.7", features = ["multipart", "macros"] }
-axum-extra = { version = "0.9.3", features = ["typed-header", "tracing"] }
+axum = { version = "0.8", features = ["multipart", "macros"] }
+axum-extra = { version = "0.12", features = ["typed-header", "tracing"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 dotenvy = "0.15"
-regex = "1.10"
-tower-http = { version = "0.5", features = [
+regex = "1.12.3"
+tower-http = { version = "0.6", features = [
     "cors",
     "limit",
     "compression-br",
@@ -23,9 +23,9 @@ bincache = { git = "https://github.com/ZitaneLabs/bincache.git", features = [
     "comp_zstd",
 ] }
 s3 = { version = "0.37", package = "zitane-s3-async" }
-metrics-exporter-prometheus = "0.15"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tracing = "0.1.40"
+metrics-exporter-prometheus = "0.18"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+tracing = "0.1.44"
 sysinfo = "0.30"
 
 chrono.workspace = true

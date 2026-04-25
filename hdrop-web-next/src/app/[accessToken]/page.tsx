@@ -15,7 +15,7 @@ export default function DownloadFilePage() {
     const { accessToken } = useParams() as { accessToken: string }
 
     // State
-    const [hashPassword, setHashPassword] = useState<string | null | undefined>(undefined)
+    const hashPassword: string | null = window.location.hash.slice(1) || null
     const [userPassword, setUserPassword] = useState<string | null>(null)
     const [phase, setPhase] = useState<DownloadPhase | null>(null)
     const [progress, setProgress] = useState<number>(0)
@@ -26,15 +26,6 @@ export default function DownloadFilePage() {
     const password = useMemo(() => {
         return hashPassword ?? userPassword
     }, [hashPassword, userPassword])
-
-    // Try to get password from url fragment
-    useEffect(() => {
-        if (window.location.hash.length === 0) {
-            setHashPassword(null)
-            return
-        }
-        setHashPassword(window.location.hash.slice(1))
-    }, [])
 
     // Start download when password is set
     useEffect(() => {

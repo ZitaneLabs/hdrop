@@ -26,8 +26,8 @@ FROM node:25-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates libgcc openssl postgresql-libs \
-    && npm i -g pm2@latest
+RUN apk add --no-cache ca-certificates libgcc openssl postgresql-libs
+RUN npm i -g pm2@latest
 
 COPY --from=builder /app/target/release/hdrop-server /usr/local/bin/hdrop-server
 COPY --from=builder /usr/local/cargo/bin/diesel /usr/local/bin/diesel

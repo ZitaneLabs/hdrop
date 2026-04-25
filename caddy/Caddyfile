@@ -29,7 +29,7 @@
 		-Server
 	}
 
-	@api path /v1/*
+	@api path /v1/* /status
 	handle @api {
 		reverse_proxy api:80
 	}

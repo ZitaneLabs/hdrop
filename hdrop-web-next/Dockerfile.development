@@ -2,7 +2,7 @@
 # Build env
 #
 
-FROM node:24-alpine
+FROM node:25-alpine
 
 WORKDIR /app
 ENV PATH=/app/node_modules/.bin:$PATH

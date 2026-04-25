@@ -1,4 +1,4 @@
-FROM node:24-alpine AS base
+FROM node:25-alpine AS base
 
 #
 # Build env
@@ -7,7 +7,7 @@ FROM node:24-alpine AS base
 FROM base AS builder
 
 WORKDIR /app
-ENV PATH /app/node_modules/.bin:$PATH
+ENV PATH=/app/node_modules/.bin:$PATH
 
 COPY package.json ./
 COPY package-lock.json ./

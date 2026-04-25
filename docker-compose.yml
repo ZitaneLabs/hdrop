@@ -1,86 +1,98 @@
-# This is for local development only.
-# DO NOT deploy this on a production server!
-
 services:
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - HDROP_SITE_ADDRESS=${HDROP_SITE_ADDRESS:?set HDROP_SITE_ADDRESS to your production hostname}
+      - HDROP_MAX_UPLOAD_SIZE=${HDROP_MAX_UPLOAD_SIZE:-500MB}
+    networks:
+      - hdrop
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api
   web:
     build:
       context: ./hdrop-web-next
-      dockerfile: Dockerfile.development
-    ports:
-      - "3000:3000"
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_WEB_BASE_URL: ${HDROP_PUBLIC_URL:?set HDROP_PUBLIC_URL, for example https://hdrop.io}
+        NEXT_PUBLIC_API_BASE_URL: ${HDROP_PUBLIC_URL:?set HDROP_PUBLIC_URL, for example https://hdrop.io}
+    restart: unless-stopped
+    expose:
+      - "80"
     networks:
       - hdrop
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-      - NEXT_PUBLIC_WEB_BASE_URL=http://localhost:3000
-      - NEXT_PUBLIC_API_ENDPOINT=http://api:8080
-    volumes:
-      - ./hdrop-web-next:/app
-      - /app/node_modules
   api:
     build:
       context: .
       dockerfile: ./hdrop-server/Dockerfile
-    ports:
-      - "8080:80"
+    restart: unless-stopped
+    expose:
+      - "80"
+      - "3001"
     networks:
       - hdrop
       - backend
     environment:
       - HDROP_PORT=80
       - PROMETHEUS_PORT=3001
-      - STORAGE_PROVIDER=s3
-      - S3_ACCESS_KEY_ID=dev
-      - S3_SECRET_ACCESS_KEY=dev
-      - S3_REGION=eu-west-1
-      - S3_ENDPOINT=http://localstack:4566
-      - S3_BUCKET_NAME=hdrop
-      - S3_PUBLIC_URL=http://localhost:4566/hdrop
-      - CORS_ORIGIN=*
-      - CACHE_STRATEGY=memory
-      - CACHE_MEMORY_LIMIT_MB=2000
-      - SINGLE_FILE_LIMIT_MB=500
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/hdrop
+      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-s3}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-}
+      - S3_REGION=${S3_REGION:-}
+      - S3_ENDPOINT=${S3_ENDPOINT:-}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-}
+      - S3_PUBLIC_URL=${S3_PUBLIC_URL:-}
+      - LOCAL_STORAGE_DIR=${LOCAL_STORAGE_DIR:-/data/hdrop-files}
+      - LOCAL_STORAGE_LIMIT_MB=${LOCAL_STORAGE_LIMIT_MB:-}
+      - CORS_ORIGIN=${HDROP_PUBLIC_URL:?set HDROP_PUBLIC_URL, for example https://hdrop.io}
+      - CACHE_STRATEGY=${CACHE_STRATEGY:-memory}
+      - CACHE_MEMORY_LIMIT_MB=${CACHE_MEMORY_LIMIT_MB:-}
+      - CACHE_DISK_LIMIT_MB=${CACHE_DISK_LIMIT_MB:-}
+      - CACHE_DIR=${CACHE_DIR:-/cache/hdrop}
+      - SINGLE_FILE_LIMIT_MB=${SINGLE_FILE_LIMIT_MB:-500}
+      - DATABASE_URL=${DATABASE_URL:?set DATABASE_URL, for example postgres://hdrop:password@postgres:5432/hdrop}
     depends_on:
-      - postgres
-      - localstack
+      postgres:
+        condition: service_healthy
+        required: false
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
-  localstack:
-    image: localstack/localstack:latest
-    ports:
-      - "4566:4566"
-      - "4567:4567"
-    networks:
-      - hdrop
-      - backend
-    environment:
-      - DEBUG=1
-      - SERVICES=s3
-      - AWS_ACCESS_KEY_ID=dev
-      - AWS_SECRET_ACCESS_KEY=dev
-      - AWS_DEFAULT_REGION=eu-west-1
-      - SKIP_SSL_CERT_DOWNLOAD=1
-      - EDGE_BIND_HOST=0.0.0.0
-      - EXTRA_CORS_ALLOWED_ORIGINS=*
+      test: ["CMD", "curl", "-f", "http://localhost/status"]
     volumes:
-      - ./aws:/etc/localstack/init/ready.d
-    healthcheck:
-      test: ["CMD", "awslocal", "s3api", "wait", "bucket-exists", "--bucket", "hdrop"]
+      - local_storage:/data/hdrop-files
+      - cache_data:/cache/hdrop
   postgres:
-    image: postgres:15-alpine
-    ports:
-      - "5432:5432"
+    image: postgres:18-alpine
+    profiles:
+      - bundled-postgres
+    restart: unless-stopped
+    expose:
+      - "5432"
     networks:
       - backend
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=hdrop
+      - POSTGRES_USER=${POSTGRES_USER:-hdrop}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+      - POSTGRES_DB=${POSTGRES_DB:-hdrop}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=\"$${POSTGRES_PASSWORD}\" psql -U \"$${POSTGRES_USER:-hdrop}\" -d \"$${POSTGRES_DB:-hdrop}\" -c 'SELECT 1' >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   prometheus:
     image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
+    restart: unless-stopped
+    expose:
+      - "9090"
     networks:
       - backend
     volumes:
@@ -88,3 +100,10 @@ services:
 networks:
   hdrop:
   backend:
+
+volumes:
+  caddy_data:
+  caddy_config:
+  cache_data:
+  local_storage:
+  postgres_data:

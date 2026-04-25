@@ -31,7 +31,7 @@ export default class AesGcm {
     static restoreParams(iv: Uint8Array): AesGcmParams {
         return {
             name: 'AES-GCM',
-            iv,
+            iv: iv as BufferSource,
             tagLength: 128,
         }
     }
@@ -44,7 +44,7 @@ export default class AesGcm {
         const iv = AesGcm.xorIv(params.iv as Uint8Array, mask)
         return {
             name: 'AES-GCM',
-            iv,
+            iv: iv as BufferSource,
             tagLength: 128,
         }
     }
@@ -60,19 +60,19 @@ export default class AesGcm {
         return result
     }
 
-    static async encrypt(data: BufferSource, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
+    static async encrypt(data: ArrayBuffer | Uint8Array, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
         return await crypto.subtle.encrypt(
             params,
             key,
-            data
+            data as BufferSource
         )
     }
 
-    static async decrypt(data: BufferSource, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
+    static async decrypt(data: ArrayBuffer | Uint8Array, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
         return await crypto.subtle.decrypt(
             params,
             key,
-            data
+            data as BufferSource
         )
     }
 }

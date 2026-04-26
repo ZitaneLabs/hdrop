@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: caddy:latest
+    image: caddy:2-alpine
     restart: unless-stopped
     ports:
       - "80:80"
@@ -99,7 +99,7 @@ services:
       timeout: 5s
       retries: 5
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3
     restart: unless-stopped
     expose:
       - "9090"

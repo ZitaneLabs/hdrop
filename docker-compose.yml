@@ -45,7 +45,8 @@ services:
       - "3001"
     networks:
       - hdrop
-      - backend
+      - db
+      - metrics
     environment:
       - HDROP_PORT=80
       - PROMETHEUS_PORT=3001
@@ -86,10 +87,10 @@ services:
     expose:
       - "5432"
     networks:
-      - backend
+      - db
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-hdrop}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD to a secure password}
       - POSTGRES_DB=${POSTGRES_DB:-hdrop}
     volumes:
       - postgres_data:/var/lib/postgresql
@@ -104,7 +105,7 @@ services:
     expose:
       - "9090"
     networks:
-      - backend
+      - metrics
     volumes:
       - ./prometheus:/etc/prometheus
     healthcheck:
@@ -115,7 +116,10 @@ services:
       start_period: 10s
 networks:
   hdrop:
-  backend:
+  db:
+    internal: true
+  metrics:
+    internal: true
 
 volumes:
   caddy_data:

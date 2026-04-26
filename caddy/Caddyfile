@@ -21,9 +21,11 @@
 		# Browser hardening headers that should not interfere with Next.js assets.
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
+		X-Permitted-Cross-Domain-Policies "none"
+		Cross-Origin-Opener-Policy "same-origin"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
-		Content-Security-Policy "base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		Content-Security-Policy "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests"
 
 		# Do not leak backend implementation details.
 		-Server

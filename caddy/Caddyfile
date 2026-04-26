@@ -31,7 +31,7 @@
 
 	@api path /v1/* /status
 	handle @api {
-		reverse_proxy api:80
+		reverse_proxy api:3000
 	}
 
 	handle {

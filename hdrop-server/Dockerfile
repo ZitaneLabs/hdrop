@@ -41,10 +41,6 @@ RUN chown -R root:root /app \
     && install -d -o hdrop -g hdrop -m 0750 /data/hdrop-files /cache/hdrop
 USER hdrop:hdrop
 
-# Transfer ownership of necessary directories to the hdrop user
-RUN mkdir -p /data/hdrop-files /cache/hdrop && chown -R hdrop:hdrop /app /data/hdrop-files /cache/hdrop
-USER hdrop:hdrop
-
 # API
 EXPOSE 3000
 

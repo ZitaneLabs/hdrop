@@ -1,3 +1,5 @@
+#[cfg(unix)]
+use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::{
     fs::{self, OpenOptions},
     io::Write,
@@ -886,12 +888,22 @@ fn write_output(output: &PathBuf, content: &str) -> Result<(), String> {
         })?;
     }
 
-    let mut file = OpenOptions::new()
-        .create(true)
-        .truncate(true)
-        .write(true)
+    let mut options = OpenOptions::new();
+    options.create(true).truncate(true).write(true);
+
+    #[cfg(unix)]
+    options.mode(0o600);
+
+    let mut file = options
         .open(output)
         .map_err(|err| format!("failed to open {}: {err}", output.display()))?;
+
+    #[cfg(unix)]
+    {
+        // mode() only applies to new files; --force may overwrite an existing one.
+        file.set_permissions(fs::Permissions::from_mode(0o600))
+            .map_err(|err| format!("failed to secure {}: {err}", output.display()))?;
+    }
 
     file.write_all(content.as_bytes())
         .map_err(|err| format!("failed to write {}: {err}", output.display()))
@@ -952,6 +964,29 @@ mod tests {
             "CACHE_DIR='/cache\\files'",
         ] {
             assert!(env.contains(expected), "missing {expected}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_output_uses_private_permissions() {
+        for precreate in [false, true] {
+            let output = std::env::temp_dir().join(format!(
+                "hdrop-env-permissions-{}-{}",
+                process::id(),
+                random_hex(8).unwrap()
+            ));
+
+            if precreate {
+                fs::write(&output, "old").unwrap();
+                fs::set_permissions(&output, fs::Permissions::from_mode(0o644)).unwrap();
+            }
+
+            write_output(&output, "secret").unwrap();
+
+            let mode = fs::metadata(&output).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, 0o600);
+            fs::remove_file(output).unwrap();
         }
     }
 

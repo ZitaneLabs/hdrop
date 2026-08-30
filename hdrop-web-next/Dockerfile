@@ -1,4 +1,4 @@
-FROM node:25-alpine AS base
+FROM node:lts-alpine AS base
 
 #
 # Build env

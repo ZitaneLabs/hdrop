@@ -15,7 +15,7 @@ export default function DownloadFilePage() {
     const { accessToken } = useParams() as { accessToken: string }
 
     // State
-    const hashPassword: string | null = window.location.hash.slice(1) || null
+    const [hashPassword, setHashPassword] = useState<string | null | undefined>(undefined)
     const [userPassword, setUserPassword] = useState<string | null>(null)
     const [phase, setPhase] = useState<DownloadPhase | null>(null)
     const [progress, setProgress] = useState<number>(0)
@@ -26,6 +26,12 @@ export default function DownloadFilePage() {
     const password = useMemo(() => {
         return hashPassword ?? userPassword
     }, [hashPassword, userPassword])
+
+    // Client components are also rendered on the server, where window is unavailable.
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- browser state is unavailable during SSR
+        setHashPassword(window.location.hash.slice(1) || null)
+    }, [])
 
     // Start download when password is set
     useEffect(() => {

@@ -724,6 +724,11 @@ fn percent_encode_connection_component(value: &str) -> String {
     encoded
 }
 
+fn quote_compose_env(value: &str) -> String {
+    // Compose only treats single-quoted .env values as literal strings.
+    format!("'{}'", value.replace('\'', "\\'"))
+}
+
 fn render_env(config: &mut Config) -> Result<String, String> {
     let public_url = format!("https://{}", config.site);
     let postgres_password = match (&config.database_mode, &config.postgres_password) {
@@ -769,10 +774,10 @@ HDROP_MAX_UPLOAD_SIZE={single_file_limit}MB
 # values will not update the stored database credentials automatically.
 DATABASE_URL={database_url}
 ",
-        site = config.site,
-        public_url = public_url,
+        site = quote_compose_env(&config.site),
+        public_url = quote_compose_env(&public_url),
         single_file_limit = config.single_file_limit_mb,
-        database_url = database_url,
+        database_url = quote_compose_env(&database_url),
     ));
 
     if config.database_mode == DatabaseMode::Bundled {
@@ -782,9 +787,9 @@ POSTGRES_USER={postgres_user}
 POSTGRES_PASSWORD={postgres_password}
 POSTGRES_DB={postgres_db}
 ",
-            postgres_user = config.postgres_user,
-            postgres_password = postgres_password,
-            postgres_db = config.postgres_db,
+            postgres_user = quote_compose_env(&config.postgres_user),
+            postgres_password = quote_compose_env(&postgres_password),
+            postgres_db = quote_compose_env(&config.postgres_db),
         ));
     }
 
@@ -807,12 +812,12 @@ S3_ENDPOINT={s3_endpoint}
 S3_BUCKET_NAME={s3_bucket}
 S3_PUBLIC_URL={s3_public_url}
 ",
-                s3_access_key_id = config.s3_access_key_id,
-                s3_secret_access_key = config.s3_secret_access_key,
-                s3_region = config.s3_region,
-                s3_endpoint = config.s3_endpoint,
-                s3_bucket = config.s3_bucket,
-                s3_public_url = config.s3_public_url,
+                s3_access_key_id = quote_compose_env(&config.s3_access_key_id),
+                s3_secret_access_key = quote_compose_env(&config.s3_secret_access_key),
+                s3_region = quote_compose_env(&config.s3_region),
+                s3_endpoint = quote_compose_env(&config.s3_endpoint),
+                s3_bucket = quote_compose_env(&config.s3_bucket),
+                s3_public_url = quote_compose_env(&config.s3_public_url),
             ));
         }
         StorageProvider::Local => {
@@ -821,7 +826,7 @@ S3_PUBLIC_URL={s3_public_url}
 LOCAL_STORAGE_DIR={local_storage_dir}
 LOCAL_STORAGE_LIMIT_MB={local_storage_limit_mb}
 ",
-                local_storage_dir = config.local_storage_dir,
+                local_storage_dir = quote_compose_env(&config.local_storage_dir),
                 local_storage_limit_mb = config.local_storage_limit_mb,
             ));
         }
@@ -846,7 +851,7 @@ CACHE_DISK_LIMIT_MB={cache_disk_limit}
 CACHE_DIR={cache_dir}
 ",
                 cache_disk_limit = config.cache_disk_limit_mb,
-                cache_dir = config.cache_dir,
+                cache_dir = quote_compose_env(&config.cache_dir),
             ));
         }
         CacheStrategy::Hybrid => {
@@ -858,7 +863,7 @@ CACHE_DIR={cache_dir}
 ",
                 cache_memory_limit = config.cache_memory_limit_mb,
                 cache_disk_limit = config.cache_disk_limit_mb,
-                cache_dir = config.cache_dir,
+                cache_dir = quote_compose_env(&config.cache_dir),
             ));
         }
     }
@@ -925,6 +930,29 @@ mod tests {
             percent_encode_connection_component("abcXYZ012-._~"),
             "abcXYZ012-._~"
         );
+    }
+
+    #[test]
+    fn render_env_quotes_compose_values() {
+        let mut config = Config::default();
+        config.postgres_user = "user name".to_string();
+        config.postgres_password = Some("pa$ss'word".to_string());
+        config.postgres_db = "db#1".to_string();
+        config.local_storage_dir = "/data/user files".to_string();
+        config.cache_dir = "/cache\\files".to_string();
+
+        let env = render_env(&mut config).unwrap();
+
+        for expected in [
+            "POSTGRES_USER='user name'",
+            "POSTGRES_PASSWORD='pa$ss\\'word'",
+            "POSTGRES_DB='db#1'",
+            "DATABASE_URL='postgres://user%20name:pa%24ss%27word@postgres:5432/db%231'",
+            "LOCAL_STORAGE_DIR='/data/user files'",
+            "CACHE_DIR='/cache\\files'",
+        ] {
+            assert!(env.contains(expected), "missing {expected}");
+        }
     }
 
     #[test]

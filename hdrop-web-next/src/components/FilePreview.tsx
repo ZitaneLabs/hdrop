@@ -11,6 +11,7 @@ type Props = {
 }
 
 export default function FilePreview({ data, fileName }: Props) {
+    const [objectUrl, setObjectUrl] = useState('')
     const mimeType = useMemo(() => {
         if (fileName === null) return ''
         return mime.getType(fileName.toLowerCase()) ?? 'application/octet-stream'
@@ -19,22 +20,21 @@ export default function FilePreview({ data, fileName }: Props) {
     // Get mime type prefix (e.g. 'image', 'video', 'audio', etc.)
     const mimePrefix = mimeType.split('/')[0]
 
-    // Object url for preview and download
-    const objectUrl = useMemo(() => {
-        if (data === undefined || fileName === null) return ''
-
-        const blob = new Blob([data], { type: mimeType })
-        return URL.createObjectURL(blob)
-    }, [data, fileName, mimeType])
-
-    // Revoke object url when component unmounts or when data/fileName changes
+    // Object URLs own browser resources, so create them only after React commits.
     useEffect(() => {
-        if (objectUrl.length === 0) return
+        if (data === undefined || fileName === null) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronize the external resource snapshot
+            setObjectUrl('')
+            return
+        }
+
+        const url = URL.createObjectURL(new Blob([data], { type: mimeType }))
+        setObjectUrl(url)
 
         return () => {
-            URL.revokeObjectURL(objectUrl)
+            URL.revokeObjectURL(url)
         }
-    }, [objectUrl])
+    }, [data, fileName, mimeType])
 
     // Try to decode data as text
     const textData = useMemo(() => {

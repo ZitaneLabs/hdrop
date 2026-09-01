@@ -1,49 +1,76 @@
 use async_trait::async_trait;
 use hdrop_shared::{env, metrics::UpdateMetrics};
-use regex::Regex;
-use s3::{creds::Credentials, region::Region, Bucket};
+use object_store::{
+    aws::{AmazonS3, AmazonS3Builder},
+    path::Path,
+    ClientOptions,
+    Error as ObjectStoreError,
+    ObjectStoreExt,
+};
 
 use super::provider::{Fetchtype, StorageProvider};
 use crate::Result;
 
 #[derive(Debug)]
 pub struct S3Provider {
-    pub bucket: Bucket,
+    pub store: AmazonS3,
     public_url: String,
 }
 
 impl S3Provider {
     pub fn try_from_env() -> Result<Self> {
-        let region_custom = Region::Custom {
-            region: env::s3_region()?,
-            endpoint: env::s3_endpoint()?,
+        let region = env::s3_region()?;
+        let endpoint = env::s3_endpoint()?;
+        let access_key = normalize_credential(env::s3_access_key_id()?);
+        let secret_key = normalize_credential(env::s3_secret_access_key()?);
+        let bucket = env::s3_bucket_name()?;
+        let virtual_hosted_style_request = env::s3_virtual_hosted_style_request()?;
+        let client_options = match env::s3_request_timeout()? {
+            Some(timeout) => ClientOptions::new().with_timeout(timeout),
+            None => ClientOptions::new().with_timeout_disabled(),
         };
-        let credentials = Credentials::new(
-            Some(&env::s3_access_key_id()?),
-            Some(&env::s3_secret_access_key()?),
-            None,
-            None,
-            None,
-        )?;
+        let allow_http = endpoint.starts_with("http://");
+        let endpoint = normalize_endpoint(&endpoint, &bucket);
 
-        let bucket = Bucket::new(
-            &env::s3_bucket_name()?,
-            region_custom,
-            // Credentials are collected from environment, config, profile or instance metadata
-            credentials,
-        )?
-        .with_path_style();
+        let store = AmazonS3Builder::new()
+            .with_region(region)
+            .with_endpoint(endpoint)
+            .with_bucket_name(bucket)
+            .with_access_key_id(access_key)
+            .with_secret_access_key(secret_key)
+            .with_client_options(client_options)
+            .with_virtual_hosted_style_request(virtual_hosted_style_request)
+            .with_disable_bulk_delete(true)
+            .with_allow_http(allow_http)
+            .build()?;
 
-        let regex = Regex::new(r"(?m)/+$")?;
-        let public_url = regex.replace(&env::s3_public_url()?, "").to_string();
-        Ok(S3Provider { bucket, public_url })
+        let public_url = normalize_public_url(&env::s3_public_url()?);
+        Ok(S3Provider { store, public_url })
     }
+}
+
+fn normalize_credential(credential: String) -> String {
+    credential.replace('\n', "")
+}
+
+fn normalize_endpoint(endpoint: &str, bucket: &str) -> String {
+    let endpoint = endpoint.trim_end_matches('/');
+    endpoint
+        .strip_suffix(&format!("/{bucket}"))
+        .unwrap_or(endpoint)
+        .to_string()
+}
+
+fn normalize_public_url(public_url: &str) -> String {
+    public_url.trim_end_matches('/').to_string()
 }
 
 #[async_trait]
 impl StorageProvider for S3Provider {
     async fn store_file(&mut self, ident: String, content: &[u8]) -> Result<Option<String>> {
-        let _response_data = self.bucket.put_object(&ident, content).await?;
+        self.store
+            .put(&Path::from(ident.as_str()), content.to_vec().into())
+            .await?;
 
         Ok(Some(format!(
             "{s3_host}/{ident}",
@@ -52,9 +79,7 @@ impl StorageProvider for S3Provider {
     }
 
     async fn delete_file(&mut self, ident: String) -> Result<()> {
-        let s3_path = ident.as_str();
-
-        let _response_data = self.bucket.delete_object(s3_path).await?;
+        self.store.delete(&Path::from(ident.as_str())).await?;
 
         Ok(())
     }
@@ -66,9 +91,11 @@ impl StorageProvider for S3Provider {
     }
 
     async fn file_exists(&self, ident: String) -> Result<bool> {
-        let s3_path = ident.as_str();
-
-        Ok(self.bucket.object_exists(s3_path).await?)
+        match self.store.head(&Path::from(ident.as_str())).await {
+            Ok(_) => Ok(true),
+            Err(ObjectStoreError::NotFound { .. }) => Ok(false),
+            Err(error) => Err(error.into()),
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::OnceLock};
+use std::{path::PathBuf, sync::OnceLock, time::Duration};
 
 use paste::paste;
 
@@ -78,10 +78,82 @@ local_storage_dir => PathBuf,
 local_storage_limit_mb => usize,
 );
 
+static S3_ADDRESSING_STYLE_CELL: OnceLock<Result<bool, EnvError>> = OnceLock::new();
+
+/// Whether S3 requests should use virtual-hosted-style addressing.
+///
+/// Path-style addressing remains the default when `S3_ADDRESSING_STYLE` is unset.
+pub fn s3_virtual_hosted_style_request() -> Result<bool, EnvError> {
+    S3_ADDRESSING_STYLE_CELL
+        .get_or_init(|| {
+            let value = match std::env::var("S3_ADDRESSING_STYLE") {
+                Ok(value) => Some(value),
+                Err(std::env::VarError::NotPresent) => None,
+                Err(std::env::VarError::NotUnicode(_)) => {
+                    return Err(EnvError::ParseError {
+                        key: "S3_ADDRESSING_STYLE".to_string(),
+                    });
+                }
+            };
+
+            parse_s3_addressing_style(value.as_deref())
+        })
+        .clone()
+}
+
+fn parse_s3_addressing_style(value: Option<&str>) -> Result<bool, EnvError> {
+    match value.unwrap_or("path") {
+        "path" => Ok(false),
+        "virtual" => Ok(true),
+        _ => Err(EnvError::ParseError {
+            key: "S3_ADDRESSING_STYLE".to_string(),
+        }),
+    }
+}
+
+static S3_REQUEST_TIMEOUT_CELL: OnceLock<Result<Option<Duration>, EnvError>> = OnceLock::new();
+
+/// Get the optional overall S3 request timeout.
+pub fn s3_request_timeout() -> Result<Option<Duration>, EnvError> {
+    S3_REQUEST_TIMEOUT_CELL
+        .get_or_init(|| {
+            let value = match std::env::var("S3_REQUEST_TIMEOUT_SECS") {
+                Ok(value) => Some(value),
+                Err(std::env::VarError::NotPresent) => None,
+                Err(std::env::VarError::NotUnicode(_)) => {
+                    return Err(EnvError::ParseError {
+                        key: "S3_REQUEST_TIMEOUT_SECS".to_string(),
+                    });
+                }
+            };
+
+            parse_s3_request_timeout(value.as_deref())
+        })
+        .clone()
+}
+
+fn parse_s3_request_timeout(value: Option<&str>) -> Result<Option<Duration>, EnvError> {
+    match value {
+        None => Ok(None),
+        Some(value) => value
+            .parse::<u64>()
+            .ok()
+            .filter(|seconds| *seconds > 0)
+            .map(|seconds| Some(Duration::from_secs(seconds)))
+            .ok_or_else(|| EnvError::ParseError {
+                key: "S3_REQUEST_TIMEOUT_SECS".to_string(),
+            }),
+    }
+}
+
 /// Get a list of all environment variables used in the hdrop backend.
 pub fn get_env_vars() -> Vec<String> {
     ENV_VARS_BACKEND
         .iter()
         .map(|&var| var.to_uppercase())
+        .chain([
+            "S3_ADDRESSING_STYLE".to_string(),
+            "S3_REQUEST_TIMEOUT_SECS".to_string(),
+        ])
         .collect()
 }

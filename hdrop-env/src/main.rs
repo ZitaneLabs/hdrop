@@ -45,6 +45,21 @@ impl StorageProvider {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum S3AddressingStyle {
+    Path,
+    Virtual,
+}
+
+impl S3AddressingStyle {
+    fn as_env(self) -> &'static str {
+        match self {
+            Self::Path => "path",
+            Self::Virtual => "virtual",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 enum CacheStrategy {
     Memory,
     Disk,
@@ -93,6 +108,14 @@ struct Cli {
     /// S3 region. Default: eu-west-1
     #[arg(long, value_name = "REGION")]
     s3_region: Option<String>,
+
+    /// S3 addressing style. Default: path
+    #[arg(long, value_enum, value_name = "STYLE")]
+    s3_addressing_style: Option<S3AddressingStyle>,
+
+    /// Optional overall S3 request timeout in seconds.
+    #[arg(long, value_name = "SECONDS", value_parser = clap::value_parser!(u64).range(1..))]
+    s3_request_timeout_secs: Option<u64>,
 
     /// S3 API endpoint. Default: https://s3.<region>.amazonaws.com
     #[arg(long, value_name = "URL")]
@@ -183,6 +206,8 @@ struct Config {
     s3_access_key_id: String,
     s3_secret_access_key: String,
     s3_region: String,
+    s3_addressing_style: S3AddressingStyle,
+    s3_request_timeout_secs: Option<u64>,
     s3_endpoint: String,
     s3_bucket: String,
     s3_public_url: String,
@@ -208,8 +233,9 @@ impl Default for Config {
     fn default() -> Self {
         let s3_region = DEFAULT_REGION.to_string();
         let s3_bucket = DEFAULT_BUCKET.to_string();
-        let s3_endpoint = default_s3_endpoint(&s3_region);
-        let s3_public_url = default_s3_public_url(&s3_endpoint, &s3_bucket);
+        let s3_addressing_style = S3AddressingStyle::Path;
+        let s3_endpoint = default_s3_endpoint(&s3_region, &s3_bucket, s3_addressing_style);
+        let s3_public_url = default_s3_public_url(&s3_endpoint, &s3_bucket, s3_addressing_style);
 
         Self {
             output: PathBuf::from(DEFAULT_OUTPUT),
@@ -218,6 +244,8 @@ impl Default for Config {
             s3_access_key_id: TODO_S3_ACCESS_KEY_ID.to_string(),
             s3_secret_access_key: TODO_S3_SECRET_ACCESS_KEY.to_string(),
             s3_region,
+            s3_addressing_style,
+            s3_request_timeout_secs: None,
             s3_endpoint,
             s3_bucket,
             s3_public_url,
@@ -245,6 +273,7 @@ impl Config {
     fn from_cli(cli: Cli) -> Self {
         let mut config = Self::default();
         let changed_s3_region = cli.s3_region.is_some();
+        let changed_s3_addressing_style = cli.s3_addressing_style.is_some();
         let changed_s3_endpoint = cli.s3_endpoint.is_some();
         let changed_s3_bucket = cli.s3_bucket.is_some();
 
@@ -266,18 +295,36 @@ impl Config {
         if let Some(s3_region) = cli.s3_region {
             config.s3_region = s3_region;
         }
-        if let Some(s3_endpoint) = cli.s3_endpoint {
-            config.s3_endpoint = s3_endpoint;
-        } else if changed_s3_region {
-            config.s3_endpoint = default_s3_endpoint(&config.s3_region);
+        if let Some(s3_addressing_style) = cli.s3_addressing_style {
+            config.s3_addressing_style = s3_addressing_style;
+        }
+        if let Some(s3_request_timeout_secs) = cli.s3_request_timeout_secs {
+            config.s3_request_timeout_secs = Some(s3_request_timeout_secs);
         }
         if let Some(s3_bucket) = cli.s3_bucket {
             config.s3_bucket = s3_bucket;
         }
+        if let Some(s3_endpoint) = cli.s3_endpoint {
+            config.s3_endpoint = s3_endpoint;
+        } else if changed_s3_region || changed_s3_addressing_style || changed_s3_bucket {
+            config.s3_endpoint = default_s3_endpoint(
+                &config.s3_region,
+                &config.s3_bucket,
+                config.s3_addressing_style,
+            );
+        }
         if let Some(s3_public_url) = cli.s3_public_url {
             config.s3_public_url = s3_public_url;
-        } else if changed_s3_region || changed_s3_endpoint || changed_s3_bucket {
-            config.s3_public_url = default_s3_public_url(&config.s3_endpoint, &config.s3_bucket);
+        } else if changed_s3_region
+            || changed_s3_addressing_style
+            || changed_s3_endpoint
+            || changed_s3_bucket
+        {
+            config.s3_public_url = default_s3_public_url(
+                &config.s3_endpoint,
+                &config.s3_bucket,
+                config.s3_addressing_style,
+            );
         }
         if let Some(local_storage_dir) = cli.local_storage_dir {
             config.local_storage_dir = local_storage_dir;
@@ -472,15 +519,49 @@ fn prompt_s3(theme: &ColorfulTheme, config: &mut Config) -> Result<(), String> {
     config.s3_secret_access_key =
         prompt_secret_with_fallback(theme, "S3 secret access key", &config.s3_secret_access_key)?;
     config.s3_region = prompt_text(theme, "S3 region", &config.s3_region)?;
+    config.s3_bucket = prompt_text(theme, "S3 bucket name", &config.s3_bucket)?;
+    config.s3_addressing_style = prompt_s3_addressing_style(theme, config.s3_addressing_style)?;
     config.s3_endpoint = prompt_text(
         theme,
         "S3 endpoint",
-        &default_s3_endpoint(&config.s3_region),
+        &default_s3_endpoint(
+            &config.s3_region,
+            &config.s3_bucket,
+            config.s3_addressing_style,
+        ),
     )?;
-    config.s3_bucket = prompt_text(theme, "S3 bucket name", &config.s3_bucket)?;
-    let default_public_url = default_s3_public_url(&config.s3_endpoint, &config.s3_bucket);
+    let default_public_url = default_s3_public_url(
+        &config.s3_endpoint,
+        &config.s3_bucket,
+        config.s3_addressing_style,
+    );
     config.s3_public_url = prompt_text(theme, "S3 public URL", &default_public_url)?;
     Ok(())
+}
+
+fn prompt_s3_addressing_style(
+    theme: &ColorfulTheme,
+    current: S3AddressingStyle,
+) -> Result<S3AddressingStyle, String> {
+    let items = [
+        "Path style - endpoint/bucket/object",
+        "Virtual-hosted style - bucket.endpoint/object",
+    ];
+    let default = match current {
+        S3AddressingStyle::Path => 0,
+        S3AddressingStyle::Virtual => 1,
+    };
+    let selected = Select::with_theme(theme)
+        .with_prompt("How should S3 buckets be addressed?")
+        .items(items)
+        .default(default)
+        .interact()
+        .map_err(|err| format!("failed to read S3 addressing style: {err}"))?;
+
+    Ok(match selected {
+        0 => S3AddressingStyle::Path,
+        _ => S3AddressingStyle::Virtual,
+    })
 }
 
 fn prompt_local_storage(theme: &ColorfulTheme, config: &mut Config) -> Result<(), String> {
@@ -703,12 +784,22 @@ fn normalize_site(site: String) -> String {
         .to_string()
 }
 
-fn default_s3_endpoint(region: &str) -> String {
-    format!("https://s3.{region}.amazonaws.com")
+fn default_s3_endpoint(region: &str, bucket: &str, addressing_style: S3AddressingStyle) -> String {
+    match addressing_style {
+        S3AddressingStyle::Path => format!("https://s3.{region}.amazonaws.com"),
+        S3AddressingStyle::Virtual => format!("https://{bucket}.s3.{region}.amazonaws.com"),
+    }
 }
 
-fn default_s3_public_url(endpoint: &str, bucket: &str) -> String {
-    format!("{}/{}", endpoint.trim_end_matches('/'), bucket)
+fn default_s3_public_url(
+    endpoint: &str,
+    bucket: &str,
+    addressing_style: S3AddressingStyle,
+) -> String {
+    match addressing_style {
+        S3AddressingStyle::Path => format!("{}/{}", endpoint.trim_end_matches('/'), bucket),
+        S3AddressingStyle::Virtual => endpoint.trim_end_matches('/').to_string(),
+    }
 }
 
 fn percent_encode_connection_component(value: &str) -> String {
@@ -805,11 +896,17 @@ STORAGE_PROVIDER={storage_provider}
 
     match config.storage_provider {
         StorageProvider::S3 => {
+            let s3_request_timeout = config
+                .s3_request_timeout_secs
+                .map(|seconds| format!("S3_REQUEST_TIMEOUT_SECS={seconds}\n"))
+                .unwrap_or_default();
             env.push_str(&format!(
                 "\
 S3_ACCESS_KEY_ID={s3_access_key_id}
 S3_SECRET_ACCESS_KEY={s3_secret_access_key}
 S3_REGION={s3_region}
+S3_ADDRESSING_STYLE={s3_addressing_style}
+{s3_request_timeout}\
 S3_ENDPOINT={s3_endpoint}
 S3_BUCKET_NAME={s3_bucket}
 S3_PUBLIC_URL={s3_public_url}
@@ -817,6 +914,8 @@ S3_PUBLIC_URL={s3_public_url}
                 s3_access_key_id = quote_compose_env(&config.s3_access_key_id),
                 s3_secret_access_key = quote_compose_env(&config.s3_secret_access_key),
                 s3_region = quote_compose_env(&config.s3_region),
+                s3_addressing_style = config.s3_addressing_style.as_env(),
+                s3_request_timeout = s3_request_timeout,
                 s3_endpoint = quote_compose_env(&config.s3_endpoint),
                 s3_bucket = quote_compose_env(&config.s3_bucket),
                 s3_public_url = quote_compose_env(&config.s3_public_url),

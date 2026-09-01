@@ -11,7 +11,6 @@ axum = { version = "0.8", features = ["multipart", "macros"] }
 axum-extra = { version = "0.12", features = ["typed-header", "tracing"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 dotenvy = "0.15"
-regex = "1.12.3"
 tower-http = { version = "0.6", features = [
     "cors",
     "limit",
@@ -22,7 +21,7 @@ bincache = { git = "https://github.com/ZitaneLabs/bincache.git", features = [
     "rt_tokio_1",
     "comp_zstd",
 ] }
-s3 = { version = "0.38", package = "zitane-s3-async" }
+object_store = { version = "0.14", default-features = false, features = ["aws"] }
 metrics-exporter-prometheus = "0.18"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 tracing = "0.1.44"

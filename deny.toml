@@ -16,11 +16,13 @@ allow = [
     "ISC", # used by untrusted, dependency of hyper-rustls through hdrop-server
     "Apache-2.0",
     "BSD-3-Clause",
-    "Unicode-3.0", # used by zerovec-derive through zitane-s3-async
+    "Unicode-3.0",
     "AGPL-3.0-or-later", # hdrop-db, hdrop-shared
-    "MPL-2.0", # dependencies of zitane-s3-async
     "CC0-1.0",
     "Zlib", # OSI approved, FSF free/libre, used by foldhash
+]
+exceptions = [
+    { allow = ["CDLA-Permissive-2.0"], crate = "webpki-root-certs" },
 ]
 
 [bans]

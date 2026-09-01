@@ -16,12 +16,9 @@ allow = [
     "ISC", # used by untrusted, dependency of hyper-rustls through hdrop-server
     "Apache-2.0",
     "BSD-3-Clause",
-    "Unicode-DFS-2016", # used by unicode-ident
     "Unicode-3.0", # used by zerovec-derive through zitane-s3-async
-    "AGPL-3.0", # hdrop-db, hdrop-shared
     "AGPL-3.0-or-later", # hdrop-db, hdrop-shared
     "MPL-2.0", # dependencies of zitane-s3-async
-    "OpenSSL", # used by aws-lc-sys, dependency of metrics-exporter-prometheus through hdrop-server
     "CC0-1.0",
     "Zlib", # OSI approved, FSF free/libre, used by foldhash
 ]

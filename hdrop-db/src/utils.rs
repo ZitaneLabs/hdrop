@@ -28,7 +28,7 @@ impl TokenGenerator {
         let mut hasher = Sha3_256::new();
         hasher.update(uuid);
         let result = hasher.finalize();
-        let result = format!("{:x}", result);
+        let result = hex::encode(result);
         result.chars().take(length).collect::<String>()
     }
 }

@@ -1,0 +1,48 @@
+{
+	# Keep Caddy's admin API unavailable in production containers.
+	admin off
+}
+
+# Set HDROP_SITE_ADDRESS to the production hostname, for example:
+# HDROP_SITE_ADDRESS=hdrop.io
+{$HDROP_SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	# Match the backend's SINGLE_FILE_LIMIT_MB default from docker-compose.yml.
+	request_body {
+		max_size {$HDROP_MAX_UPLOAD_SIZE:500MB}
+	}
+
+	header {
+		# HTTPS-only once a client has seen the site. Omit preload/includeSubDomains
+		# here so staging or sibling domains are not accidentally pinned.
+		Strict-Transport-Security "max-age=31536000"
+
+		# Browser hardening headers that should not interfere with Next.js assets.
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		X-Permitted-Cross-Domain-Policies "none"
+		Cross-Origin-Opener-Policy "same-origin"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+		Content-Security-Policy "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests"
+
+		# Do not leak backend implementation details.
+		-Server
+	}
+
+	@api path /v1/* /status
+	handle @api {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		reverse_proxy web:80
+	}
+}
+
+# Keep container health independent of public DNS and TLS readiness.
+http://127.0.0.1:8080 {
+	bind 127.0.0.1
+	reverse_proxy /status api:3000
+}

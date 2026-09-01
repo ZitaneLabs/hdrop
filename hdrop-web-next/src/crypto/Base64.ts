@@ -43,7 +43,7 @@ export default class Base64 {
     }
 
     /** Decode a base64 string into a byte array. */
-    static decode(str: string): Uint8Array {
+    static decode(str: string): Uint8Array<ArrayBuffer> {
         str = Base64.fromDisplay(str)
         const missingOctets = this.determineMissingOctetCount(str.length)
         const n = str.length + missingOctets

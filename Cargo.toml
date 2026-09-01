@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "hdrop-db",
+    "hdrop-env",
     "hdrop-server",
     "hdrop-shared"
 ]

@@ -38,6 +38,29 @@ You will find extensive and up-to-date documentation there.
 | API Spec v1 (OpenAPI) | [api_v1.yml](./docs/api_v1.yml)       |
 | Changelog             | [changelog.md](./docs/changelog.md)   |
 
+## Production environment
+
+Generate a Docker Compose `.env` file before deploying:
+
+```sh
+cargo run -p hdrop-env --
+```
+
+For scripted deployments, pass values with flags and add `--non-interactive`.
+
+Review the generated `TODO_...` values before running:
+
+```sh
+docker compose config
+docker compose up -d --build
+```
+
+Bundled Postgres stores its initialized users in the `postgres_data` Docker
+volume. If you regenerate `.env` or change `POSTGRES_PASSWORD` after the first
+startup, Postgres will keep the old password in that existing volume. Either
+update the database role password inside Postgres or recreate the bundled
+database volume before starting the stack with the new `.env`.
+
 ## License
 
 At Zitane Labs, we are committed to promoting a free and open Internet. We believe in the principles of open source software and the power of community collaboration.

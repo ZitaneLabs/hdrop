@@ -27,13 +27,10 @@ export default function DownloadFilePage() {
         return hashPassword ?? userPassword
     }, [hashPassword, userPassword])
 
-    // Try to get password from url fragment
+    // Client components are also rendered on the server, where window is unavailable.
     useEffect(() => {
-        if (window.location.hash.length === 0) {
-            setHashPassword(null)
-            return
-        }
-        setHashPassword(window.location.hash.slice(1))
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- browser state is unavailable during SSR
+        setHashPassword(window.location.hash.slice(1) || null)
     }, [])
 
     // Start download when password is set

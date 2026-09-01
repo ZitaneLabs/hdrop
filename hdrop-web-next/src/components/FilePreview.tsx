@@ -12,44 +12,44 @@ type Props = {
 
 export default function FilePreview({ data, fileName }: Props) {
     const [objectUrl, setObjectUrl] = useState('')
-    const [mimeType, setMimeType] = useState('')
+    const mimeType = useMemo(() => {
+        if (fileName === null) return ''
+        return mime.getType(fileName.toLowerCase()) ?? 'application/octet-stream'
+    }, [fileName])
 
     // Get mime type prefix (e.g. 'image', 'video', 'audio', etc.)
-    const mimePrefix = useMemo(() => mimeType.split('/')[0], [mimeType])
+    const mimePrefix = mimeType.split('/')[0]
+
+    // Object URLs own browser resources, so create them only after React commits.
+    useEffect(() => {
+        if (data === undefined || fileName === null) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronize the external resource snapshot
+            setObjectUrl('')
+            return
+        }
+
+        const url = URL.createObjectURL(new Blob([data], { type: mimeType }))
+        setObjectUrl(url)
+
+        return () => {
+            URL.revokeObjectURL(url)
+        }
+    }, [data, fileName, mimeType])
 
     // Try to decode data as text
     const textData = useMemo(() => {
         if (data === undefined) return null
-        if (data.byteLength > 3 && data.byteLength <= 100_000) {
-            try {
-                const text = new TextDecoder().decode(data)
-                return text
-            } catch {
-                return null
-            }
-        } else {
+
+        if (data.byteLength <= 3 || data.byteLength > 100_000) {
+            return null
+        }
+
+        try {
+            return new TextDecoder().decode(data)
+        } catch {
             return null
         }
     }, [data])
-
-    // Prepare preview
-    useEffect(() => {
-        if (data === undefined || fileName === null) return
-
-        // Detect and set mime type
-        const mimeType = mime.getType(fileName.toLowerCase()) ?? 'application/octet-stream'
-        setMimeType(mimeType)
-
-        // Create object url
-        const blob = new Blob([data], { type: mimeType })
-        const objectUrl = URL.createObjectURL(blob)
-        setObjectUrl(objectUrl)
-
-        // Revoke object url when component unmounts
-        return () => {
-            URL.revokeObjectURL(objectUrl)
-        }
-    }, [data, fileName])
 
     // No data, no preview
     if (data === undefined || fileName === null) return null

@@ -1,6 +1,9 @@
 use hdrop_shared::metrics::names;
+use tokio::time::{self, Duration, MissedTickBehavior};
 
 use crate::core::monitoring::SystemMetrics;
+
+const METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(15);
 
 pub struct MetricsUpdater {
     system: SystemMetrics,
@@ -15,7 +18,12 @@ impl MetricsUpdater {
 
     /// Time-based update of all metrics except for the self updating ones (requests)
     pub async fn run(mut self) {
+        let mut interval = time::interval(METRICS_UPDATE_INTERVAL);
+        interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
+
         loop {
+            interval.tick().await;
+
             // Update RAM
             let ram_status = self.system.ram_status();
 
@@ -29,9 +37,10 @@ impl MetricsUpdater {
                 added_up_usage += cpu.utilization();
             }
 
-            let average = added_up_usage / len;
-
-            metrics::gauge!(names::system::AVG_CPU_USAGE).set(average);
+            if len > 0. {
+                let average = added_up_usage / len;
+                metrics::gauge!(names::system::AVG_CPU_USAGE).set(average);
+            }
         }
     }
 }

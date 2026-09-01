@@ -102,6 +102,7 @@ services:
       - S3_BUCKET_NAME=${S3_BUCKET_NAME:-}
       - S3_PUBLIC_URL=${S3_PUBLIC_URL:-}
       - S3_ADDRESSING_STYLE=${S3_ADDRESSING_STYLE:-path}
+      # Optional; leaving this unset disables the overall S3 request timeout.
       - S3_REQUEST_TIMEOUT_SECS
       - LOCAL_STORAGE_DIR=${LOCAL_STORAGE_DIR:-/data/hdrop-files}
       - LOCAL_STORAGE_LIMIT_MB=${LOCAL_STORAGE_LIMIT_MB:-}

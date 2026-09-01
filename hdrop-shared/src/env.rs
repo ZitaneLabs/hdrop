@@ -113,7 +113,7 @@ fn parse_s3_addressing_style(value: Option<&str>) -> Result<bool, EnvError> {
 
 static S3_REQUEST_TIMEOUT_CELL: OnceLock<Result<Option<Duration>, EnvError>> = OnceLock::new();
 
-/// Get the optional overall S3 request timeout.
+/// Get the optional overall S3 request timeout. An unset variable disables it.
 pub fn s3_request_timeout() -> Result<Option<Duration>, EnvError> {
     S3_REQUEST_TIMEOUT_CELL
         .get_or_init(|| {

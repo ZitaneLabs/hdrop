@@ -109,15 +109,18 @@ struct Cli {
     #[arg(long, value_name = "REGION")]
     s3_region: Option<String>,
 
-    /// S3 addressing style. Default: path
+    /// S3 addressing style. Virtual style requires the bucket in the endpoint
+    /// hostname. Default: path
     #[arg(long, value_enum, value_name = "STYLE")]
     s3_addressing_style: Option<S3AddressingStyle>,
 
-    /// Optional overall S3 request timeout in seconds.
+    /// Optional overall S3 request timeout in seconds. Unset disables it.
     #[arg(long, value_name = "SECONDS", value_parser = clap::value_parser!(u64).range(1..))]
     s3_request_timeout_secs: Option<u64>,
 
-    /// S3 API endpoint. Default: https://s3.<region>.amazonaws.com
+    /// S3 API endpoint, without the bucket path. With virtual style, include the
+    /// bucket in the hostname. Legacy endpoints ending in `/<bucket>` remain accepted.
+    /// Default: https://s3.<region>.amazonaws.com
     #[arg(long, value_name = "URL")]
     s3_endpoint: Option<String>,
 
@@ -899,12 +902,17 @@ STORAGE_PROVIDER={storage_provider}
             let s3_request_timeout = config
                 .s3_request_timeout_secs
                 .map(|seconds| format!("S3_REQUEST_TIMEOUT_SECS={seconds}\n"))
-                .unwrap_or_default();
+                .unwrap_or_else(|| {
+                    "# Optional overall S3 request timeout. Unset disables it.\n\
+# S3_REQUEST_TIMEOUT_SECS=300\n"
+                        .to_string()
+                });
             env.push_str(&format!(
                 "\
 S3_ACCESS_KEY_ID={s3_access_key_id}
 S3_SECRET_ACCESS_KEY={s3_secret_access_key}
 S3_REGION={s3_region}
+# Use path (default) or virtual. Virtual requires the bucket in the endpoint hostname.
 S3_ADDRESSING_STYLE={s3_addressing_style}
 {s3_request_timeout}\
 S3_ENDPOINT={s3_endpoint}

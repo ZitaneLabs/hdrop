@@ -157,3 +157,50 @@ pub fn get_env_vars() -> Vec<String> {
         ])
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn s3_addressing_style_defaults_to_path() {
+        assert!(!parse_s3_addressing_style(None).unwrap());
+    }
+
+    #[test]
+    fn parses_s3_addressing_styles() {
+        assert!(!parse_s3_addressing_style(Some("path")).unwrap());
+        assert!(parse_s3_addressing_style(Some("virtual")).unwrap());
+    }
+
+    #[test]
+    fn rejects_invalid_s3_addressing_style() {
+        assert!(matches!(
+            parse_s3_addressing_style(Some("auto")),
+            Err(EnvError::ParseError { key }) if key == "S3_ADDRESSING_STYLE"
+        ));
+    }
+
+    #[test]
+    fn s3_request_timeout_is_optional() {
+        assert_eq!(parse_s3_request_timeout(None).unwrap(), None);
+    }
+
+    #[test]
+    fn parses_s3_request_timeout() {
+        assert_eq!(
+            parse_s3_request_timeout(Some("45")).unwrap(),
+            Some(Duration::from_secs(45))
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_s3_request_timeouts() {
+        for value in ["", "0", "-1", "invalid"] {
+            assert!(matches!(
+                parse_s3_request_timeout(Some(value)),
+                Err(EnvError::ParseError { key }) if key == "S3_REQUEST_TIMEOUT_SECS"
+            ));
+        }
+    }
+}

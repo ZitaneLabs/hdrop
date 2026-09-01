@@ -100,3 +100,91 @@ impl StorageProvider for S3Provider {
 }
 
 impl UpdateMetrics for S3Provider {}
+
+#[cfg(test)]
+mod tests {
+    use uuid::Uuid;
+
+    use super::*;
+
+    #[test]
+    fn removes_newlines_from_credentials_only() {
+        assert_eq!(
+            normalize_credential(" access\nkey\r\n ".to_string()),
+            " accesskey\r "
+        );
+    }
+
+    #[test]
+    fn normalizes_s3_endpoints() {
+        let cases = [
+            ("https://objects.example.com", "https://objects.example.com"),
+            (
+                "https://objects.example.com/",
+                "https://objects.example.com",
+            ),
+            (
+                "https://objects.example.com/hdrop",
+                "https://objects.example.com",
+            ),
+            (
+                "https://objects.example.com/hdrop/",
+                "https://objects.example.com",
+            ),
+            (
+                "https://objects.example.com/prefix",
+                "https://objects.example.com/prefix",
+            ),
+        ];
+
+        for (endpoint, expected) in cases {
+            assert_eq!(normalize_endpoint(endpoint, "hdrop"), expected);
+        }
+    }
+
+    #[test]
+    fn normalizes_public_url() {
+        assert_eq!(
+            normalize_public_url("https://cdn.example.com///"),
+            "https://cdn.example.com"
+        );
+    }
+
+    #[tokio::test]
+    #[ignore = "requires LocalStack from docker-compose.dev.yml"]
+    async fn localstack_round_trip() -> Result<()> {
+        let store = AmazonS3Builder::new()
+            .with_region("eu-west-1")
+            .with_endpoint("http://localhost:4566")
+            .with_bucket_name("hdrop")
+            .with_access_key_id("dev")
+            .with_secret_access_key("dev")
+            .with_client_options(ClientOptions::new().with_timeout_disabled())
+            .with_virtual_hosted_style_request(false)
+            .with_disable_bulk_delete(true)
+            .with_allow_http(true)
+            .build()?;
+        let mut provider = S3Provider {
+            store,
+            public_url: "http://localhost:4566/hdrop".to_string(),
+        };
+        let ident = Uuid::new_v4().to_string();
+
+        assert!(!provider.file_exists(ident.clone()).await?);
+
+        let public_url = provider
+            .store_file(ident.clone(), b"hdrop object_store regression test")
+            .await?;
+
+        assert!(provider.file_exists(ident.clone()).await?);
+        assert_eq!(
+            public_url,
+            Some(format!("http://localhost:4566/hdrop/{ident}"))
+        );
+
+        provider.delete_file(ident.clone()).await?;
+        assert!(!provider.file_exists(ident).await?);
+
+        Ok(())
+    }
+}

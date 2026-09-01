@@ -1103,6 +1103,7 @@ mod tests {
         let cli = Cli::try_parse_from(["hdrop-env", "--s3-region", "us-east-1"]).unwrap();
         let config = Config::from_cli(cli);
 
+        assert_eq!(config.s3_addressing_style, S3AddressingStyle::Path);
         assert_eq!(config.s3_region, "us-east-1");
         assert_eq!(config.s3_endpoint, "https://s3.us-east-1.amazonaws.com");
         assert_eq!(
@@ -1128,6 +1129,58 @@ mod tests {
         assert_eq!(config.s3_endpoint, "https://objects.example.com");
         assert_eq!(config.s3_bucket, "files");
         assert_eq!(config.s3_public_url, "https://cdn.example.com/files");
+    }
+
+    #[test]
+    fn config_from_cli_supports_virtual_s3_addressing() {
+        let cli = Cli::try_parse_from([
+            "hdrop-env",
+            "--storage-provider",
+            "s3",
+            "--s3-addressing-style",
+            "virtual",
+            "--s3-region",
+            "us-east-1",
+            "--s3-bucket",
+            "files",
+        ])
+        .unwrap();
+        let mut config = Config::from_cli(cli);
+
+        assert_eq!(config.s3_addressing_style, S3AddressingStyle::Virtual);
+        assert_eq!(
+            config.s3_endpoint,
+            "https://files.s3.us-east-1.amazonaws.com"
+        );
+        assert_eq!(
+            config.s3_public_url,
+            "https://files.s3.us-east-1.amazonaws.com"
+        );
+        assert!(render_env(&mut config)
+            .unwrap()
+            .contains("S3_ADDRESSING_STYLE=virtual"));
+    }
+
+    #[test]
+    fn config_from_cli_supports_s3_request_timeout() {
+        let cli = Cli::try_parse_from([
+            "hdrop-env",
+            "--storage-provider",
+            "s3",
+            "--s3-request-timeout-secs",
+            "45",
+        ])
+        .unwrap();
+        let mut config = Config::from_cli(cli);
+
+        assert!(render_env(&mut config)
+            .unwrap()
+            .contains("S3_REQUEST_TIMEOUT_SECS=45"));
+    }
+
+    #[test]
+    fn cli_rejects_invalid_s3_request_timeout() {
+        assert!(Cli::try_parse_from(["hdrop-env", "--s3-request-timeout-secs", "0"]).is_err());
     }
 
     #[test]

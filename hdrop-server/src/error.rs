@@ -3,8 +3,6 @@ use std::{io::Error as StdError, net::AddrParseError};
 use axum::{extract::multipart::MultipartError, http::StatusCode, response::IntoResponse, Json};
 use bincache::Error as BincacheError;
 use hdrop_shared::ErrorResponse;
-use regex::Error as RegexError;
-use s3::{creds::error::CredentialsError, error::S3Error};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -19,13 +17,9 @@ pub enum Error {
     InvalidProvider(String),
     #[error("No Storage provider given")]
     NoProvider,
-    // S3
-    #[error("S3 error: {0}")]
-    S3(#[from] S3Error),
-    #[error("S3 error: {0}")]
-    S3Credential(#[from] CredentialsError),
-    #[error("Regex error: {0}")]
-    Regex(#[from] RegexError),
+    // Object store
+    #[error("Object store error: {0}")]
+    ObjectStore(#[from] object_store::Error),
     #[error("Bincache error: {0}")]
     Cache(#[from] BincacheError),
     #[error("{0}")]

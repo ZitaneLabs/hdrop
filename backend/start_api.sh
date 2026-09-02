@@ -4,13 +4,17 @@
 
 set -euo pipefail
 
-trap 'docker compose down' EXIT SIGINT
+repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_dir"
+
+trap 'docker compose --project-directory "$repo_dir" down' EXIT SIGINT
 docker compose up --build --wait -d
 
-pushd hdrop-db
+pushd backend/hdrop-db
 DATABASE_URL="postgres://postgres:postgres@localhost:5432/hdrop" diesel migration run
 popd
 
+cd backend
 cargo build --release -p hdrop-server
 export RUST_BACKTRACE=1
 export HDROP_PORT=8080

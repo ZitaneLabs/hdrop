@@ -30,6 +30,7 @@ jobs:
 
       - name: Check formatting
         run: cargo +nightly fmt --all --check
+        working-directory: ./backend
 
   clippy:
     name: Clippy Lints
@@ -48,17 +49,20 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
+            backend/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
 
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features #-- -D warnings
+        working-directory: ./backend
 
   deny:
     name: Cargo Deny
     runs-on: ubuntu-latest
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - uses: actions/checkout@v6
 
@@ -66,3 +70,4 @@ jobs:
         uses: EmbarkStudios/cargo-deny-action@v2
         with:
           rust-version: "1.90.0"
+          manifest-path: ./backend/Cargo.toml

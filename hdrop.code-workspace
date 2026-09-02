@@ -5,28 +5,18 @@
             "path": "."
         },
         {
-            "name": "hdrop-shared",
-            "path": "hdrop-shared",
+            "name": "backend",
+            "path": "backend"
         },
         {
-            "name": "hdrop-db",
-            "path": "hdrop-db",
-        },
-        {
-            "name": "hdrop-server",
-            "path": "hdrop-server",
-        },
-        {
-            "name": "hdrop-web-next",
-            "path": "hdrop-web-next"
+            "name": "frontend",
+            "path": "frontend"
         },
     ],
     "settings": {
         "jest.disabledWorkspaceFolders": [
             "root",
-            "hdrop-db",
-            "hdrop-shared",
-            "hdrop-server",
+            "backend",
         ]
     }
 }

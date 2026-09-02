@@ -86,7 +86,7 @@ enum DatabaseMode {
 #[command(
     about = "Generate a production Docker Compose .env file for hdrop.",
     long_about = "Generate a production Docker Compose .env file for hdrop.\n\nBy default, this command opens an interactive setup flow.",
-    after_help = "Examples:\n  cargo run -p hdrop-env --\n  cargo run -p hdrop-env -- --site hdrop.io\n  cargo run -p hdrop-env -- --site hdrop.io --storage-provider local\n  cargo run -p hdrop-env -- --site hdrop.io --database-mode external --postgres-host db.example.com\n  cargo run -p hdrop-env -- --site hdrop.io --cache-strategy disk --non-interactive"
+    after_help = "Examples (from the repository root):\n  (cd backend && cargo run -p hdrop-env -- --output ../.env)\n  (cd backend && cargo run -p hdrop-env -- --output ../.env --site hdrop.io)\n  (cd backend && cargo run -p hdrop-env -- --output ../.env --site hdrop.io --storage-provider local)\n  (cd backend && cargo run -p hdrop-env -- --output ../.env --site hdrop.io --database-mode external --postgres-host db.example.com)\n  (cd backend && cargo run -p hdrop-env -- --output ../.env --site hdrop.io --cache-strategy disk --non-interactive)"
 )]
 struct Cli {
     /// Public hostname, without a scheme. Default: localhost
@@ -1103,7 +1103,9 @@ mod tests {
 
         assert!(help.contains("Generate a production Docker Compose .env file for hdrop."));
         assert!(help.contains("--storage-provider"));
-        assert!(help.contains("cargo run -p hdrop-env -- --site hdrop.io"));
+        assert!(help.contains(
+            "(cd backend && cargo run -p hdrop-env -- --output ../.env --site hdrop.io)"
+        ));
     }
 
     #[test]

@@ -11,7 +11,7 @@
 [badge_license]: https://badgers.space/github/license/ZitaneLabs/hdrop
 [github_ci]: https://badgers.space/github/checks/zitanelabs/hdrop
 
-<img align="right" width="64" src="./hdrop-web-next/public/logo512.png" />
+<img align="right" width="64" src="./frontend/public/logo512.png" />
 
 **Simple, self-hosted encrypted file transfer.**
 
@@ -43,7 +43,7 @@ You will find extensive and up-to-date documentation there.
 Generate a Docker Compose `.env` file before deploying:
 
 ```sh
-cargo run -p hdrop-env --
+(cd backend && cargo run -p hdrop-env -- --output ../.env)
 ```
 
 For scripted deployments, pass values with flags and add `--non-interactive`.

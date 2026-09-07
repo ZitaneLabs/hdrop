@@ -55,7 +55,7 @@ services:
         max-size: "10m"
         max-file: "3"
     build:
-      context: ./hdrop-web-next
+      context: ./frontend
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_WEB_BASE_URL: ${HDROP_PUBLIC_URL:?set HDROP_PUBLIC_URL, for example https://hdrop.io}
@@ -81,7 +81,7 @@ services:
         max-size: "10m"
         max-file: "3"
     build:
-      context: .
+      context: ./backend
       dockerfile: ./hdrop-server/Dockerfile
     restart: unless-stopped
     expose:

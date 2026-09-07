@@ -1,3 +1,8 @@
+// Stable UTF-8 domains authenticate each ciphertext's protocol role.
+export const FILE_AAD = new TextEncoder().encode('hdrop/v1/file')
+export const FILE_NAME_AAD = new TextEncoder().encode('hdrop/v1/filename')
+export const CHALLENGE_AAD = new TextEncoder().encode('hdrop/v1/challenge')
+
 // This mask is XORed with the IV to generate the challenge IV.
 // This is done to prevent catastrophic failure of AES-GCM through IV reuse.
 export const CHALLENGE_XOR_MASK = new Uint8Array([
@@ -60,17 +65,17 @@ export default class AesGcm {
         return result
     }
 
-    static async encrypt(data: ArrayBuffer | Uint8Array, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
+    static async encrypt(data: ArrayBuffer | Uint8Array, key: CryptoKey, params: AesGcmParams, additionalData: BufferSource): Promise<ArrayBuffer> {
         return await crypto.subtle.encrypt(
-            params,
+            { ...params, additionalData },
             key,
             data as BufferSource
         )
     }
 
-    static async decrypt(data: ArrayBuffer | Uint8Array, key: CryptoKey, params: AesGcmParams): Promise<ArrayBuffer> {
+    static async decrypt(data: ArrayBuffer | Uint8Array, key: CryptoKey, params: AesGcmParams, additionalData: BufferSource): Promise<ArrayBuffer> {
         return await crypto.subtle.decrypt(
-            params,
+            { ...params, additionalData },
             key,
             data as BufferSource
         )

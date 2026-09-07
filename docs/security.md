@@ -14,16 +14,30 @@ hdrop exclusively uses `WebCrypto` APIs provided by the browser for all cryptogr
 
 ### File Encryption (Client)
 
+File contents, file names, and challenges are encrypted before upload.
+
+All three object types use AES-256-GCM with 96-bit IVs and 128-bit authentication tags. Fixed Additional Authenticated Data (encoded as UTF-8 with `TextEncoder`) provides domain separation:
+
+| Object        | AAD                  |
+| ------------- | -------------------- |
+| File contents | `hdrop/v1/file`      |
+| File name     | `hdrop/v1/filename`  |
+| Challenge     | `hdrop/v1/challenge` |
+
+AAD is public and authenticated alongside the ciphertext. The client supplies the exact same domain during encryption and decryption. It never takes the domain from server metadata.
+
+Decrypting under a different domain fails authentication. This means if a malicious server substitutes both ciphertext and its matching IV, the authentication fails.
+
 1. Generate a random initialization vector `IV` with a size of 12 bytes
    - The frontend provides **two** static XOR masks to generate different IVs for the file name and the challenge (based on the random IV).[^1]
    - Producing IV, Name_IV, Challenge_IV
-3. Encrypt file data `Fd` using `AES-256-GCM-ENC(IV, K, Fd)`
+2. Encrypt file data `Fd` using `AES-256-GCM-ENC(IV, K, Fd, "hdrop/v1/file")`
    - Producing encrypted file data `EFd`
-4. Encrypt file name `Fn` using `AES-256-GCM-ENC(Name_IV, K, Fn)`
+3. Encrypt file name `Fn` using `AES-256-GCM-ENC(Name_IV, K, Fn, "hdrop/v1/filename")`
    - Producing encrypted file name `EFn`
-5. Generate and encrypt 32 bytes long file challenge `Fc` using `AES-256-GCM-ENC(Challenge_IV, K, Fc)`
+4. Generate and encrypt 32 bytes long file challenge `Fc` using `AES-256-GCM-ENC(Challenge_IV, K, Fc, "hdrop/v1/challenge")`
    - Producing encrypted file challenge `EFc`
-7. Hash file challenge `Fc` using `SHA-256(Fc)`
+5. Hash file challenge `Fc` using `SHA-256(Fc)`
    - Producing hashed file challenge `H(Fc)`
 
 ### File Upload
@@ -65,14 +79,14 @@ hdrop exclusively uses `WebCrypto` APIs provided by the browser for all cryptogr
 
 ### Key Derivation
 
-1. Retrieve challenge data (`EFn`, `S`, `IV`) from server
+1. Retrieve challenge data (`EFc`, `S`, `IV`) from server
 2. Derive a key `K` from the password `P` using `600_000` rounds of `PBKDF2(P, S)`
 
 ### Challenge
 
 #### Client
 
-1. Decrypt the encrypted file challenge `EFc` using `AES-256-GCM-DEC(Challenge_IV, K, EFc)`
+1. Decrypt the encrypted file challenge `EFc` using `AES-256-GCM-DEC(Challenge_IV, K, EFc, "hdrop/v1/challenge")`
    - Producing file challenge `Fc'` (== `Fc`, if successful)
 2. Hash file challenge `Fc'` using `SHA-256(Fc')`
    - Producing challenge solution `H(Fc')` (== `H(Fc)`, if successful)
@@ -87,9 +101,9 @@ hdrop exclusively uses `WebCrypto` APIs provided by the browser for all cryptogr
 
 ### File Decryption
 
-1. Decrypt encrypted file data `EFd` using `AES-256-GCM-DEC(IV, K, EFd)`
+1. Decrypt encrypted file data `EFd` using `AES-256-GCM-DEC(IV, K, EFd, "hdrop/v1/file")`
    - Producing file data `Fd`
-2. Decrypt encrypted file name `EFn` using `AES-256-GCM-DEC(Name_IV, K, EFn)`
+2. Decrypt encrypted file name `EFn` using `AES-256-GCM-DEC(Name_IV, K, EFn, "hdrop/v1/filename")`
    - Producing file name `Fn`
 
 #### Notes

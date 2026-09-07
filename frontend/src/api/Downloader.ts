@@ -1,4 +1,4 @@
-import { AesGcm, Base64, CHALLENGE_XOR_MASK, FILE_NAME_XOR_MASK, Pbkdf2, Sha256 } from "@/crypto"
+import { AesGcm, Base64, CHALLENGE_XOR_MASK, FILE_NAME_XOR_MASK, FILE_AAD, FILE_NAME_AAD, CHALLENGE_AAD, Pbkdf2, Sha256 } from "@/crypto"
 import { ApiClient } from './'
 
 export type DownloadPhase = "validating" | "downloading" | "decrypting" | "done"
@@ -30,7 +30,7 @@ export default class Downloader {
         const aesBaseParams = AesGcm.restoreParams(ivBytes)
         const aesChallengeParams = AesGcm.xorParams(aesBaseParams, CHALLENGE_XOR_MASK)
         const aesFileNameParams = AesGcm.xorParams(aesBaseParams, FILE_NAME_XOR_MASK)
-        const decryptedChallenge = await AesGcm.decrypt(challengeBytes, derivedKey.key, aesChallengeParams)
+        const decryptedChallenge = await AesGcm.decrypt(challengeBytes, derivedKey.key, aesChallengeParams, CHALLENGE_AAD)
         const challengeHash = await Sha256.hash(new Uint8Array(decryptedChallenge))
 
         // Submit challenge
@@ -38,7 +38,7 @@ export default class Downloader {
 
         // Decrypt file name
         const fileNameBytes = Base64.decode(file_name_data)
-        const decryptedFileName = await AesGcm.decrypt(fileNameBytes, derivedKey.key, aesFileNameParams)
+        const decryptedFileName = await AesGcm.decrypt(fileNameBytes, derivedKey.key, aesFileNameParams, FILE_NAME_AAD)
         const fileName = new TextDecoder().decode(new Uint8Array(decryptedFileName))
         onFileNameObtained(fileName)
 
@@ -50,7 +50,7 @@ export default class Downloader {
 
         // Decrypt file
         onProgressChange('decrypting', 1);
-        const decryptedFile = await AesGcm.decrypt(fileBytes, derivedKey.key, aesBaseParams)
+        const decryptedFile = await AesGcm.decrypt(fileBytes, derivedKey.key, aesBaseParams, FILE_AAD)
 
         onDownloadComplete({ data: decryptedFile })
         onProgressChange('done', 1);

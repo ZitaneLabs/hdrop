@@ -73,6 +73,25 @@ update the database role password inside Postgres or, for a disposable installat
 recreate the bundled database volume before starting with the new `.env`.
 Recreating the volume deletes its stored data.
 
+PostgreSQL connections honor `sslmode` (`disable`, `allow`, `prefer`, `require`,
+`verify-ca`, or `verify-full`) and `sslrootcert`, `sslcert`, and `sslkey` in
+`DATABASE_URL`, with the corresponding `PGSSL*` environment variables and default
+PostgreSQL certificate locations as fallbacks. Use `verify-full` with a trusted
+CA file, or `sslrootcert=system`, to verify the server's identity. Client private
+keys must be unencrypted PKCS#8 PEM. On Unix, use mode `0600` for a client
+key. A root-owned key may also be group-readable (`0640`).
+
+When `DATABASE_URL` omits the password, the API tries `PGPASSWORD`, then
+the first matching entry in the PostgreSQL password file for each host.
+Set that file with `passfile` in the URL or with `PGPASSFILE`. The default
+is `~/.pgpass` on Unix and `%APPDATA%\postgresql\pgpass.conf` on Windows.
+New connections pick up rotated password files and certificates.
+
+Set `channel_binding=require` or `PGCHANNELBINDING=require` to require
+channel binding. The API rejects unsupported connection policies, including
+CRLs, required GSS encryption, and `require_auth`, as well as libpq service
+definitions.
+
 ## License
 
 At Zitane Labs, we are committed to promoting a free and open Internet. We believe in the principles of open source software and the power of community collaboration.

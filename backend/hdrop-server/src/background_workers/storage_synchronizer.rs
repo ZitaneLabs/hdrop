@@ -71,7 +71,7 @@ impl StorageSynchronizer {
         cache: Arc<RwLock<CacheVariant>>,
     ) {
         // Database update DataUrl here
-        if let Err(err) = database.update_data_url(uuid, data_url.as_ref()).await {
+        if let Err(err) = database.update_data_url(uuid, data_url.as_deref()).await {
             tracing::error!("Database data url update failed: {err}");
             tokio::spawn(Self::database_retry_worker(data_url, database, uuid));
         } else {
@@ -176,7 +176,7 @@ impl StorageSynchronizer {
         uuid: Uuid,
     ) {
         for i in 0..=6u32 {
-            if let Err(err) = database.update_data_url(uuid, data_url.as_ref()).await {
+            if let Err(err) = database.update_data_url(uuid, data_url.as_deref()).await {
                 tracing::error!("Retry worker failed, database dataUrl update failed: {err}");
                 Self::exponential_backoff(i).await;
             } else {

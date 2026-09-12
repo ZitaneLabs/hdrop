@@ -20,7 +20,6 @@ async fn test_database(pool_size: usize) -> (Database, AsyncPgConnection, String
     ));
     let database = Database {
         pool: Pool::builder(manager).max_size(pool_size).build().unwrap(),
-        generator: TokenGenerator::default(),
     };
     let mut conn = database.pool.get().await.unwrap();
     for migration in [
@@ -183,7 +182,7 @@ async fn async_queries_and_token_uniqueness() {
         Err(Error::Diesel(_))
     ));
     db.pool.close();
-    assert_eq!(db.generate_access_token().len(), 5);
+    assert_eq!(Database::generate_access_token().len(), 5);
     assert!(matches!(
         db.get_file_by_access_token("missing").await,
         Err(Error::DeadpoolPool(_))

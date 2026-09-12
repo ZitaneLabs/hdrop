@@ -140,7 +140,7 @@ async fn async_queries_and_token_uniqueness() {
             .as_deref(),
         Some("https://example.com/file")
     );
-    db.update_data_url(uuid, None::<String>).await.unwrap();
+    db.update_data_url(uuid, None).await.unwrap();
     assert!(db
         .get_file_by_access_token("taken")
         .await
@@ -155,9 +155,11 @@ async fn async_queries_and_token_uniqueness() {
         ("challenge".into(), "salt".into(), "iv".into())
     );
     assert!(db.get_files_to_flush().await.unwrap().is_empty());
-    let mut file = db.get_file_by_uuid(uuid).await.unwrap();
-    file.expiresAt = Timestamp::now() - jiff::SignedDuration::from_hours(1);
-    db.update_file_expiry(file).await.unwrap();
+    let expires_at = Timestamp::now() - jiff::SignedDuration::from_hours(1);
+    db.update_file_expiry(uuid, expires_at).await.unwrap();
+    let file = db.get_file_by_uuid(uuid).await.unwrap();
+    assert_eq!(file.challengeHash, "hash");
+    assert_eq!(file.expiresAt.as_microsecond(), expires_at.as_microsecond());
     assert_eq!(db.get_files_to_flush().await.unwrap(), vec![uuid]);
     db.delete_file(uuid).await.unwrap();
     db.delete_file(uuid).await.unwrap();

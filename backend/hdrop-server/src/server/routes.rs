@@ -184,9 +184,9 @@ pub async fn update_file_expiry(
     Query(query): Query<UpdateTokenQuery>,
     Json(expiry_data): Json<request::ExpiryData>,
 ) -> Result<Json<()>> {
-    let mut file = state
+    let file = state
         .database
-        .get_file_by_access_token(access_token)
+        .get_file_by_access_token(&access_token)
         .await?;
 
     if expiry_data.expiry > MAX_EXPIRY_SECONDS {
@@ -194,8 +194,8 @@ pub async fn update_file_expiry(
     }
 
     if file.updateToken == query.update_token {
-        file.expiresAt = expires_at(file.createdAt, expiry_data.expiry)?;
-        state.database.update_file_expiry(file).await?;
+        let expiry = expires_at(file.createdAt, expiry_data.expiry)?;
+        state.database.update_file_expiry(file.uuid, expiry).await?;
 
         Ok(Json(()))
     } else {

@@ -11,7 +11,7 @@ use axum_extra::{
     TypedHeader,
 };
 use chrono::Utc;
-use hdrop_db::{Database, File, InsertFile};
+use hdrop_db::{Database, File};
 use hdrop_shared::{
     requests as request,
     responses::{FileMetaData, GetChallengeData, UploadFileData, VerifyChallengeData},
@@ -53,7 +53,7 @@ pub async fn upload_file(
     let access_token = Database::generate_access_token();
     let update_token = Database::generate_update_token();
     let time = Utc::now();
-    let file = InsertFile {
+    let file = File {
         uuid,
         accessToken: access_token,
         updateToken: update_token.clone(),

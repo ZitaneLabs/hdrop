@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     error::Result,
-    models::{File, InsertFile},
+    models::File,
     schema::files::dsl as files_table,
     utils::{generate_token, ACCESS_TOKEN_LENGTH, UPDATE_TOKEN_LENGTH},
 };
@@ -33,7 +33,7 @@ impl Database {
 
     /// Insert a file, regenerating its access token if another insert claimed it.
     /// Callers must use the access token in the returned file.
-    pub async fn insert_file(&self, mut file: InsertFile) -> Result<File> {
+    pub async fn insert_file(&self, mut file: File) -> Result<File> {
         let mut conn = self.pool.get().await?;
         let mut retries = 0;
         let file = loop {

@@ -5,9 +5,9 @@ edition = "2021"
 license.workspace = true
 
 [dependencies]
-diesel = { version = "2.3", features = ["postgres_backend", "uuid"] }
+diesel = { version = "2.3", default-features = false, features = ["postgres_backend", "uuid"] }
 jiff-diesel = { version = "1", features = ["postgres"] }
-diesel-async = { version = "0.9.2", features = ["postgres", "deadpool"] }
+diesel-async = { version = "0.9.2", default-features = false, features = ["postgres", "deadpool"] }
 native-tls = "0.2.18"
 postgres-native-tls = "0.5.3"
 tokio-postgres = "0.7"

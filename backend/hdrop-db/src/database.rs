@@ -158,37 +158,9 @@ impl Database {
         Ok(())
     }
 
-    pub async fn check_access_token_collission<'a>(
-        &self,
-        access_token: impl Into<Cow<'a, str>>,
-    ) -> Result<bool> {
-        let mut conn = self.pool.get().await?;
-        let access_token = access_token.into().into_owned();
-        Ok(diesel::select(diesel::dsl::exists(
-            files_table::files.filter(files_table::accessToken.eq(access_token)),
-        ))
-        .get_result(&mut conn)
-        .await?)
-    }
-    /// Generates access token with min length.
-    /// Retriess generation when collissions happen (10 times), after that it increases the generated length by 1.
-    pub async fn generate_access_token(&self) -> Result<String> {
-        let mut target_length = self.generator.get_access_token_min_length();
-        let mut access_token = TokenGenerator::generate_token(target_length);
-        let mut collisions = 0;
-
-        while self.check_access_token_collission(&access_token).await? {
-            collisions += 1;
-
-            if collisions > 10 {
-                target_length += 1;
-                // From now on, only two repeat attempts before increasing the length again
-                collisions = 8;
-            }
-            access_token = TokenGenerator::generate_token(target_length);
-        }
-
-        Ok(access_token)
+    /// Generate an access token; insertion handles collisions through the unique index.
+    pub fn generate_access_token(&self) -> String {
+        TokenGenerator::generate_token(self.generator.get_access_token_min_length())
     }
 
     pub fn generate_update_token() -> String {

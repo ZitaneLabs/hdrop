@@ -50,12 +50,12 @@ pub async fn upload_file(
     // Upload to StorageProvider & update DB (S3 etc.)
     let uuid = Uuid::new_v4();
 
-    let access_token = state.database.generate_access_token().await?;
+    let access_token = state.database.generate_access_token();
     let update_token = Database::generate_update_token();
     let time = Utc::now();
     let file = InsertFile {
         uuid,
-        accessToken: access_token.clone(),
+        accessToken: access_token,
         updateToken: update_token.clone(),
         dataUrl: None,
         fileNameData: data.file_name_data,

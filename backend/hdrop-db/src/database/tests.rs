@@ -203,3 +203,67 @@ async fn concurrent_inserts_retry_token_conflicts() {
         .await
         .unwrap();
 }
+
+#[tokio::test]
+#[ignore = "requires PostgreSQL and TEST_DATABASE_URL"]
+async fn file_count_metrics_track_mutations_and_reconcile() {
+    use metrics_util::debugging::{DebugValue, DebuggingRecorder};
+
+    let recorder = DebuggingRecorder::new();
+    // This test's current-thread runtime keeps the recorder isolated from other tests.
+    let _guard = metrics::set_default_local_recorder(&recorder);
+    let snapshotter = recorder.snapshotter();
+    let assert_count = |expected: f64| {
+        let values = snapshotter.snapshot().into_vec();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].3, DebugValue::Gauge(expected.into()));
+        // DebuggingRecorder snapshots reset gauges; restore the checked value.
+        metrics::gauge!(names::storage::DATABASE_FILE_COUNT).set(expected);
+    };
+    let (db, mut admin, schema) = test_database(1).await;
+    let external = new_file("external");
+    diesel::insert_into(files_table::files)
+        .values(&external)
+        .execute(&mut db.pool.get().await.unwrap())
+        .await
+        .unwrap();
+    db.update_metrics().await;
+    assert_count(1.0);
+
+    let inserted = db.insert_file(new_file("inserted")).await.unwrap();
+    assert_count(2.0);
+    let mut duplicate_uuid = new_file("duplicate");
+    duplicate_uuid.uuid = inserted.uuid;
+    assert!(db.insert_file(duplicate_uuid).await.is_err());
+    assert_count(2.0);
+    let retried = db.insert_file(new_file("inserted")).await.unwrap();
+    assert_count(3.0);
+    db.delete_file_by_uuid(retried.uuid).await.unwrap();
+    assert_count(2.0);
+    db.delete_file_by_uuid(retried.uuid).await.unwrap();
+    assert_count(2.0);
+    assert!(db.delete_file(retried).await.unwrap_err().is_not_found());
+    assert_count(2.0);
+
+    // External changes are picked up by reconciliation, not by each mutation.
+    diesel::delete(files_table::files.filter(files_table::uuid.eq(external.uuid)))
+        .execute(&mut db.pool.get().await.unwrap())
+        .await
+        .unwrap();
+    db.delete_file(inserted).await.unwrap();
+    assert_count(1.0);
+    db.update_metrics().await;
+    assert_count(0.0);
+
+    let file = db.insert_file(new_file("retained")).await.unwrap();
+    assert_count(1.0);
+    admin
+        .batch_execute(&format!("DROP SCHEMA {schema} CASCADE"))
+        .await
+        .unwrap();
+    assert!(db.insert_file(new_file("failed")).await.is_err());
+    assert!(db.delete_file_by_uuid(file.uuid).await.is_err());
+    assert!(db.delete_file(file).await.is_err());
+    db.update_metrics().await;
+    assert_count(1.0);
+}

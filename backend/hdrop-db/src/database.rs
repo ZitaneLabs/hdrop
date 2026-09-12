@@ -8,10 +8,7 @@ use diesel_async::{
     AsyncPgConnection,
     RunQueryDsl,
 };
-use hdrop_shared::{
-    metrics::{names, UpdateMetrics},
-    responses,
-};
+use hdrop_shared::metrics::{names, UpdateMetrics};
 use uuid::Uuid;
 
 use crate::{
@@ -116,17 +113,6 @@ impl Database {
             .await?)
     }
 
-    pub async fn get_verification_data<'a>(
-        &self,
-        access_token: impl Into<Cow<'a, str>>,
-    ) -> Result<responses::VerifyChallengeData> {
-        let file = self.get_file_by_access_token(access_token).await?;
-        Ok(responses::VerifyChallengeData {
-            challenge_hash: Some(file.challengeHash),
-            file_name_data: file.fileNameData,
-        })
-    }
-
     pub async fn get_files_to_flush(&self) -> Result<Vec<Uuid>> {
         let mut conn = self.pool.get().await?;
         Ok(files_table::files
@@ -134,19 +120,6 @@ impl Database {
             .select(files_table::uuid)
             .load::<Uuid>(&mut conn)
             .await?)
-    }
-
-    pub async fn get_challenge<'a>(
-        &self,
-        access_token: impl Into<Cow<'a, str>>,
-    ) -> Result<responses::GetChallengeData> {
-        let file = self.get_file_by_access_token(access_token).await?;
-
-        Ok(responses::GetChallengeData {
-            salt: file.salt,
-            iv: file.iv,
-            challenge: file.challengeData,
-        })
     }
 
     pub async fn delete_file(&self, uuid: Uuid) -> Result<()> {

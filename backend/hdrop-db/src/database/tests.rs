@@ -52,17 +52,20 @@ fn new_file(token: &str) -> InsertFile {
 #[ignore = "requires PostgreSQL and TEST_DATABASE_URL"]
 async fn async_queries_and_token_uniqueness() {
     let (db, mut admin, schema) = test_database(1).await;
-    assert!(!db.check_access_token_collission("taken").await.unwrap());
+    assert!(db
+        .get_file_by_access_token("taken")
+        .await
+        .unwrap_err()
+        .is_not_found());
     let file = db.insert_file(new_file("taken")).await.unwrap();
     let uuid = file.uuid;
-    assert!(db.check_access_token_collission("taken").await.unwrap());
     assert_eq!(
         db.get_file_by_access_token("taken").await.unwrap().uuid,
         uuid
     );
     assert_eq!(db.get_file_rows().await.unwrap(), 1);
 
-    // Bypassing the preflight and retry still cannot store duplicate tokens.
+    // Bypassing the insert retry still cannot store duplicate tokens.
     let error = diesel::insert_into(files_table::files)
         .values(new_file("taken"))
         .execute(&mut db.pool.get().await.unwrap())
@@ -162,22 +165,23 @@ async fn async_queries_and_token_uniqueness() {
     db.delete_file(retried.uuid).await.unwrap();
     assert_eq!(db.get_file_rows().await.unwrap(), 0);
 
-    // A real query failure must not masquerade as an unused token.
+    // Query and connection failures still propagate through the production API.
     admin
         .batch_execute(&format!("DROP SCHEMA {schema} CASCADE"))
         .await
         .unwrap();
     assert!(matches!(
-        db.check_access_token_collission("missing").await,
+        db.get_file_by_access_token("missing").await,
         Err(Error::Diesel(_))
     ));
     assert!(matches!(
-        db.generate_access_token().await,
+        db.insert_file(new_file("failed")).await,
         Err(Error::Diesel(_))
     ));
     db.pool.close();
+    assert_eq!(db.generate_access_token().len(), 5);
     assert!(matches!(
-        db.check_access_token_collission("missing").await,
+        db.get_file_by_access_token("missing").await,
         Err(Error::DeadpoolPool(_))
     ));
 }
@@ -186,8 +190,7 @@ async fn async_queries_and_token_uniqueness() {
 #[ignore = "requires PostgreSQL and TEST_DATABASE_URL"]
 async fn concurrent_inserts_retry_token_conflicts() {
     let (db, mut admin, schema) = test_database(2).await;
-    // Both clients have passed the preflight before attempting the same token.
-    assert!(!db.check_access_token_collission("shared").await.unwrap());
+    // Both clients attempt the same token without a preflight query.
     let (left, right) = tokio::join!(
         db.insert_file(new_file("shared")),
         db.insert_file(new_file("shared"))

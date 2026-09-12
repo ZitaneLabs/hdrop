@@ -1,4 +1,7 @@
-use hdrop_shared::metrics::names;
+use std::sync::Arc;
+
+use hdrop_db::Database;
+use hdrop_shared::metrics::{names, UpdateMetrics};
 use tokio::time::{self, Duration, MissedTickBehavior};
 
 use crate::core::monitoring::SystemMetrics;
@@ -16,7 +19,14 @@ impl MetricsUpdater {
         }
     }
 
-    /// Time-based update of all metrics except for the self updating ones (requests)
+    /// Reconcile once at startup, then wait between completed counts.
+    pub async fn run_database(database: Arc<Database>) {
+        loop {
+            database.update_metrics().await;
+            time::sleep(METRICS_UPDATE_INTERVAL).await;
+        }
+    }
+
     pub async fn run(mut self) {
         let mut interval = time::interval(METRICS_UPDATE_INTERVAL);
         interval.set_missed_tick_behavior(MissedTickBehavior::Delay);

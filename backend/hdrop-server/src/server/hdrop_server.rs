@@ -133,13 +133,11 @@ impl Server {
         // Update cache metrics
         self.state.cache.read().await.update_metrics().await;
 
-        // Update db metrics
-        self.state.database.update_metrics().await;
-
         // Update storage metrics
         self.state.provider.read().await.update_metrics().await;
 
-        // Start metrics update worker for time-based updates of system gauges
+        // A busy database must not delay CPU and RAM sampling.
+        tokio::spawn(MetricsUpdater::run_database(self.state.database.clone()));
         tokio::spawn(MetricsUpdater::new().run());
 
         // Calculate request body limit

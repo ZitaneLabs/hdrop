@@ -71,12 +71,12 @@ pub async fn upload_file(
         challengeHash: data.challenge_hash,
         salt: data.salt,
         iv: data.iv,
-        createdAt: time,
-        expiresAt: expires_at(time, MAX_EXPIRY_SECONDS)?,
+        createdAt: time.into(),
+        expiresAt: expires_at(time, MAX_EXPIRY_SECONDS)?.into(),
     };
 
     // Inser Partial File into DB
-    let _ = state.database.insert_file(file).await?;
+    let file = state.database.insert_file(file).await?;
 
     // Cache to ensure instant availability after upload
     state
@@ -104,7 +104,7 @@ pub async fn upload_file(
         .expect("Unable to send data to the storage synchronizer");
 
     Ok(Json(UploadFileData {
-        access_token,
+        access_token: file.accessToken,
         update_token,
     }))
 }

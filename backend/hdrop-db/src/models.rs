@@ -27,7 +27,7 @@ pub struct File {
     pub challengeHash: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Insertable, Identifiable, AsChangeset)]
+#[derive(Debug, Insertable, Identifiable, AsChangeset)]
 #[diesel(primary_key(uuid))]
 #[diesel(table_name = crate::schema::files)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -41,10 +41,8 @@ pub struct InsertFile {
     pub fileNameData: String,
     pub salt: String,
     pub iv: String,
-    #[diesel(serialize_as = DbTimestamp)]
-    pub createdAt: Timestamp,
-    #[diesel(serialize_as = DbTimestamp)]
-    pub expiresAt: Timestamp,
+    pub createdAt: DbTimestamp,
+    pub expiresAt: DbTimestamp,
     pub challengeData: String,
     pub challengeHash: String,
 }

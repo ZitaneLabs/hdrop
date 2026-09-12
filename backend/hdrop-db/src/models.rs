@@ -4,9 +4,7 @@ use jiff::Timestamp;
 use jiff_diesel::Timestamp as DbTimestamp;
 use serde::{Deserialize, Serialize};
 
-#[derive(
-    Default, Serialize, Deserialize, Debug, Queryable, Selectable, Identifiable, AsChangeset,
-)]
+#[derive(Default, Serialize, Deserialize, Debug, Queryable, Selectable, Identifiable)]
 #[diesel(primary_key(uuid))]
 #[diesel(table_name = crate::schema::files)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -19,15 +17,15 @@ pub struct File {
     pub fileNameData: String,
     pub salt: String,
     pub iv: String,
-    #[diesel(deserialize_as = DbTimestamp, serialize_as = DbTimestamp)]
+    #[diesel(deserialize_as = DbTimestamp)]
     pub createdAt: Timestamp,
-    #[diesel(deserialize_as = DbTimestamp, serialize_as = DbTimestamp)]
+    #[diesel(deserialize_as = DbTimestamp)]
     pub expiresAt: Timestamp,
     pub challengeData: String,
     pub challengeHash: String,
 }
 
-#[derive(Debug, Insertable, Identifiable, AsChangeset)]
+#[derive(Debug, Insertable, Identifiable)]
 #[diesel(primary_key(uuid))]
 #[diesel(table_name = crate::schema::files)]
 #[diesel(check_for_backend(diesel::pg::Pg))]

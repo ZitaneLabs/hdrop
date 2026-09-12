@@ -34,7 +34,7 @@ impl ExpirationWorker {
     }
 
     async fn delete_file_from_database(&self, uuid: Uuid) -> Result<()> {
-        if let Err(err) = self.database.delete_file_by_uuid(uuid).await {
+        if let Err(err) = self.database.delete_file(uuid).await {
             tracing::error!("Could not delete file from database: {err}");
             Err(Error::Database(err))
         } else {

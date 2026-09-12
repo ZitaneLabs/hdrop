@@ -146,12 +146,11 @@ async fn async_queries_and_token_uniqueness() {
         .unwrap()
         .dataUrl
         .is_none());
-    let verification = db.get_verification_data("taken").await.unwrap();
-    assert_eq!(verification.challenge_hash.as_deref(), Some("hash"));
-    assert_eq!(verification.file_name_data, "name");
-    let challenge = db.get_challenge("taken").await.unwrap();
+    let file = db.get_file_by_access_token("taken").await.unwrap();
+    assert_eq!(file.challengeHash, "hash");
+    assert_eq!(file.fileNameData, "name");
     assert_eq!(
-        (challenge.challenge, challenge.salt, challenge.iv),
+        (file.challengeData, file.salt, file.iv),
         ("challenge".into(), "salt".into(), "iv".into())
     );
     assert!(db.get_files_to_flush().await.unwrap().is_empty());

@@ -1016,6 +1016,7 @@ dependencies = [
  "serde",
  "sha3",
  "thiserror 2.0.20",
+ "tokio",
  "uuid",
 ]
 

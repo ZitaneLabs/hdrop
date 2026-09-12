@@ -2,8 +2,12 @@ use std::borrow::Cow;
 
 use async_trait::async_trait;
 use chrono::Utc;
-use deadpool_diesel::postgres::{Manager, Pool};
 use diesel::prelude::*;
+use diesel_async::{
+    pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager},
+    AsyncPgConnection,
+    RunQueryDsl,
+};
 use hdrop_shared::{
     metrics::{names, UpdateMetrics},
     responses,
@@ -18,7 +22,7 @@ use crate::{
 };
 
 pub struct Database {
-    pool: Pool,
+    pool: Pool<AsyncPgConnection>,
     generator: TokenGenerator,
 }
 
@@ -26,49 +30,36 @@ impl Database {
     /// Initialize the database from environment variables.
     pub fn try_from_env() -> Result<Database> {
         let database_url = hdrop_shared::env::database_url()?;
-        let manager = Manager::new(database_url, deadpool_diesel::Runtime::Tokio1);
+        let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
         let pool = Pool::builder(manager).max_size(8).build()?;
         let generator = TokenGenerator::default();
         Ok(Database { pool, generator })
     }
 
     pub async fn insert_file(&self, file: InsertFile) -> Result<File> {
-        let r = Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(|conn| {
-                diesel::insert_into(files_table::files)
-                    .values(file)
-                    .get_result::<File>(conn)
-            })
-            .await??);
+        let mut conn = self.pool.get().await?;
+        let r = Ok(diesel::insert_into(files_table::files)
+            .values(file)
+            .get_result::<File>(&mut conn)
+            .await?);
+        drop(conn);
         // Action-based update of metrics
         self.update_metrics().await;
         r
     }
 
     pub async fn update_file(&self, file: File) -> Result<()> {
-        Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(|conn| {
-                diesel::update(files_table::files.filter(files_table::uuid.eq(file.uuid)))
-                    .set(file)
-                    .execute(conn)
-                    .map(|_| ())
-            })
-            .await??)
+        let mut conn = self.pool.get().await?;
+        diesel::update(files_table::files.filter(files_table::uuid.eq(file.uuid)))
+            .set(file)
+            .execute(&mut conn)
+            .await?;
+        Ok(())
     }
 
     pub async fn get_file_rows(&self) -> Result<i64> {
-        Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(|conn| files_table::files.count().get_result(conn))
-            .await??)
+        let mut conn = self.pool.get().await?;
+        Ok(files_table::files.count().get_result(&mut conn).await?)
     }
 
     pub async fn update_data_url<'a>(
@@ -76,62 +67,42 @@ impl Database {
         uuid: Uuid,
         file_url: Option<impl Into<Cow<'a, str>>>,
     ) -> Result<()> {
+        let mut conn = self.pool.get().await?;
         let file_url: Option<String> = file_url.map(|inner| inner.into().into_owned());
-        Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(move |conn| {
-                diesel::update(files_table::files.filter(files_table::uuid.eq(uuid)))
-                    .set(files_table::dataUrl.eq(file_url))
-                    .execute(conn)
-                    .map(|_| ())
-            })
-            .await??)
+        diesel::update(files_table::files.filter(files_table::uuid.eq(uuid)))
+            .set(files_table::dataUrl.eq(file_url))
+            .execute(&mut conn)
+            .await?;
+        Ok(())
     }
 
     pub async fn update_file_expiry(&self, file: File) -> Result<()> {
-        Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(move |conn| {
-                diesel::update(files_table::files.filter(files_table::uuid.eq(file.uuid)))
-                    .set(files_table::expiresAt.eq(file.expiresAt))
-                    .execute(conn)
-                    .map(|_| ())
-            })
-            .await??)
+        let mut conn = self.pool.get().await?;
+        diesel::update(files_table::files.filter(files_table::uuid.eq(file.uuid)))
+            .set(files_table::expiresAt.eq(file.expiresAt))
+            .execute(&mut conn)
+            .await?;
+        Ok(())
     }
 
     pub async fn get_file_by_uuid(&self, uuid: Uuid) -> Result<File> {
-        Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(move |conn| {
-                files_table::files
-                    .filter(files_table::uuid.eq(uuid))
-                    .first(conn)
-            })
-            .await??)
+        let mut conn = self.pool.get().await?;
+        Ok(files_table::files
+            .filter(files_table::uuid.eq(uuid))
+            .first(&mut conn)
+            .await?)
     }
 
     pub async fn get_file_by_access_token<'a>(
         &self,
         access_token: impl Into<Cow<'a, str>>,
     ) -> Result<File> {
+        let mut conn = self.pool.get().await?;
         let access_token = access_token.into().into_owned();
-        Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(move |conn| {
-                files_table::files
-                    .filter(files_table::accessToken.eq(access_token))
-                    .first(conn)
-            })
-            .await??)
+        Ok(files_table::files
+            .filter(files_table::accessToken.eq(access_token))
+            .first(&mut conn)
+            .await?)
     }
 
     pub async fn get_verification_data<'a>(
@@ -156,17 +127,12 @@ impl Database {
     }
 
     pub async fn get_files_to_flush(&self) -> Result<Vec<Uuid>> {
-        Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(move |conn| {
-                files_table::files
-                    .filter(files_table::expiresAt.lt(Utc::now()))
-                    .select(files_table::uuid)
-                    .load::<Uuid>(conn)
-            })
-            .await??)
+        let mut conn = self.pool.get().await?;
+        Ok(files_table::files
+            .filter(files_table::expiresAt.lt(Utc::now()))
+            .select(files_table::uuid)
+            .load::<Uuid>(&mut conn)
+            .await?)
     }
 
     pub async fn get_challenge<'a>(
@@ -183,49 +149,37 @@ impl Database {
     }
 
     pub async fn delete_file(&self, file: File) -> Result<File> {
-        let r = Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(move |conn| {
-                diesel::delete(files_table::files.filter(files_table::uuid.eq(&file.uuid)))
-                    .get_result(conn)
-            })
-            .await??);
+        let mut conn = self.pool.get().await?;
+        let r = Ok(
+            diesel::delete(files_table::files.filter(files_table::uuid.eq(&file.uuid)))
+                .get_result(&mut conn)
+                .await?,
+        );
+        drop(conn);
         // Action-based update of metrics
         self.update_metrics().await;
         r
     }
 
     pub async fn delete_file_by_uuid(&self, uuid: Uuid) -> Result<()> {
-        Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(move |conn| {
-                diesel::delete(files_table::files.filter(files_table::uuid.eq(uuid)))
-                    .execute(conn)
-                    .map(|_| ())
-            })
-            .await??)
+        let mut conn = self.pool.get().await?;
+        diesel::delete(files_table::files.filter(files_table::uuid.eq(uuid)))
+            .execute(&mut conn)
+            .await?;
+        Ok(())
     }
 
     pub async fn check_access_token_collission<'a>(
         &self,
         access_token: impl Into<Cow<'a, str>>,
     ) -> Result<bool> {
+        let mut conn = self.pool.get().await?;
         let access_token = access_token.into().into_owned();
-        Ok(self
-            .pool
-            .get()
-            .await?
-            .interact(|conn| {
-                files_table::files
-                    .filter(files_table::accessToken.eq(access_token))
-                    .first::<File>(conn)
-                    .is_ok()
-            })
-            .await?)
+        Ok(files_table::files
+            .filter(files_table::accessToken.eq(access_token))
+            .first::<File>(&mut conn)
+            .await
+            .is_ok())
     }
     /// Generates access token with min length.
     /// Retriess generation when collissions happen (10 times), after that it increases the generated length by 1.

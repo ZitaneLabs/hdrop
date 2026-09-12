@@ -106,22 +106,14 @@ pub async fn get_file(
     TypedHeader(bearer): TypedHeader<Authorization<Bearer>>,
     Path(access_token): Path<String>,
 ) -> Result<impl IntoResponse> {
-    // Check bearer token to restrict access
-    let challenge_hash = state
-        .database
-        .get_verification_data(&access_token)
-        .await?
-        .challenge_hash
-        .unwrap_or(String::default());
-
-    if bearer.token() != challenge_hash {
-        return Err(Error::InvalidChallenge);
-    }
-
     let file_entry = state
         .database
         .get_file_by_access_token(&access_token)
         .await?;
+
+    if bearer.token() != file_entry.challengeHash {
+        return Err(Error::InvalidChallenge);
+    }
 
     match file_entry.dataUrl {
         Some(_) => Ok(Json(FileMetaData {
@@ -207,9 +199,15 @@ pub async fn get_challenge(
     State(state): State<Arc<AppState>>,
     Path(access_token): Path<String>,
 ) -> Result<Json<GetChallengeData>> {
-    let get_challenge_data = state.database.get_challenge(access_token).await?;
-
-    Ok(Json(get_challenge_data))
+    let file = state
+        .database
+        .get_file_by_access_token(&access_token)
+        .await?;
+    Ok(Json(GetChallengeData {
+        salt: file.salt,
+        iv: file.iv,
+        challenge: file.challengeData,
+    }))
 }
 
 pub async fn verify_challenge(
@@ -217,13 +215,16 @@ pub async fn verify_challenge(
     Path(access_token): Path<String>,
     Json(json_data): Json<request::ChallengeData>,
 ) -> Result<Json<VerifyChallengeData>> {
-    let mut verify_challenge_data = state.database.get_verification_data(access_token).await?;
+    let file = state
+        .database
+        .get_file_by_access_token(&access_token)
+        .await?;
 
-    if verify_challenge_data.challenge_hash == Some(json_data.challenge) {
-        verify_challenge_data.challenge_hash = None;
-        let response = Json(verify_challenge_data);
-
-        Ok(response)
+    if file.challengeHash == json_data.challenge {
+        Ok(Json(VerifyChallengeData {
+            challenge_hash: None,
+            file_name_data: file.fileNameData,
+        }))
     } else {
         Err(Error::InvalidChallenge)
     }

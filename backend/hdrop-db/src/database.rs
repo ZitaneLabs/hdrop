@@ -33,7 +33,9 @@ impl Database {
         let database_url = hdrop_shared::env::database_url()?;
         let config = crate::connection::config(&database_url)?;
         let manager = AsyncDieselConnectionManager::new_with_config(database_url, config);
-        let pool = Pool::builder(manager).max_size(8).build()?;
+        let pool = Pool::builder(manager)
+            .max_size(hdrop_shared::env::database_pool_size()?)
+            .build()?;
         let generator = TokenGenerator::default();
         Ok(Database { pool, generator })
     }

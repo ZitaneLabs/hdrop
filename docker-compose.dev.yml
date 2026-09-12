@@ -41,6 +41,7 @@ services:
       - CACHE_MEMORY_LIMIT_MB=2000
       - SINGLE_FILE_LIMIT_MB=500
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/hdrop
+      - DATABASE_POOL_SIZE
     depends_on:
       - postgres
       - localstack

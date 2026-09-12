@@ -92,6 +92,10 @@ channel binding. The API rejects unsupported connection policies, including
 CRLs, required GSS encryption, and `require_auth`, as well as libpq service
 definitions.
 
+Set `DATABASE_POOL_SIZE` in the environment (or the Compose `.env` file) to
+limit database connections per backend process. It defaults to `8` and accepts
+integers from `1` through `262143`. Invalid values prevent startup.
+
 ## License
 
 At Zitane Labs, we are committed to promoting a free and open Internet. We believe in the principles of open source software and the power of community collaboration.

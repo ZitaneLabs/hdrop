@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::OnceLock, time::Duration};
+use std::{ffi::OsStr, path::PathBuf, sync::OnceLock, time::Duration};
 
 use paste::paste;
 
@@ -78,6 +78,28 @@ local_storage_dir => PathBuf,
 local_storage_limit_mb => usize,
 );
 
+static DATABASE_POOL_SIZE_CELL: OnceLock<Result<usize, EnvError>> = OnceLock::new();
+// PostgreSQL's pg_settings.max_val for max_connections.
+const MAX_DATABASE_POOL_SIZE: usize = 262_143;
+
+/// Maximum database connections per process. Defaults to 8 when unset.
+pub fn database_pool_size() -> Result<usize, EnvError> {
+    DATABASE_POOL_SIZE_CELL
+        .get_or_init(|| parse_database_pool_size(std::env::var_os("DATABASE_POOL_SIZE").as_deref()))
+        .clone()
+}
+
+fn parse_database_pool_size(value: Option<&OsStr>) -> Result<usize, EnvError> {
+    value
+        .unwrap_or(OsStr::new("8"))
+        .to_str()
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|size| (1..=MAX_DATABASE_POOL_SIZE).contains(size))
+        .ok_or_else(|| EnvError::ParseError {
+            key: "DATABASE_POOL_SIZE".to_string(),
+        })
+}
+
 static S3_ADDRESSING_STYLE_CELL: OnceLock<Result<bool, EnvError>> = OnceLock::new();
 
 /// Whether S3 requests should use virtual-hosted-style addressing.
@@ -152,6 +174,7 @@ pub fn get_env_vars() -> Vec<String> {
         .iter()
         .map(|&var| var.to_uppercase())
         .chain([
+            "DATABASE_POOL_SIZE".to_string(),
             "S3_ADDRESSING_STYLE".to_string(),
             "S3_REQUEST_TIMEOUT_SECS".to_string(),
         ])
@@ -161,6 +184,34 @@ pub fn get_env_vars() -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parses_database_pool_size() {
+        assert_eq!(parse_database_pool_size(None).unwrap(), 8);
+        for size in [1, 16, 262_143] {
+            let value = size.to_string();
+            let parsed = parse_database_pool_size(Some(value.as_ref())).unwrap();
+            assert_eq!(parsed, size);
+        }
+        assert!(get_env_vars().contains(&"DATABASE_POOL_SIZE".to_string()));
+    }
+
+    #[test]
+    fn rejects_invalid_database_pool_sizes() {
+        let max_usize = usize::MAX.to_string();
+        let overflow = format!("{max_usize}0");
+        for value in ["", "0", "-1", "invalid", "262144", &max_usize, &overflow] {
+            assert!(matches!(
+                parse_database_pool_size(Some(OsStr::new(value))),
+                Err(EnvError::ParseError { key }) if key == "DATABASE_POOL_SIZE"
+            ));
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::ffi::OsStrExt;
+            assert!(parse_database_pool_size(Some(OsStr::from_bytes(b"\xff"))).is_err());
+        }
+    }
 
     #[test]
     fn s3_addressing_style_defaults_to_path() {

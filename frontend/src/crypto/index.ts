@@ -1,4 +1,4 @@
-export { default as AesGcm, AesBundle, CHALLENGE_XOR_MASK, FILE_NAME_XOR_MASK } from './AesGcm'
+export { default as AesGcm, AesBundle, CHALLENGE_XOR_MASK, FILE_NAME_XOR_MASK, FILE_AAD, FILE_NAME_AAD, CHALLENGE_AAD } from './AesGcm'
 export { default as Base64 } from './Base64'
 export { default as CryptoHelper } from './CryptoHelper'
 export { default as Pbkdf2, DerivedKey } from './Pbkdf2'

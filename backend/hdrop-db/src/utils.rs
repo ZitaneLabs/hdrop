@@ -1,17 +1,18 @@
-use sha3::{Digest, Sha3_256};
 use uuid::Uuid;
 
 pub const ACCESS_TOKEN_LENGTH: usize = 5;
 pub const UPDATE_TOKEN_LENGTH: usize = 8;
 
-/// Generates a SHA3(uuidv4) as String truncated to the given length.
+/// Generate lowercase hex with four random bits per character.
 pub fn generate_token(length: usize) -> String {
-    let uuid = Uuid::new_v4();
-    let mut hasher = Sha3_256::new();
-    hasher.update(uuid);
-    let result = hasher.finalize();
-    let result = hex::encode(result);
-    result.chars().take(length).collect::<String>()
+    let length = length.min(64); // Preserve the previous SHA3-256 output limit.
+    let mut token = String::with_capacity(length);
+    while token.len() < length {
+        // Each fresh UUID's first 32 bits are random, without version/variant bits.
+        token.push_str(&format!("{:08x}", Uuid::new_v4().as_fields().0));
+    }
+    token.truncate(length);
+    token
 }
 
 #[cfg(test)]

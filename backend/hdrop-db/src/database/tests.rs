@@ -169,6 +169,17 @@ async fn async_queries_and_token_uniqueness() {
     db.delete_file(retried.uuid).await.unwrap();
     assert_eq!(db.get_file_rows().await.unwrap(), 0);
 
+    // Retry generation preserves longer tokens too, not just the default length.
+    for length in [8, 32, 64] {
+        let token = "a".repeat(length);
+        let original = db.insert_file(new_file(&token)).await.unwrap();
+        let retried = db.insert_file(new_file(&token)).await.unwrap();
+        assert_eq!(retried.accessToken.len(), length);
+        assert_ne!(retried.accessToken, token);
+        db.delete_file(original.uuid).await.unwrap();
+        db.delete_file(retried.uuid).await.unwrap();
+    }
+
     // Query and connection failures still propagate through the production API.
     admin
         .batch_execute(&format!("DROP SCHEMA {schema} CASCADE"))

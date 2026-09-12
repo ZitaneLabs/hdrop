@@ -1014,7 +1014,6 @@ dependencies = [
  "hex",
  "metrics",
  "metrics-util",
- "serde",
  "sha3",
  "thiserror 2.0.20",
  "tokio",

@@ -3,9 +3,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(
-    Default, Serialize, Deserialize, Debug, Queryable, Selectable, Identifiable, AsChangeset,
-)]
+#[derive(Default, Serialize, Deserialize, Debug, Queryable, Selectable, Identifiable)]
 #[diesel(primary_key(uuid))]
 #[diesel(table_name = crate::schema::files)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -24,7 +22,7 @@ pub struct File {
     pub challengeHash: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Insertable, Identifiable, AsChangeset)]
+#[derive(Default, Serialize, Deserialize, Debug, Insertable, Identifiable)]
 #[diesel(primary_key(uuid))]
 #[diesel(table_name = crate::schema::files)]
 #[diesel(check_for_backend(diesel::pg::Pg))]

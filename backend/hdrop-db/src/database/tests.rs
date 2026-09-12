@@ -37,6 +37,11 @@ fn new_file(token: &str) -> InsertFile {
     InsertFile {
         uuid: Uuid::new_v4(),
         accessToken: token.into(),
+        challengeHash: "hash".into(),
+        challengeData: "challenge".into(),
+        fileNameData: "name".into(),
+        salt: "salt".into(),
+        iv: "iv".into(),
         createdAt: Utc::now(),
         expiresAt: Utc::now() + chrono::Duration::hours(1),
         ..Default::default()
@@ -124,27 +129,20 @@ async fn async_queries_and_token_uniqueness() {
         .await
         .unwrap();
     assert_eq!(
-        db.get_file_metadata("taken")
+        db.get_file_by_access_token("taken")
             .await
             .unwrap()
-            .file_url
+            .dataUrl
             .as_deref(),
         Some("https://example.com/file")
     );
     db.update_data_url(uuid, None::<String>).await.unwrap();
     assert!(db
-        .get_file_metadata("taken")
+        .get_file_by_access_token("taken")
         .await
         .unwrap()
-        .file_url
+        .dataUrl
         .is_none());
-    let mut file = db.get_file_by_uuid(uuid).await.unwrap();
-    file.challengeHash = "hash".into();
-    file.challengeData = "challenge".into();
-    file.fileNameData = "name".into();
-    file.salt = "salt".into();
-    file.iv = "iv".into();
-    db.update_file(file).await.unwrap();
     let verification = db.get_verification_data("taken").await.unwrap();
     assert_eq!(verification.challenge_hash.as_deref(), Some("hash"));
     assert_eq!(verification.file_name_data, "name");
@@ -158,10 +156,10 @@ async fn async_queries_and_token_uniqueness() {
     file.expiresAt = Utc::now() - chrono::Duration::hours(1);
     db.update_file_expiry(file).await.unwrap();
     assert_eq!(db.get_files_to_flush().await.unwrap(), vec![uuid]);
-    db.delete_file_by_uuid(uuid).await.unwrap();
-    db.delete_file_by_uuid(uuid).await.unwrap();
+    db.delete_file(uuid).await.unwrap();
+    db.delete_file(uuid).await.unwrap();
     assert!(db.get_file_by_uuid(uuid).await.unwrap_err().is_not_found());
-    assert_eq!(db.delete_file(retried).await.unwrap().accessToken.len(), 5);
+    db.delete_file(retried.uuid).await.unwrap();
     assert_eq!(db.get_file_rows().await.unwrap(), 0);
 
     // A real query failure must not masquerade as an unused token.
@@ -238,11 +236,9 @@ async fn file_count_metrics_track_mutations_and_reconcile() {
     assert_count(2.0);
     let retried = db.insert_file(new_file("inserted")).await.unwrap();
     assert_count(3.0);
-    db.delete_file_by_uuid(retried.uuid).await.unwrap();
+    db.delete_file(retried.uuid).await.unwrap();
     assert_count(2.0);
-    db.delete_file_by_uuid(retried.uuid).await.unwrap();
-    assert_count(2.0);
-    assert!(db.delete_file(retried).await.unwrap_err().is_not_found());
+    db.delete_file(retried.uuid).await.unwrap();
     assert_count(2.0);
 
     // External changes are picked up by reconciliation, not by each mutation.
@@ -250,7 +246,7 @@ async fn file_count_metrics_track_mutations_and_reconcile() {
         .execute(&mut db.pool.get().await.unwrap())
         .await
         .unwrap();
-    db.delete_file(inserted).await.unwrap();
+    db.delete_file(inserted.uuid).await.unwrap();
     assert_count(1.0);
     db.update_metrics().await;
     assert_count(0.0);
@@ -262,8 +258,7 @@ async fn file_count_metrics_track_mutations_and_reconcile() {
         .await
         .unwrap();
     assert!(db.insert_file(new_file("failed")).await.is_err());
-    assert!(db.delete_file_by_uuid(file.uuid).await.is_err());
-    assert!(db.delete_file(file).await.is_err());
+    assert!(db.delete_file(file.uuid).await.is_err());
     db.update_metrics().await;
     assert_count(1.0);
 }

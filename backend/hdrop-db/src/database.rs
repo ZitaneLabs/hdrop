@@ -68,16 +68,7 @@ impl Database {
         Ok(file)
     }
 
-    pub async fn update_file(&self, file: File) -> Result<()> {
-        let mut conn = self.pool.get().await?;
-        diesel::update(files_table::files.filter(files_table::uuid.eq(file.uuid)))
-            .set(file)
-            .execute(&mut conn)
-            .await?;
-        Ok(())
-    }
-
-    pub async fn get_file_rows(&self) -> Result<i64> {
+    async fn get_file_rows(&self) -> Result<i64> {
         let mut conn = self.pool.get().await?;
         Ok(files_table::files.count().get_result(&mut conn).await?)
     }
@@ -136,16 +127,6 @@ impl Database {
         })
     }
 
-    pub async fn get_file_metadata<'a>(
-        &self,
-        access_token: impl Into<Cow<'a, str>>,
-    ) -> Result<responses::FileMetaData> {
-        let file = self.get_file_by_access_token(access_token).await?;
-        Ok(responses::FileMetaData {
-            file_url: file.dataUrl,
-        })
-    }
-
     pub async fn get_files_to_flush(&self) -> Result<Vec<Uuid>> {
         let mut conn = self.pool.get().await?;
         Ok(files_table::files
@@ -168,16 +149,7 @@ impl Database {
         })
     }
 
-    pub async fn delete_file(&self, file: File) -> Result<File> {
-        let mut conn = self.pool.get().await?;
-        let file = diesel::delete(files_table::files.filter(files_table::uuid.eq(file.uuid)))
-            .get_result(&mut conn)
-            .await?;
-        metrics::gauge!(names::storage::DATABASE_FILE_COUNT).decrement(1.0);
-        Ok(file)
-    }
-
-    pub async fn delete_file_by_uuid(&self, uuid: Uuid) -> Result<()> {
+    pub async fn delete_file(&self, uuid: Uuid) -> Result<()> {
         let mut conn = self.pool.get().await?;
         let deleted = diesel::delete(files_table::files.filter(files_table::uuid.eq(uuid)))
             .execute(&mut conn)

@@ -1032,7 +1032,6 @@ dependencies = [
  "native-tls",
  "percent-encoding",
  "postgres-native-tls",
- "serde",
  "sha3",
  "thiserror 2.0.20",
  "tokio",

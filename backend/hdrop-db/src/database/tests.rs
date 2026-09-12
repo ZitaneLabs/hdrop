@@ -32,8 +32,8 @@ async fn test_database(pool_size: usize) -> (Database, AsyncPgConnection, String
     (database, admin, schema)
 }
 
-fn new_file(token: &str) -> InsertFile {
-    InsertFile {
+fn new_file(token: &str) -> File {
+    File {
         uuid: Uuid::new_v4(),
         accessToken: token.into(),
         challengeHash: "hash".into(),
@@ -43,7 +43,8 @@ fn new_file(token: &str) -> InsertFile {
         iv: "iv".into(),
         createdAt: Utc::now(),
         expiresAt: Utc::now() + chrono::Duration::hours(1),
-        ..Default::default()
+        updateToken: "update".into(),
+        dataUrl: None,
     }
 }
 

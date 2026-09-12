@@ -1,4 +1,7 @@
-use hdrop_shared::metrics::names;
+use std::sync::Arc;
+
+use hdrop_db::Database;
+use hdrop_shared::metrics::{names, UpdateMetrics};
 use tokio::time::{self, Duration, MissedTickBehavior};
 
 use crate::core::monitoring::SystemMetrics;
@@ -7,12 +10,14 @@ const METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(15);
 
 pub struct MetricsUpdater {
     system: SystemMetrics,
+    database: Arc<Database>,
 }
 
 impl MetricsUpdater {
-    pub fn new() -> Self {
+    pub fn new(database: Arc<Database>) -> Self {
         Self {
             system: SystemMetrics::new(),
+            database,
         }
     }
 
@@ -23,6 +28,8 @@ impl MetricsUpdater {
 
         loop {
             interval.tick().await;
+
+            self.database.update_metrics().await;
 
             // Update RAM
             let ram_status = self.system.ram_status();

@@ -62,9 +62,7 @@ impl Database {
                 Err(error) => return Err(error.into()),
             }
         };
-        drop(conn);
-        // Action-based update of metrics
-        self.update_metrics().await;
+        metrics::gauge!(names::storage::DATABASE_FILE_COUNT).increment(1.0);
         Ok(file)
     }
 
@@ -170,22 +168,19 @@ impl Database {
 
     pub async fn delete_file(&self, file: File) -> Result<File> {
         let mut conn = self.pool.get().await?;
-        let r = Ok(
-            diesel::delete(files_table::files.filter(files_table::uuid.eq(&file.uuid)))
-                .get_result(&mut conn)
-                .await?,
-        );
-        drop(conn);
-        // Action-based update of metrics
-        self.update_metrics().await;
-        r
+        let file = diesel::delete(files_table::files.filter(files_table::uuid.eq(file.uuid)))
+            .get_result(&mut conn)
+            .await?;
+        metrics::gauge!(names::storage::DATABASE_FILE_COUNT).decrement(1.0);
+        Ok(file)
     }
 
     pub async fn delete_file_by_uuid(&self, uuid: Uuid) -> Result<()> {
         let mut conn = self.pool.get().await?;
-        diesel::delete(files_table::files.filter(files_table::uuid.eq(uuid)))
+        let deleted = diesel::delete(files_table::files.filter(files_table::uuid.eq(uuid)))
             .execute(&mut conn)
             .await?;
+        metrics::gauge!(names::storage::DATABASE_FILE_COUNT).decrement(deleted as f64);
         Ok(())
     }
 
@@ -229,13 +224,12 @@ impl Database {
 
 #[async_trait]
 impl UpdateMetrics for Database {
-    /// Monitor the database file count.
+    /// Reconcile at startup and periodically, including changes by other processes.
+    /// Concurrent mutations can briefly skew this snapshot; the next pass repairs it.
     async fn update_metrics(&self) {
-        // Determine the number of files currently stored according to the database.
-        let file_count = self.get_file_rows().await.unwrap_or(0);
-
-        // Update file count gauge
-        metrics::gauge!(names::storage::DATABASE_FILE_COUNT).set(file_count as f64);
+        if let Ok(file_count) = self.get_file_rows().await {
+            metrics::gauge!(names::storage::DATABASE_FILE_COUNT).set(file_count as f64);
+        }
     }
 }
 

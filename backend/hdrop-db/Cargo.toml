@@ -21,3 +21,4 @@ hex = "0.4.3"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt", "time"] }
+metrics-util = { version = "0.20", default-features = false, features = ["debugging"] }

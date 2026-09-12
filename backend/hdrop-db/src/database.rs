@@ -31,7 +31,9 @@ impl Database {
     pub fn try_from_env() -> Result<Database> {
         let database_url = hdrop_shared::env::database_url()?;
         let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
-        let pool = Pool::builder(manager).max_size(8).build()?;
+        let pool = Pool::builder(manager)
+            .max_size(hdrop_shared::env::database_pool_size()?)
+            .build()?;
         let generator = TokenGenerator::default();
         Ok(Database { pool, generator })
     }

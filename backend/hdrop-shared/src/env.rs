@@ -78,6 +78,36 @@ local_storage_dir => PathBuf,
 local_storage_limit_mb => usize,
 );
 
+static DATABASE_POOL_SIZE_CELL: OnceLock<Result<usize, EnvError>> = OnceLock::new();
+
+/// Maximum database connections per process. Defaults to 8 when unset.
+pub fn database_pool_size() -> Result<usize, EnvError> {
+    DATABASE_POOL_SIZE_CELL
+        .get_or_init(|| {
+            let value = match std::env::var("DATABASE_POOL_SIZE") {
+                Ok(value) => Some(value),
+                Err(std::env::VarError::NotPresent) => None,
+                Err(std::env::VarError::NotUnicode(_)) => {
+                    return Err(EnvError::ParseError {
+                        key: "DATABASE_POOL_SIZE".to_string(),
+                    });
+                }
+            };
+            parse_database_pool_size(value.as_deref())
+        })
+        .clone()
+}
+
+fn parse_database_pool_size(value: Option<&str>) -> Result<usize, EnvError> {
+    value
+        .unwrap_or("8")
+        .parse::<std::num::NonZeroUsize>()
+        .map(std::num::NonZeroUsize::get)
+        .map_err(|_| EnvError::ParseError {
+            key: "DATABASE_POOL_SIZE".to_string(),
+        })
+}
+
 static S3_ADDRESSING_STYLE_CELL: OnceLock<Result<bool, EnvError>> = OnceLock::new();
 
 /// Whether S3 requests should use virtual-hosted-style addressing.
@@ -152,6 +182,7 @@ pub fn get_env_vars() -> Vec<String> {
         .iter()
         .map(|&var| var.to_uppercase())
         .chain([
+            "DATABASE_POOL_SIZE".to_string(),
             "S3_ADDRESSING_STYLE".to_string(),
             "S3_REQUEST_TIMEOUT_SECS".to_string(),
         ])
@@ -161,6 +192,28 @@ pub fn get_env_vars() -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn database_pool_size_defaults_to_eight() {
+        assert_eq!(parse_database_pool_size(None).unwrap(), 8);
+        assert!(get_env_vars().contains(&"DATABASE_POOL_SIZE".to_string()));
+    }
+
+    #[test]
+    fn parses_database_pool_size() {
+        assert_eq!(parse_database_pool_size(Some("1")).unwrap(), 1);
+        assert_eq!(parse_database_pool_size(Some("16")).unwrap(), 16);
+    }
+
+    #[test]
+    fn rejects_invalid_database_pool_sizes() {
+        for value in ["", "0", "-1", "invalid", "18446744073709551616"] {
+            assert!(matches!(
+                parse_database_pool_size(Some(value)),
+                Err(EnvError::ParseError { key }) if key == "DATABASE_POOL_SIZE"
+            ));
+        }
+    }
 
     #[test]
     fn s3_addressing_style_defaults_to_path() {

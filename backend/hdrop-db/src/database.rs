@@ -36,16 +36,36 @@ impl Database {
         Ok(Database { pool, generator })
     }
 
-    pub async fn insert_file(&self, file: InsertFile) -> Result<File> {
+    /// Insert a file, regenerating its access token if another insert claimed it.
+    /// Callers must use the access token in the returned file.
+    pub async fn insert_file(&self, mut file: InsertFile) -> Result<File> {
         let mut conn = self.pool.get().await?;
-        let r = Ok(diesel::insert_into(files_table::files)
-            .values(file)
-            .get_result::<File>(&mut conn)
-            .await?);
+        let mut retries = 0;
+        let file = loop {
+            match diesel::insert_into(files_table::files)
+                .values(&file)
+                .get_result::<File>(&mut conn)
+                .await
+            {
+                Ok(file) => break file,
+                Err(diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UniqueViolation,
+                    ref info,
+                )) if info.constraint_name() == Some("files_accessToken_key") && retries < 10 => {
+                    retries += 1;
+                    file.accessToken = TokenGenerator::generate_token(
+                        file.accessToken
+                            .len()
+                            .max(self.generator.get_access_token_min_length()),
+                    );
+                }
+                Err(error) => return Err(error.into()),
+            }
+        };
         drop(conn);
         // Action-based update of metrics
         self.update_metrics().await;
-        r
+        Ok(file)
     }
 
     pub async fn update_file(&self, file: File) -> Result<()> {
@@ -175,11 +195,11 @@ impl Database {
     ) -> Result<bool> {
         let mut conn = self.pool.get().await?;
         let access_token = access_token.into().into_owned();
-        Ok(files_table::files
-            .filter(files_table::accessToken.eq(access_token))
-            .first::<File>(&mut conn)
-            .await
-            .is_ok())
+        Ok(diesel::select(diesel::dsl::exists(
+            files_table::files.filter(files_table::accessToken.eq(access_token)),
+        ))
+        .get_result(&mut conn)
+        .await?)
     }
     /// Generates access token with min length.
     /// Retriess generation when collissions happen (10 times), after that it increases the generated length by 1.
@@ -218,3 +238,6 @@ impl UpdateMetrics for Database {
         metrics::gauge!(names::storage::DATABASE_FILE_COUNT).set(file_count as f64);
     }
 }
+
+#[cfg(test)]
+mod tests;

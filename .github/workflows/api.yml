@@ -58,6 +58,34 @@ jobs:
         run: cargo clippy --all-targets --all-features #-- -D warnings
         working-directory: ./backend
 
+  test:
+    name: Rust Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: hdrop-test
+          POSTGRES_DB: hdrop_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:hdrop-test@localhost:5432/hdrop_test
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run workspace tests
+        run: cargo test --workspace
+        working-directory: ./backend
+      - name: Run PostgreSQL tests
+        run: cargo test -p hdrop-db -- --include-ignored
+        working-directory: ./backend
+
   deny:
     name: Cargo Deny
     runs-on: ubuntu-latest

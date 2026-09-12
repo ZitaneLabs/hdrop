@@ -1,7 +1,5 @@
-use std::borrow::Cow;
-
 use async_trait::async_trait;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel_async::{
     pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager},
@@ -70,13 +68,8 @@ impl Database {
         Ok(files_table::files.count().get_result(&mut conn).await?)
     }
 
-    pub async fn update_data_url<'a>(
-        &self,
-        uuid: Uuid,
-        file_url: Option<impl Into<Cow<'a, str>>>,
-    ) -> Result<()> {
+    pub async fn update_data_url(&self, uuid: Uuid, file_url: Option<&str>) -> Result<()> {
         let mut conn = self.pool.get().await?;
-        let file_url: Option<String> = file_url.map(|inner| inner.into().into_owned());
         diesel::update(files_table::files.filter(files_table::uuid.eq(uuid)))
             .set(files_table::dataUrl.eq(file_url))
             .execute(&mut conn)
@@ -84,10 +77,10 @@ impl Database {
         Ok(())
     }
 
-    pub async fn update_file_expiry(&self, file: File) -> Result<()> {
+    pub async fn update_file_expiry(&self, uuid: Uuid, expires_at: DateTime<Utc>) -> Result<()> {
         let mut conn = self.pool.get().await?;
-        diesel::update(files_table::files.filter(files_table::uuid.eq(file.uuid)))
-            .set(files_table::expiresAt.eq(file.expiresAt))
+        diesel::update(files_table::files.filter(files_table::uuid.eq(uuid)))
+            .set(files_table::expiresAt.eq(expires_at))
             .execute(&mut conn)
             .await?;
         Ok(())
@@ -101,12 +94,8 @@ impl Database {
             .await?)
     }
 
-    pub async fn get_file_by_access_token<'a>(
-        &self,
-        access_token: impl Into<Cow<'a, str>>,
-    ) -> Result<File> {
+    pub async fn get_file_by_access_token(&self, access_token: &str) -> Result<File> {
         let mut conn = self.pool.get().await?;
-        let access_token = access_token.into().into_owned();
         Ok(files_table::files
             .filter(files_table::accessToken.eq(access_token))
             .first(&mut conn)

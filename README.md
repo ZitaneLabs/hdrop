@@ -69,6 +69,10 @@ CA file, or `sslrootcert=system`, to verify the server's identity. Client privat
 keys must be unencrypted PKCS#8 PEM. Unsupported TLS settings, including CRLs,
 are rejected rather than silently ignored.
 
+Set `DATABASE_POOL_SIZE` in the environment (or the Compose `.env` file) to
+limit database connections per backend process. It defaults to `8`; configured
+values must be positive integers. Invalid values prevent startup.
+
 ## License
 
 At Zitane Labs, we are committed to promoting a free and open Internet. We believe in the principles of open source software and the power of community collaboration.

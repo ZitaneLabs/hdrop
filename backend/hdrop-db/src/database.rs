@@ -34,7 +34,9 @@ impl Database {
             database_url,
             crate::connection::config(),
         );
-        let pool = Pool::builder(manager).max_size(8).build()?;
+        let pool = Pool::builder(manager)
+            .max_size(hdrop_shared::env::database_pool_size()?)
+            .build()?;
         let generator = TokenGenerator::default();
         Ok(Database { pool, generator })
     }

@@ -113,6 +113,7 @@ services:
       - CACHE_DIR=${CACHE_DIR:-/cache/hdrop}
       - SINGLE_FILE_LIMIT_MB=${SINGLE_FILE_LIMIT_MB:-500}
       - DATABASE_URL=${DATABASE_URL:?set DATABASE_URL, for example postgres://hdrop:password@postgres:5432/hdrop}
+      - DATABASE_POOL_SIZE
     depends_on:
       postgres:
         condition: service_healthy

@@ -139,8 +139,8 @@ impl Server {
         // Update storage metrics
         self.state.provider.read().await.update_metrics().await;
 
-        // Start metrics update worker for time-based updates of system gauges
-        tokio::spawn(MetricsUpdater::new().run());
+        // Start metrics update worker for time-based updates of system and database gauges
+        tokio::spawn(MetricsUpdater::new(self.state.database.clone()).run());
 
         // Calculate request body limit
         let request_body_limit_bytes = mb_to_bytes(env::single_file_limit_mb().unwrap_or(100));

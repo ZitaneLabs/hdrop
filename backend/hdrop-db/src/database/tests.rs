@@ -32,8 +32,8 @@ async fn test_database(pool_size: usize) -> (Database, AsyncPgConnection, String
     (database, admin, schema)
 }
 
-fn new_file(token: &str) -> InsertFile {
-    InsertFile {
+fn new_file(token: &str) -> File {
+    File {
         uuid: Uuid::new_v4(),
         accessToken: token.into(),
         challengeHash: "hash".into(),
@@ -158,7 +158,10 @@ async fn async_queries_and_token_uniqueness() {
     db.update_file_expiry(uuid, expires_at).await.unwrap();
     let file = db.get_file_by_uuid(uuid).await.unwrap();
     assert_eq!(file.challengeHash, "hash");
-    assert_eq!(file.expiresAt.as_microsecond(), expires_at.as_microsecond());
+    assert_eq!(
+        file.expiresAt.to_jiff().as_microsecond(),
+        expires_at.as_microsecond()
+    );
     assert_eq!(db.get_files_to_flush().await.unwrap(), vec![uuid]);
     db.delete_file(uuid).await.unwrap();
     db.delete_file(uuid).await.unwrap();

@@ -10,7 +10,7 @@ use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
-use hdrop_db::{Database, File, InsertFile};
+use hdrop_db::{Database, File};
 use hdrop_shared::{
     requests as request,
     responses::{FileMetaData, GetChallengeData, UploadFileData, VerifyChallengeData},
@@ -61,7 +61,7 @@ pub async fn upload_file(
     let access_token = Database::generate_access_token();
     let update_token = Database::generate_update_token();
     let time = Timestamp::now();
-    let file = InsertFile {
+    let file = File {
         uuid,
         accessToken: access_token,
         updateToken: update_token.clone(),
@@ -194,7 +194,7 @@ pub async fn update_file_expiry(
     }
 
     if file.updateToken == query.update_token {
-        let expiry = expires_at(file.createdAt, expiry_data.expiry)?;
+        let expiry = expires_at(file.createdAt.to_jiff(), expiry_data.expiry)?;
         state.database.update_file_expiry(file.uuid, expiry).await?;
 
         Ok(Json(()))

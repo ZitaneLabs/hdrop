@@ -19,7 +19,6 @@ whoami = "2"
 
 jiff.workspace = true
 uuid.workspace = true
-serde.workspace = true
 thiserror.workspace = true
 async-trait.workspace = true
 metrics.workspace = true

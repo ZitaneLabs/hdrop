@@ -5,7 +5,4 @@ mod schema;
 mod utils;
 
 pub mod error;
-pub use self::{
-    database::Database,
-    models::{File, InsertFile},
-};
+pub use self::{database::Database, models::File};

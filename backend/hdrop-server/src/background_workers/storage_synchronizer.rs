@@ -136,7 +136,7 @@ impl StorageSynchronizer {
                 .await
             {
                 Ok(file) => {
-                    if Timestamp::now() > file.expiresAt {
+                    if Timestamp::now() > file.expiresAt.to_jiff() {
                         tracing::trace!(
                             "File already expired, stopping storage synchronization retry worker"
                         );

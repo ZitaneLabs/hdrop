@@ -13,12 +13,11 @@ use crate::{
     error::Result,
     models::{File, InsertFile},
     schema::files::dsl as files_table,
-    utils::{TokenGenerator, UPDATE_TOKEN_LENGTH},
+    utils::{generate_token, ACCESS_TOKEN_LENGTH, UPDATE_TOKEN_LENGTH},
 };
 
 pub struct Database {
     pool: Pool<AsyncPgConnection>,
-    generator: TokenGenerator,
 }
 
 impl Database {
@@ -29,8 +28,7 @@ impl Database {
         let pool = Pool::builder(manager)
             .max_size(hdrop_shared::env::database_pool_size()?)
             .build()?;
-        let generator = TokenGenerator::default();
-        Ok(Database { pool, generator })
+        Ok(Database { pool })
     }
 
     /// Insert a file, regenerating its access token if another insert claimed it.
@@ -50,11 +48,8 @@ impl Database {
                     ref info,
                 )) if info.constraint_name() == Some("files_accessToken_key") && retries < 10 => {
                     retries += 1;
-                    file.accessToken = TokenGenerator::generate_token(
-                        file.accessToken
-                            .len()
-                            .max(self.generator.get_access_token_min_length()),
-                    );
+                    file.accessToken =
+                        generate_token(file.accessToken.len().max(ACCESS_TOKEN_LENGTH));
                 }
                 Err(error) => return Err(error.into()),
             }
@@ -121,12 +116,12 @@ impl Database {
     }
 
     /// Generate an access token; insertion handles collisions through the unique index.
-    pub fn generate_access_token(&self) -> String {
-        TokenGenerator::generate_token(self.generator.get_access_token_min_length())
+    pub fn generate_access_token() -> String {
+        generate_token(ACCESS_TOKEN_LENGTH)
     }
 
     pub fn generate_update_token() -> String {
-        TokenGenerator::generate_token(UPDATE_TOKEN_LENGTH)
+        generate_token(UPDATE_TOKEN_LENGTH)
     }
 }
 

@@ -1,3 +1,4 @@
+mod connection;
 pub(crate) mod database;
 pub(crate) mod models;
 mod schema;

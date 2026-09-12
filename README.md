@@ -61,6 +61,14 @@ startup, Postgres will keep the old password in that existing volume. Either
 update the database role password inside Postgres or recreate the bundled
 database volume before starting the stack with the new `.env`.
 
+PostgreSQL connections honor `sslmode` (`disable`, `allow`, `prefer`, `require`,
+`verify-ca`, or `verify-full`) and `sslrootcert`, `sslcert`, and `sslkey` in
+`DATABASE_URL`, with the corresponding `PGSSL*` environment variables and default
+PostgreSQL certificate locations as fallbacks. Use `verify-full` with a trusted
+CA file, or `sslrootcert=system`, to verify the server's identity. Client private
+keys must be unencrypted PKCS#8 PEM. Unsupported TLS settings, including CRLs,
+are rejected rather than silently ignored.
+
 ## License
 
 At Zitane Labs, we are committed to promoting a free and open Internet. We believe in the principles of open source software and the power of community collaboration.

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from "react"
-import { useParams } from "next/navigation"
 import { toast, Toaster } from "react-hot-toast"
 import { Cpu, Key } from "lucide-react"
 import Wave from "react-wavify"
@@ -12,30 +11,33 @@ import { Switch, Match as UntypedMatch, PasswordField, FilePreview } from "@/com
 const Match = UntypedMatch<DownloadPhase | null>
 
 export default function DownloadFilePage() {
-    const { accessToken } = useParams() as { accessToken: string }
-
     // State
-    const [hashPassword, setHashPassword] = useState<string | null | undefined>(undefined)
+    const [link, setLink] = useState<{ accessToken: string | null, hashPassword: string | null } | null>(null)
     const [userPassword, setUserPassword] = useState<string | null>(null)
     const [phase, setPhase] = useState<DownloadPhase | null>(null)
     const [progress, setProgress] = useState<number>(0)
     const [fileName, setFileName] = useState<string | null>(null)
     const [result, setResult] = useState<DownloadResult | null>(null)
+    const accessToken = link?.accessToken
+    const hashPassword = link?.hashPassword
 
     // The password is either obtained from the url fragment or specified by the user
     const password = useMemo(() => {
         return hashPassword ?? userPassword
     }, [hashPassword, userPassword])
 
-    // Client components are also rendered on the server, where window is unavailable.
+    // The same exported HTML serves every token URL. Read the original browser URL
+    // after hydration; the password fragment is never part of a server request.
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- browser state is unavailable during SSR
-        setHashPassword(window.location.hash.slice(1) || null)
+        // Keep this token pattern aligned with next.config.js and nginx.conf.
+        const accessToken = /^\/([0-9a-f]{5,64})\/?$/.exec(window.location.pathname)?.[1] ?? null
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- browser state is unavailable during static rendering
+        setLink({ accessToken, hashPassword: window.location.hash.slice(1) || null })
     }, [])
 
     // Start download when password is set
     useEffect(() => {
-        if (accessToken === undefined || password === null) return
+        if (!accessToken || password === null) return
         Downloader.downloadFile({
             accessToken,
             password,
@@ -56,6 +58,10 @@ export default function DownloadFilePage() {
             })
         })
     }, [accessToken, password])
+
+    if (link && !accessToken) {
+        return <main className="flex justify-center items-center">Invalid download link.</main>
+    }
 
     return (
         <main className="flex flex-col justify-center items-center">

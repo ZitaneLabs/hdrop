@@ -40,26 +40,62 @@ You will find extensive and up-to-date documentation there.
 
 ## Production environment
 
-Generate a Docker Compose `.env` file before deploying:
+Caddy handles HTTPS and routes `/v1/*` and `/status` to the Rust API. The frontend
+uses static files served by unprivileged, read-only Nginx. Node.js/Next.js run only
+during builds. See [frontend setup](./frontend/README.md) for configuration and tests.
+
+You'll need Docker Engine, the Compose plugin, and Git. Point your domain at
+the host and allow TCP ports 80 and 443.
+
+Generate the Compose `.env` file with Rust installed. You can do this on your
+workstation using the same checkout:
 
 ```sh
 (cd backend && cargo run -p hdrop-env -- --output ../.env)
 ```
 
 For scripted deployments, pass values with flags and add `--non-interactive`.
-
-Review the generated `TODO_...` values before running:
+Review the generated `TODO_...` values and keep `.env` private in the host's
+repository root. To build from source, leave `HDROP_WEB_IMAGE` unset and run:
 
 ```sh
-docker compose config
+docker compose config --quiet
 docker compose up -d --build
 ```
+
+### Prebuilt frontend
+
+CI publishes Linux x86-64 images on pushes to `development` and `production`,
+tagged `sha-<full-commit-sha>`. Production pushes also update the `production` tag.
+After CI succeeds, set the image in `.env`:
+
+```dotenv
+HDROP_WEB_IMAGE=ghcr.io/zitanelabs/hdrop-web:sha-<full-commit-sha>
+```
+
+Forks use `ghcr.io/<lowercase-owner>/<lowercase-repository>-web`. Use
+`@sha256:<digest>` to pin an image and `docker login ghcr.io` for private packages.
+The image works across domains without rebuilding:
+
+```sh
+docker compose pull web
+docker compose build api
+docker compose up -d --no-build
+```
+
+This builds only the backend on the host. For frontend updates, change
+`HDROP_WEB_IMAGE`, pull again, and run `docker compose up -d --no-build web`.
+Keep frontend and backend revisions compatible.
+
+Check `docker compose ps`, `https://<your-host>/status`, and a browser
+upload/download round trip, including refreshing the share link.
 
 Bundled Postgres stores its initialized users in the `postgres_data` Docker
 volume. If you regenerate `.env` or change `POSTGRES_PASSWORD` after the first
 startup, Postgres will keep the old password in that existing volume. Either
-update the database role password inside Postgres or recreate the bundled
-database volume before starting the stack with the new `.env`.
+update the database role password inside Postgres or, for a disposable installation,
+recreate the bundled database volume before starting with the new `.env`.
+Recreating the volume deletes its stored data.
 
 ## License
 

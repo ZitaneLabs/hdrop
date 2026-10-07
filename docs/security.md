@@ -5,6 +5,14 @@
 
 hdrop exclusively uses `WebCrypto` APIs provided by the browser for all cryptographic operations.
 
+## Production frontend
+
+An unprivileged, read-only Nginx container serves static assets behind Caddy
+(HTTPS and security headers). There's no Node.js/Next.js server in production,
+but frontend dependencies still need security updates. Download passwords stay in
+URL fragments and never enter HTTP requests. The derived challenge solution
+authorizes downloads.
+
 ## File Storage
 
 ### Key Derivation (Client)

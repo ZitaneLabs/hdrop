@@ -40,9 +40,14 @@ services:
       retries: 3
       start_period: 10s
   web:
+    # Set an immutable CI image reference to deploy with pull/up --no-build.
+    image: ${HDROP_WEB_IMAGE:-hdrop-web:local}
     init: true
     pids_limit: 256
     read_only: true
+    # Keep web:80 with an unprivileged nginx user and no Linux capabilities.
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
     cap_drop:
       - ALL
     security_opt:

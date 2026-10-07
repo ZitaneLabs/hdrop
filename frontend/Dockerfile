@@ -41,21 +41,18 @@ RUN npm run build
 # Production env
 #
 
-FROM base AS runner
+FROM nginx:stable-alpine AS runner
 
-WORKDIR /app
+RUN rm -rf /usr/share/nginx/html/*
+COPY infra/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY --from=builder /app/out /usr/share/nginx/html
 
-ENV NODE_ENV=production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
+USER nginx
 
 EXPOSE 80
-ENV PORT=80
-CMD ["node", "server.js"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://127.0.0.1:80/ || exit 1
+
+# The complete configuration needs no startup scripts or writable image paths.
+ENTRYPOINT []
+CMD ["nginx", "-g", "daemon off;"]

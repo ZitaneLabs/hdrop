@@ -13,14 +13,15 @@ import {
  *
  * @type {string}
  */
-const HOMEPAGE: string = process.env.NEXT_PUBLIC_WEB_BASE_URL!
+const HOMEPAGE = process.env.NEXT_PUBLIC_WEB_BASE_URL?.replace(/\/+$/, '')
 
 /**
  * Base URL of the API
  *
  * @type {string}
  */
-const API_BASE: string = process.env.NEXT_PUBLIC_API_BASE_URL!
+// An unset base keeps requests on the origin serving the static frontend.
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/+$/, '')
 
 type ErrorResponse = {
     reason?: string
@@ -168,7 +169,7 @@ export default class APIClient {
      * The password is transfered via the fragment identifier, which is not sent to the server.
      */
     static getDownloadLink(accessToken: string, password: string | null = null): string {
-        const baseUrl = `${HOMEPAGE}/${accessToken}`
+        const baseUrl = `${HOMEPAGE || window.location.origin}/${accessToken}`
         const query = password === null ? '' : `#${password}`
         return `${baseUrl}${query}`
     }

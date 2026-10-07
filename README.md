@@ -40,26 +40,38 @@ You will find extensive and up-to-date documentation there.
 
 ## Production environment
 
-Generate a Docker Compose `.env` file before deploying:
+Caddy handles HTTPS and routes `/v1/*` and `/status` to the Rust API. The frontend
+defaults to static files served by unprivileged, read-only Nginx, with an optional
+Next.js runtime. See [frontend setup](./frontend/README.md) for configuration and tests.
+
+You'll need Docker Engine, the Compose plugin, and Git. Point your domain at
+the host and allow TCP ports 80 and 443.
+
+Generate the Compose `.env` file with Rust installed. You can do this on your
+workstation using the same checkout:
 
 ```sh
 (cd backend && cargo run -p hdrop-env -- --output ../.env)
 ```
 
 For scripted deployments, pass values with flags and add `--non-interactive`.
-
-Review the generated `TODO_...` values before running:
+Review the generated `TODO_...` values and keep `.env` private in the host's
+repository root, then run:
 
 ```sh
-docker compose config
+docker compose config --quiet
 docker compose up -d --build
 ```
+
+To use the Next.js production server, set `HDROP_WEB_RUNTIME=nextjs`
+in `.env`, then run `docker compose up -d --build web`.
 
 Bundled Postgres stores its initialized users in the `postgres_data` Docker
 volume. If you regenerate `.env` or change `POSTGRES_PASSWORD` after the first
 startup, Postgres will keep the old password in that existing volume. Either
-update the database role password inside Postgres or recreate the bundled
-database volume before starting the stack with the new `.env`.
+update the database role password inside Postgres or, for a disposable installation,
+recreate the bundled database volume before starting with the new `.env`.
+Recreating the volume deletes its stored data.
 
 ## License
 

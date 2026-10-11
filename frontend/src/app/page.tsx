@@ -83,7 +83,7 @@ export default function Home() {
 
                 {/* Waiting for file upload */}
                 <Match on={null}>
-                    <div className="flex flex-col gap-4 justify-center items-center bg-[hsla(0,0%,0%,.1)] p-8 w-10/12 h-1/2 md:w-8/12 lg:w-1/2 xl:w-4/12 2xl:w-4/12 rounded-md drop-shadow-md cursor-pointer md:hover:scale-105 transition ease-out duration-[.5s] backdrop-blur-sm" {...getRootProps()}>
+                    <div className="flex flex-col gap-4 justify-center items-center bg-[hsla(0,0%,0%,.1)] p-8 w-10/12 h-1/2 md:w-8/12 lg:w-1/2 xl:w-4/12 2xl:w-4/12 rounded-md drop-shadow-md cursor-pointer md:hover:scale-105 transition ease-out duration-[.5s] backdrop-blur-xs" {...getRootProps()}>
                         <Upload size={64} color="white" className={isDragActive ? 'transition-all animate-bounce' : 'transition-all'} />
                         <span className="text-center">
                             {isDragActive ? 'Drop the file here ...' : 'Drag and drop a file here, or click to select one'}
@@ -134,7 +134,7 @@ export default function Home() {
                                 '24h': 60 * 60 * 24
                             }}
                         />
-                        <div className="flex flex-col gap-8 pt-8 justify-center items-center bg-[hsla(0,0%,0%,.1)] rounded-lg drop-shadow-md transition ease-out duration-[.5s] backdrop-blur-sm overflow-hidden">
+                        <div className="flex flex-col gap-8 pt-8 justify-center items-center bg-[hsla(0,0%,0%,.1)] rounded-lg drop-shadow-md transition ease-out duration-[.5s] backdrop-blur-xs overflow-hidden">
                             <div className="flex w-[calc(100%_-_4rem)] gap-4 justify-center items-center px-4 py-4 bg-[hsl(0,0%,10%)] hover:bg-[hsl(0,0%,8.5%)] hover:scale-105 transition-all hover:drop-shadow-lg rounded-md cursor-pointer" onClick={() => {
                                 navigator.clipboard.writeText(downloadUrlWithPassword ?? '')
                                 toast.success('Copied to clipboard')

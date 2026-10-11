@@ -21,7 +21,7 @@ export default function PasswordField({ onSubmit }: Props) {
 
     return (
         <input
-            className="px-8 py-4 p-8 text-lg w-10/12 md:w-8/12 lg:w-1/2 xl:w-4/12 2xl:w-4/12 outline-none rounded-md bg-[hsl(0,0%,85%)] drop-shadow-xl text-black"
+            className="px-8 py-4 p-8 text-lg w-10/12 md:w-8/12 lg:w-1/2 xl:w-4/12 2xl:w-4/12 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 rounded-md bg-[hsl(0,0%,85%)] drop-shadow-xl text-black"
             placeholder="Password"
             type="password"
             value={value}

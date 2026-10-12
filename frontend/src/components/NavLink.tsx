@@ -1,15 +1,13 @@
 'use client'
 
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 type Props = {
     href: string
     children: React.ReactNode
-    reload?: boolean
 }
 
-export default function NavLink({ href, children, reload = false }: Props) {
+export default function NavLink({ href, children }: Props) {
     const pathName = usePathname()
     const isActive = pathName === href
 
@@ -17,14 +15,8 @@ export default function NavLink({ href, children, reload = false }: Props) {
     const activeClassName = 'text-gray-100'
     const extraClassName = isActive ? activeClassName : inactiveClassName
 
-    const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-        if (isActive && reload) {
-            window.location.reload()
-            e.preventDefault()
-        }
-    }
-
+    // Full document navigation preserves browser history for static download aliases.
     return (
-        <Link onClick={handleClick} className={`flex items-center h-full px-4 first:pl-0 last:pr-0 hover:text-gray-200 ${extraClassName}`} href={href}>{children}</Link>
+        <a className={`flex items-center h-full px-4 first:pl-0 last:pr-0 hover:text-gray-200 ${extraClassName}`} href={href}>{children}</a>
     )
 }

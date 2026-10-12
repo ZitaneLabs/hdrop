@@ -43,6 +43,9 @@ services:
     init: true
     pids_limit: 256
     read_only: true
+    # Keep web:80 with an unprivileged user and no Linux capabilities.
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
     cap_drop:
       - ALL
     security_opt:
@@ -57,6 +60,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: ${HDROP_WEB_RUNTIME:-static}
       args:
         NEXT_PUBLIC_WEB_BASE_URL: ${HDROP_PUBLIC_URL:?set HDROP_PUBLIC_URL, for example https://hdrop.io}
         NEXT_PUBLIC_API_BASE_URL: ${HDROP_PUBLIC_URL:?set HDROP_PUBLIC_URL, for example https://hdrop.io}

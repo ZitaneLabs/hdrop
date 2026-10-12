@@ -2,10 +2,11 @@ use uuid::Uuid;
 
 pub const ACCESS_TOKEN_LENGTH: usize = 5;
 pub const UPDATE_TOKEN_LENGTH: usize = 8;
+pub const MAX_TOKEN_LENGTH: usize = 64;
 
 /// Generate lowercase hex with four random bits per character.
 pub fn generate_token(length: usize) -> String {
-    let length = length.min(64); // Preserve the previous SHA3-256 output limit.
+    let length = length.min(MAX_TOKEN_LENGTH); // Preserve the previous SHA3-256 output limit.
     let mut token = String::with_capacity(length);
     while token.len() < length {
         // Each fresh UUID's first 32 bits are random, without version/variant bits.

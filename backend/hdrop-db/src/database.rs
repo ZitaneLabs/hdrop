@@ -13,7 +13,7 @@ use crate::{
     error::Result,
     models::File,
     schema::files::dsl as files_table,
-    utils::{generate_token, ACCESS_TOKEN_LENGTH, UPDATE_TOKEN_LENGTH},
+    utils::{generate_token, ACCESS_TOKEN_LENGTH, MAX_TOKEN_LENGTH, UPDATE_TOKEN_LENGTH},
 };
 
 pub struct Database {
@@ -34,7 +34,7 @@ impl Database {
         Ok(Database { pool })
     }
 
-    /// Insert a file, regenerating its access token if another insert claimed it.
+    /// Insert a file, growing its access token after repeated unique-index collisions.
     /// Callers must use the access token in the returned file.
     pub async fn insert_file(&self, mut file: File) -> Result<File> {
         let mut conn = self.pool.get().await?;
@@ -49,10 +49,17 @@ impl Database {
                 Err(diesel::result::Error::DatabaseError(
                     diesel::result::DatabaseErrorKind::UniqueViolation,
                     ref info,
-                )) if info.constraint_name() == Some("files_accessToken_key") && retries < 10 => {
+                )) if info.constraint_name() == Some("files_accessToken_key")
+                    && (retries < 10 || file.accessToken.len() < MAX_TOKEN_LENGTH) =>
+                {
+                    let mut length = file.accessToken.len().max(ACCESS_TOKEN_LENGTH);
                     retries += 1;
-                    file.accessToken =
-                        generate_token(file.accessToken.len().max(ACCESS_TOKEN_LENGTH));
+                    if retries > 10 {
+                        length += 1;
+                        // After the initial retry budget, grow every three collisions.
+                        retries = 8;
+                    }
+                    file.accessToken = generate_token(length);
                 }
                 Err(error) => return Err(error.into()),
             }

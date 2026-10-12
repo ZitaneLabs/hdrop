@@ -96,22 +96,50 @@ async fn async_queries_and_token_uniqueness() {
     ));
     assert_eq!(db.get_file_rows().await.unwrap(), 2);
 
-    // Force every retry to collide and verify the retry budget returns an error.
+    // Force collisions at lengths 5 and 6, and at the generator's length limit.
     db.pool
         .get()
         .await
         .unwrap()
-        .batch_execute(
+        .batch_execute(&format!(
             "CREATE FUNCTION force_collision() RETURNS trigger LANGUAGE plpgsql AS $$
-         BEGIN NEW.\"accessToken\" := 'taken'; RETURN NEW; END $$;
+         BEGIN
+             IF length(NEW.\"accessToken\") < 7
+                 OR length(NEW.\"accessToken\") >= {MAX_TOKEN_LENGTH} THEN
+                 NEW.\"accessToken\" := 'taken';
+             END IF;
+             RETURN NEW;
+         END $$;
          CREATE TRIGGER force_collision BEFORE INSERT ON files
          FOR EACH ROW EXECUTE FUNCTION force_collision();",
-        )
+        ))
         .await
         .unwrap();
+    let growth_file = new_file("taken");
+    let growth_uuid = growth_file.uuid;
+    let grown = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        db.insert_file(growth_file),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(grown.uuid, growth_uuid);
+    assert_eq!(grown.accessToken.len(), 7);
+    assert_eq!(
+        db.get_file_by_access_token(&grown.accessToken)
+            .await
+            .unwrap()
+            .uuid,
+        growth_uuid
+    );
+    assert_eq!(db.get_file_rows().await.unwrap(), 3);
+    db.delete_file(grown.uuid).await.unwrap();
+
+    // Exhaustion at the maximum length still terminates with the original error.
     let error = tokio::time::timeout(
         std::time::Duration::from_secs(5),
-        db.insert_file(new_file("forced")),
+        db.insert_file(new_file(&"a".repeat(MAX_TOKEN_LENGTH))),
     )
     .await
     .unwrap()
@@ -120,6 +148,7 @@ async fn async_queries_and_token_uniqueness() {
         matches!(error, Error::Diesel(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, ref info))
         if info.constraint_name() == Some("files_accessToken_key"))
     );
+    assert_eq!(db.get_file_rows().await.unwrap(), 2);
     db.pool
         .get()
         .await

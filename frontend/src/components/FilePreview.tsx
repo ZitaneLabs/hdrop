@@ -82,7 +82,7 @@ export default function FilePreview({ data, fileName }: Props) {
             {/* Text preview */}
             {isText && (
                 <div className="bg-[hsl(0,0%,85%)] w-full md:w-10/12 lg:w-8/12 h-4/6 rounded-md drop-shadow-xl overflow-hidden">
-                    <textarea className="px-4 py-2 w-full h-full outline-none bg-[hsl(0,0%,85%)] text-black font-mono flex-grow" readOnly value={textData} />
+                    <textarea className="px-4 py-2 w-full h-full outline-hidden bg-[hsl(0,0%,85%)] text-black font-mono grow" readOnly value={textData} />
                 </div>
             )}
 

@@ -8,7 +8,7 @@ jest.mock('mime/lite', () => ({
 
 import FilePreview from './FilePreview'
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 
 test('revokes object URLs when preview data changes and unmounts', async () => {
     const createObjectURL = jest

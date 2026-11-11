@@ -1,30 +1,60 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# hdrop frontend
 
-## Getting Started
+Next.js + React, with encryption and file transfers handled in your browser.
+Run `npm run dev` locally. Production supports static Nginx (the default) or a
+standalone Next.js server. Both hydrate in the browser and use the Rust API.
 
-First, run the development server:
+## Development
 
-```bash
+From this directory:
+
+```sh
+npm ci
+cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`. Start the Rust API separately at
+`http://localhost:8080` and allow the frontend origin in its CORS configuration.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Configuration and hosting
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+`npm run build` exports static files to `out/`. For the Next.js server, keep
+`HDROP_WEB_RUNTIME=nextjs` set for both `npm run build` and `npm start`.
+Docker uses the `static` target by default, or use `--target nextjs`.
 
-## Learn More
+[`NEXT_PUBLIC_*` settings](./.env.example) are public and compiled into JavaScript.
+Set them in `.env.local` or Docker `--build-arg` values, then rebuild. Changing env
+vars on a running container won't update the frontend. Don't put secrets here.
+Leave URL settings unset to use the browser origin for share links and `/v1/*` requests.
+A separate API origin needs matching CORS configuration.
 
-To learn more about Next.js, take a look at the following resources:
+Keep the [Nginx routing rules](./infra/nginx/nginx.conf) if you use another static host:
+`/` serves `index.html`, `/privacy` serves `privacy.html`, and access-token paths
+(5 to 64 lowercase hex characters) serve `download.html`. Passwords remain in URL
+fragments. Caddy routes `/v1/*` and `/status` to the API.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+See [deployment](../README.md#production-environment) and the
+[security model](../docs/security.md). Upload and download clients must use the
+same PBKDF2 iteration count, including for existing files.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Checks
 
-## Deploy on Vercel
+From this directory:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sh
+npm test -- --runInBand
+npm run lint
+npm run build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Install Chromium with `npx playwright install chromium` from this directory.
+Then run the container and browser checks from the repository root:
+
+```sh
+docker build -t hdrop-web:test frontend
+bash frontend/scripts/test-static.sh hdrop-web:test
+```
+
+To check both runtimes, build another image with `--target nextjs` and pass it as
+the script's second argument. Checks use a mocked API and run without Caddy.

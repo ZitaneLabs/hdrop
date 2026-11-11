@@ -11,8 +11,11 @@ id_rsa
 id_rsa.pub
 node_modules
 .next
+out
 dist
 coverage
+playwright-report
+test-results
 Dockerfile
 Dockerfile.development
 .dockerignore

@@ -35,27 +35,42 @@ COPY src ./src
 COPY next.config.js ./
 COPY postcss.config.js ./
 COPY tailwind.config.js ./
-RUN npm run build
 
-#
-# Production env
-#
+# Next.js production server (opt-in).
+FROM builder AS nextjs-builder
+RUN HDROP_WEB_RUNTIME=nextjs npm run build
 
-FROM base AS runner
+FROM base AS nextjs
 
 WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=80
 
-ENV NODE_ENV=production
+COPY --from=nextjs-builder --chown=node:node /app/.next/standalone ./
+COPY --from=nextjs-builder /app/public ./public
+COPY --from=nextjs-builder /app/.next/static ./.next/static
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+USER node
+EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://127.0.0.1:80/ || exit 1
+CMD ["node", "server.js"]
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Static frontend (default).
+FROM builder AS static-builder
+RUN npm run build
 
-USER nextjs
+FROM nginx:stable-alpine AS static
+
+RUN rm -rf /usr/share/nginx/html/*
+COPY infra/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY --from=static-builder /app/out /usr/share/nginx/html
+
+USER nginx
 
 EXPOSE 80
-ENV PORT=80
-CMD ["node", "server.js"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://127.0.0.1:80/ || exit 1
+
+# The complete configuration needs no startup scripts or writable image paths.
+ENTRYPOINT []
+CMD ["nginx", "-g", "daemon off;"]

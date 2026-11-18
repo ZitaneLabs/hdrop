@@ -1,13 +1,14 @@
 use std::borrow::Cow;
 
 use async_trait::async_trait;
-use chrono::Utc;
 use deadpool_diesel::postgres::{Manager, Pool};
 use diesel::prelude::*;
 use hdrop_shared::{
     metrics::{names, UpdateMetrics},
     responses,
 };
+use jiff::Timestamp;
+use jiff_diesel::ToDiesel;
 use uuid::Uuid;
 
 use crate::{
@@ -97,7 +98,7 @@ impl Database {
             .await?
             .interact(move |conn| {
                 diesel::update(files_table::files.filter(files_table::uuid.eq(file.uuid)))
-                    .set(files_table::expiresAt.eq(file.expiresAt))
+                    .set(files_table::expiresAt.eq(file.expiresAt.to_diesel()))
                     .execute(conn)
                     .map(|_| ())
             })
@@ -162,7 +163,7 @@ impl Database {
             .await?
             .interact(move |conn| {
                 files_table::files
-                    .filter(files_table::expiresAt.lt(Utc::now()))
+                    .filter(files_table::expiresAt.lt(Timestamp::now().to_diesel()))
                     .select(files_table::uuid)
                     .load::<Uuid>(conn)
             })

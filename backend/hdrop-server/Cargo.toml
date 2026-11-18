@@ -27,7 +27,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 tracing = "0.1.44"
 sysinfo = "0.30"
 
-chrono.workspace = true
+jiff.workspace = true
 uuid.workspace = true
 serde.workspace = true
 thiserror.workspace = true

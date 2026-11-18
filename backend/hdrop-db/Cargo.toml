@@ -5,12 +5,13 @@ edition = "2021"
 license.workspace = true
 
 [dependencies]
-diesel = { version = "2.3", features = ["postgres", "chrono", "uuid"] }
+diesel = { version = "2.3", features = ["postgres", "uuid"] }
+jiff-diesel = { version = "1", features = ["postgres"] }
 sha3 = "0.11.0"
 deadpool-diesel = { version = "0.6.1", features = ["postgres"] }
 deadpool = { version = "0.12.3", features = ["rt_tokio_1"] }
 
-chrono.workspace = true
+jiff.workspace = true
 uuid.workspace = true
 serde.workspace = true
 thiserror.workspace = true

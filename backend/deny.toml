@@ -8,14 +8,14 @@ ignore = [
     # "RUSTSEC-0000-0000"
     "RUSTSEC-2024-0436", # paste is unmaintained
 
-    # Moving hdrop to Jiff alone will still leave these two unmaintained crates
+    # hdrop uses Jiff. Cargo Deny still reports these two unmaintained crates
     # because our S3 client, object_store, requires humantime for duration parsing
     # and exposes chrono timestamps in its public API. Remove each exception
     # when we upgrade to an object_store release that drops the corresponding crate.
     # https://github.com/apache/arrow-rs-object-store/pull/908
     { id = "RUSTSEC-2026-0542", allow = ["object_store"], expiry = "2027-02-15" },
     # https://github.com/apache/arrow-rs-object-store/issues/909
-    { id = "RUSTSEC-2026-0543", allow = ["hdrop-db", "hdrop-server", "diesel", "object_store"], expiry = "2027-02-15" },
+    { id = "RUSTSEC-2026-0543", allow = ["object_store"], expiry = "2027-02-15" },
 ]
 
 [licenses]

@@ -12,7 +12,7 @@ license = "AGPL-3.0-or-later"
 
 [workspace.dependencies]
 thiserror = "2"
-chrono = { version = "0.4", default-features = false, features = ["std", "serde"] }
+jiff = { version = "1", default-features = false, features = ["std", "serde"] }
 serde =  { version = "1", features = ["derive"] }
 uuid = { version = "1.22", features = ["v4", "serde"] }
 async-trait = "0.1.80"

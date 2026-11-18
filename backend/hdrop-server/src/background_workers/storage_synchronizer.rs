@@ -1,8 +1,8 @@
 use std::{sync::Arc, time::Duration};
 
 use axum::body::Bytes;
-use chrono::Utc;
 use hdrop_db::Database;
+use jiff::Timestamp;
 use tokio::sync::{mpsc::Receiver, RwLock};
 use tracing::instrument;
 use uuid::Uuid;
@@ -136,7 +136,7 @@ impl StorageSynchronizer {
                 .await
             {
                 Ok(file) => {
-                    if Utc::now() > file.expiresAt {
+                    if Timestamp::now() > file.expiresAt {
                         tracing::trace!(
                             "File already expired, stopping storage synchronization retry worker"
                         );

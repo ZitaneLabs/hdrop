@@ -1,6 +1,7 @@
 use ::uuid::Uuid;
-use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use jiff::Timestamp;
+use jiff_diesel::Timestamp as DbTimestamp;
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -18,8 +19,10 @@ pub struct File {
     pub fileNameData: String,
     pub salt: String,
     pub iv: String,
-    pub createdAt: DateTime<Utc>,
-    pub expiresAt: DateTime<Utc>,
+    #[diesel(deserialize_as = DbTimestamp, serialize_as = DbTimestamp)]
+    pub createdAt: Timestamp,
+    #[diesel(deserialize_as = DbTimestamp, serialize_as = DbTimestamp)]
+    pub expiresAt: Timestamp,
     pub challengeData: String,
     pub challengeHash: String,
 }
@@ -38,8 +41,10 @@ pub struct InsertFile {
     pub fileNameData: String,
     pub salt: String,
     pub iv: String,
-    pub createdAt: DateTime<Utc>,
-    pub expiresAt: DateTime<Utc>,
+    #[diesel(serialize_as = DbTimestamp)]
+    pub createdAt: Timestamp,
+    #[diesel(serialize_as = DbTimestamp)]
+    pub expiresAt: Timestamp,
     pub challengeData: String,
     pub challengeHash: String,
 }

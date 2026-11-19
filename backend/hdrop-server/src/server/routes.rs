@@ -10,12 +10,12 @@ use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
-use chrono::Utc;
 use hdrop_db::{Database, File, InsertFile};
 use hdrop_shared::{
     requests as request,
     responses::{FileMetaData, GetChallengeData, UploadFileData, VerifyChallengeData},
 };
+use jiff::{SignedDuration, Timestamp};
 use uuid::Uuid;
 
 use super::{
@@ -37,6 +37,14 @@ pub struct UpdateTokenQuery {
     update_token: String,
 }
 
+const MAX_EXPIRY_SECONDS: i64 = 86_400;
+
+fn expires_at(created_at: Timestamp, seconds: i64) -> Result<Timestamp> {
+    created_at
+        .checked_add(SignedDuration::from_secs(seconds))
+        .map_err(|_| Error::InvalidExpiry)
+}
+
 /* Routes */
 pub async fn upload_file(
     State(state): State<Arc<AppState>>,
@@ -52,7 +60,7 @@ pub async fn upload_file(
 
     let access_token = state.database.generate_access_token().await?;
     let update_token = Database::generate_update_token();
-    let time = Utc::now();
+    let time = Timestamp::now();
     let file = InsertFile {
         uuid,
         accessToken: access_token.clone(),
@@ -64,7 +72,7 @@ pub async fn upload_file(
         salt: data.salt,
         iv: data.iv,
         createdAt: time,
-        expiresAt: time + chrono::Duration::seconds(86400),
+        expiresAt: expires_at(time, MAX_EXPIRY_SECONDS)?,
     };
 
     // Inser Partial File into DB
@@ -189,12 +197,12 @@ pub async fn update_file_expiry(
         .get_file_by_access_token(access_token)
         .await?;
 
-    if expiry_data.expiry > 86400 {
+    if expiry_data.expiry > MAX_EXPIRY_SECONDS {
         return Err(Error::InvalidExpiry);
     }
 
     if file.updateToken == query.update_token {
-        file.expiresAt = file.createdAt + chrono::Duration::seconds(expiry_data.expiry);
+        file.expiresAt = expires_at(file.createdAt, expiry_data.expiry)?;
         state.database.update_file_expiry(file).await?;
 
         Ok(Json(()))
@@ -226,5 +234,20 @@ pub async fn verify_challenge(
         Ok(response)
     } else {
         Err(Error::InvalidChallenge)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn negative_expiry_is_relative_to_creation_and_underflow_is_invalid() {
+        let created_at = Timestamp::from_second(1).unwrap();
+        assert_eq!(expires_at(created_at, -1).unwrap(), Timestamp::UNIX_EPOCH);
+        assert!(matches!(
+            expires_at(created_at, i64::MIN),
+            Err(Error::InvalidExpiry)
+        ));
     }
 }

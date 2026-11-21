@@ -49,13 +49,13 @@ else
     done
 
     echo 'Building the configuration wizard...'
-    "${docker_cmd[@]}" build --network "$build_network" -f backend/hdrop-env/Dockerfile \
+    "${docker_cmd[@]}" buildx build --load --network "$build_network" -f backend/hdrop-env/Dockerfile \
         -t hdrop-env:vps backend
     wizard_user="$(id -u):$(id -g)"
     if [[ $("${docker_cmd[@]}" info --format '{{json .SecurityOptions}}') == *rootless* ]]; then
         wizard_user=0:0  # Root inside rootless Docker maps to the invoking user on the host.
     fi
-    "${docker_cmd[@]}" run --rm -it --network none --user "$wizard_user" \
+    "${docker_cmd[@]}" run --rm -it --pull never --network none --user "$wizard_user" \
         -v "$setup_dir:/output" hdrop-env:vps --vps --output /output/.env
     printf '\nHDROP_IPV6=%s\nHDROP_BUILD_NETWORK=%s\n' "$ipv6" "$build_network" >> "$setup_dir/.env"
     "${compose[@]}" --env-file "$setup_dir/.env" config --quiet

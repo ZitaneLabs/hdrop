@@ -4,10 +4,11 @@ WORKDIR /app
 ENV RUSTFLAGS="-C target-feature=-crt-static"
 
 RUN --mount=type=bind,source=hdrop-server/infra/install-apk.sh,target=/tmp/install-apk.sh \
-    sh /tmp/install-apk.sh build-base openssl-dev pkgconfig libpq-dev
+    sh /tmp/install-apk.sh linux-headers libpq-dev
 
 # Install dependencies
-RUN cargo install --locked diesel_cli --no-default-features --features postgres
+RUN --mount=type=cache,id=hdrop-cargo-registry,target=/usr/local/cargo/registry \
+    cargo install --locked diesel_cli --no-default-features --features postgres
 
 # Copy workspace contents
 COPY .cargo ./.cargo
@@ -21,7 +22,8 @@ COPY hdrop-shared ./hdrop-shared
 COPY hdrop-server ./hdrop-server
 
 # Build server
-RUN cargo build --release --locked -p hdrop-server
+RUN --mount=type=cache,id=hdrop-cargo-registry,target=/usr/local/cargo/registry \
+    cargo build --release --locked -p hdrop-server
 
 FROM alpine:3.23
 

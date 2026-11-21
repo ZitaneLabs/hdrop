@@ -60,6 +60,7 @@ if "${installer[@]}" </dev/null 2>/dev/null; then exit 1; fi
 [[ ! -s $VPS_TEST_LOG && ! -e .env ]]
 
 printf '\n' | script -qec 'bash scripts/vps-install.sh' /dev/null > "$work/output"
+grep -q '^buildx build --load --network host ' "$VPS_TEST_LOG"
 grep -Fxq HDROP_IPV6=true .env
 grep -Fxq HDROP_BUILD_NETWORK=host .env
 grep -Fxq POSTGRES_PASSWORD=test-secret .env
@@ -73,7 +74,7 @@ grep -q '^hdrop is ready at https://files.example' "$work/output"
 grep -q 'up .*--wait' "$VPS_TEST_LOG"
 grep -Eq '^curl .* -6 .*https://files.example/status$' "$VPS_TEST_LOG"
 grep -Eq '^curl .* -6 .*https://files.example/$' "$VPS_TEST_LOG"
-if grep -Eq '^(build|run) ' "$VPS_TEST_LOG"; then exit 1; fi
+if grep -Eq '^(buildx build|run) ' "$VPS_TEST_LOG"; then exit 1; fi
 
 for path in /status /; do
     if FAIL_URL="https://files.example$path" "${installer[@]}" --start > "$work/output" 2>&1; then exit 1; fi

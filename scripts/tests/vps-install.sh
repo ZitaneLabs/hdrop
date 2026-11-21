@@ -20,6 +20,7 @@ echo "$*" >> "$VPS_TEST_LOG"
 case "$1" in
     context) echo unix:///var/run/docker.sock ;;
     info|buildx|build) ;;
+    stop) [[ ${2:-} == stale-proxy ]] ;;
     run)
         for arg in "$@"; do
             if [[ $arg == *:/output ]]; then
@@ -33,7 +34,8 @@ case "$1" in
             'version --short') echo 2.27.1 ;;
             *'exec -T api printenv CORS_ORIGIN') sed -n 's/^HDROP_PUBLIC_URL=//p' .env ;;
             *'exec -T api printenv HDROP_IPV6') sed -n 's/^HDROP_IPV6=//p' .env ;;
-            *'config --quiet'|*'up -d --build --wait --wait-timeout 300') ;;
+            *'ps --orphans=false --format '*) printf '%s\n' "${UNHEALTHY_ID:-}" ;;
+            *'config --quiet'|*' build'|*'up -d --no-build --wait --wait-timeout 300') ;;
             *) exit 1 ;;
         esac ;;
     *) exit 1 ;;
@@ -75,6 +77,9 @@ grep -q 'up .*--wait' "$VPS_TEST_LOG"
 grep -Eq '^curl .* -6 .*https://files.example/status$' "$VPS_TEST_LOG"
 grep -Eq '^curl .* -6 .*https://files.example/$' "$VPS_TEST_LOG"
 if grep -Eq '^(buildx build|run) ' "$VPS_TEST_LOG"; then exit 1; fi
+if grep -q '^stop ' "$VPS_TEST_LOG"; then exit 1; fi
+UNHEALTHY_ID=stale-proxy "${installer[@]}" --start > "$work/output"
+grep -Fxq 'stop stale-proxy' "$VPS_TEST_LOG"
 
 for path in /status /; do
     if FAIL_URL="https://files.example$path" "${installer[@]}" --start > "$work/output" 2>&1; then exit 1; fi

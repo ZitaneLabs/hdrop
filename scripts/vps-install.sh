@@ -71,7 +71,16 @@ if [[ $start == false ]]; then
     exit 0
 fi
 
-if ! "${compose[@]}" up -d --build --wait --wait-timeout 300; then
+"${compose[@]}" build
+# Compose --wait fails immediately on an old unhealthy status. Start those
+# containers again in dependency order after the new images are available.
+unhealthy=$("${compose[@]}" ps --orphans=false --format '{{if eq .Health "unhealthy"}}{{.ID}}{{end}}' | sed '/^$/d')
+if [[ -n $unhealthy ]]; then
+    echo 'Restarting previously unhealthy hdrop containers.'
+    mapfile -t containers <<< "$unhealthy"
+    "${docker_cmd[@]}" stop "${containers[@]}"
+fi
+if ! "${compose[@]}" up -d --no-build --wait --wait-timeout 300; then
     echo 'Startup failed. Check docker compose ps -a and docker compose logs, then rerun --start.' >&2
     exit 1
 fi

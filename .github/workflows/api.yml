@@ -58,6 +58,16 @@ jobs:
         run: cargo clippy --all-targets --all-features #-- -D warnings
         working-directory: ./backend
 
+      - name: Check VPS installation
+        run: |
+          bash scripts/tests/vps-install.sh
+          cargo test --locked --manifest-path backend/Cargo.toml -p hdrop-env
+          for db in bundled external; do
+            (cd backend && cargo run --quiet --locked -p hdrop-env -- \
+              --vps --site files.example.org --database-mode "$db" --postgres-password test --stdout) > "$RUNNER_TEMP/$db.env"
+            HDROP_IPV6=true HDROP_BUILD_NETWORK=host docker compose --env-file "$RUNNER_TEMP/$db.env" config --quiet
+          done
+
   deny:
     name: Cargo Deny
     runs-on: ubuntu-latest

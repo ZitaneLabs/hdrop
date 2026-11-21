@@ -3,7 +3,8 @@ FROM rust:alpine AS builder
 WORKDIR /app
 ENV RUSTFLAGS="-C target-feature=-crt-static"
 
-RUN apk add --no-cache build-base git openssl-dev pkgconfig postgresql-dev
+RUN --mount=type=bind,source=hdrop-server/infra/install-apk.sh,target=/tmp/install-apk.sh \
+    sh /tmp/install-apk.sh build-base openssl-dev pkgconfig libpq-dev
 
 # Install dependencies
 RUN cargo install --locked diesel_cli --no-default-features --features postgres
@@ -26,7 +27,8 @@ FROM alpine:3.23
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates libgcc openssl postgresql-libs
+RUN --mount=type=bind,source=hdrop-server/infra/install-apk.sh,target=/tmp/install-apk.sh \
+    sh /tmp/install-apk.sh ca-certificates libgcc openssl libpq
 RUN addgroup -S hdrop && adduser -S -D -H -G hdrop hdrop
 
 COPY --from=builder /app/target/release/hdrop-server /usr/local/bin/hdrop-server

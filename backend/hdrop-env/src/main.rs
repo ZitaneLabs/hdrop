@@ -89,8 +89,12 @@ enum DatabaseMode {
     after_help = "Examples (from the repository root):\n  (cd backend && cargo run -p hdrop-env -- --output ../.env)\n  (cd backend && cargo run -p hdrop-env -- --output ../.env --site hdrop.io)\n  (cd backend && cargo run -p hdrop-env -- --output ../.env --site hdrop.io --storage-provider local)\n  (cd backend && cargo run -p hdrop-env -- --output ../.env --site hdrop.io --database-mode external --postgres-host db.example.com)\n  (cd backend && cargo run -p hdrop-env -- --output ../.env --site hdrop.io --cache-strategy disk --non-interactive)"
 )]
 struct Cli {
-    /// Public hostname, without a scheme. Default: localhost
-    #[arg(long, value_name = "DOMAIN", default_value = DEFAULT_SITE)]
+    /// Configure a public VPS using the mounted Compose volumes and a new output file.
+    #[arg(long, conflicts_with = "force")]
+    vps: bool,
+
+    /// Public hostname, without a scheme. Defaults to localhost outside VPS mode.
+    #[arg(long, value_name = "DOMAIN")]
     site: Option<String>,
 
     /// Storage provider. Default: local
@@ -120,7 +124,7 @@ struct Cli {
 
     /// S3 API endpoint, without the bucket path. With virtual style, include the
     /// bucket in the hostname. Legacy endpoints ending in `/<bucket>` remain accepted.
-    /// Default: https://s3.<region>.amazonaws.com
+    /// Defaults to the regional AWS endpoint, with dual-stack addressing for VPS installs.
     #[arg(long, value_name = "URL")]
     s3_endpoint: Option<String>,
 
@@ -203,6 +207,7 @@ struct Cli {
 
 #[derive(Debug)]
 struct Config {
+    vps: bool,
     output: PathBuf,
     site: String,
     storage_provider: StorageProvider,
@@ -237,10 +242,11 @@ impl Default for Config {
         let s3_region = DEFAULT_REGION.to_string();
         let s3_bucket = DEFAULT_BUCKET.to_string();
         let s3_addressing_style = S3AddressingStyle::Path;
-        let s3_endpoint = default_s3_endpoint(&s3_region, &s3_bucket, s3_addressing_style);
+        let s3_endpoint = default_s3_endpoint(&s3_region, &s3_bucket, s3_addressing_style, false);
         let s3_public_url = default_s3_public_url(&s3_endpoint, &s3_bucket, s3_addressing_style);
 
         Self {
+            vps: false,
             output: PathBuf::from(DEFAULT_OUTPUT),
             site: DEFAULT_SITE.to_string(),
             storage_provider: StorageProvider::Local,
@@ -274,7 +280,10 @@ impl Default for Config {
 
 impl Config {
     fn from_cli(cli: Cli) -> Self {
-        let mut config = Self::default();
+        let mut config = Self {
+            vps: cli.vps,
+            ..Self::default()
+        };
         let changed_s3_region = cli.s3_region.is_some();
         let changed_s3_addressing_style = cli.s3_addressing_style.is_some();
         let changed_s3_endpoint = cli.s3_endpoint.is_some();
@@ -284,7 +293,11 @@ impl Config {
             config.output = output;
         }
         if let Some(site) = cli.site {
-            config.site = normalize_site(site);
+            config.site = if cli.vps {
+                site.trim().to_ascii_lowercase()
+            } else {
+                normalize_site(site)
+            };
         }
         if let Some(storage_provider) = cli.storage_provider {
             config.storage_provider = storage_provider;
@@ -309,16 +322,18 @@ impl Config {
         }
         if let Some(s3_endpoint) = cli.s3_endpoint {
             config.s3_endpoint = s3_endpoint;
-        } else if changed_s3_region || changed_s3_addressing_style || changed_s3_bucket {
+        } else if cli.vps || changed_s3_region || changed_s3_addressing_style || changed_s3_bucket {
             config.s3_endpoint = default_s3_endpoint(
                 &config.s3_region,
                 &config.s3_bucket,
                 config.s3_addressing_style,
+                cli.vps,
             );
         }
         if let Some(s3_public_url) = cli.s3_public_url {
             config.s3_public_url = s3_public_url;
-        } else if changed_s3_region
+        } else if cli.vps
+            || changed_s3_region
             || changed_s3_addressing_style
             || changed_s3_endpoint
             || changed_s3_bucket
@@ -389,6 +404,9 @@ fn main() {
 fn run(cli: Cli) -> Result<(), String> {
     let mut config = Config::from_cli(cli);
 
+    if config.vps && !config.stdout && config.output.exists() {
+        return Err(format!("{} already exists", config.output.display()));
+    }
     if !config.non_interactive && !config.stdout {
         prompt_for_config(&mut config)?;
     }
@@ -401,14 +419,14 @@ fn run(cli: Cli) -> Result<(), String> {
         return Ok(());
     }
 
-    if config.output.exists() && !config.force {
+    if !config.vps && config.output.exists() && !config.force {
         return Err(format!(
             "{} already exists. Use --force to overwrite it, --stdout to print the template, or answer yes in interactive mode.",
             config.output.display()
         ));
     }
 
-    write_output(&config.output, &content)?;
+    write_output(&config.output, &content, config.force)?;
     println!("Wrote {}", config.output.display());
     Ok(())
 }
@@ -419,12 +437,34 @@ fn prompt_for_config(config: &mut Config) -> Result<(), String> {
     println!("hdrop production environment setup");
     println!("Press Enter to accept a default shown in brackets.\n");
 
-    config.output = PathBuf::from(prompt_text(
-        &theme,
-        "Output file",
-        &config.output.display().to_string(),
-    )?);
-    config.site = normalize_site(prompt_text(&theme, "Public hostname", &config.site)?);
+    if config.vps {
+        let mut hostname = Input::<String>::with_theme(&theme)
+            .with_prompt("Public hostname (its AAAA record should point to this VPS)")
+            .validate_with(|input: &String| validate_public_hostname(input.trim()));
+        if config.site != DEFAULT_SITE {
+            hostname = hostname.default(config.site.clone());
+        }
+        config.site = hostname
+            .interact_text()
+            .map_err(|err| format!("failed to read public hostname: {err}"))?
+            .trim()
+            .to_ascii_lowercase();
+        println!("The defaults use local file storage, a disk cache, and bundled Postgres with a generated password.");
+        if !prompt_confirm(
+            &theme,
+            "Customize storage, cache, database or upload limits?",
+            false,
+        )? {
+            return Ok(());
+        }
+    } else {
+        config.output = PathBuf::from(prompt_text(
+            &theme,
+            "Output file",
+            &config.output.display().to_string(),
+        )?);
+        config.site = normalize_site(prompt_text(&theme, "Public hostname", &config.site)?);
+    }
 
     config.storage_provider = prompt_storage_provider(&theme, config.storage_provider)?;
     match config.storage_provider {
@@ -433,33 +473,20 @@ fn prompt_for_config(config: &mut Config) -> Result<(), String> {
     }
 
     config.cache_strategy = prompt_cache_strategy(&theme, config.cache_strategy)?;
-    match config.cache_strategy {
-        CacheStrategy::Memory => {
-            config.cache_memory_limit_mb = prompt_text(
-                &theme,
-                "Cache memory limit in MB",
-                &config.cache_memory_limit_mb,
-            )?;
-        }
-        CacheStrategy::Disk => {
-            config.cache_disk_limit_mb = prompt_text(
-                &theme,
-                "Cache disk limit in MB",
-                &config.cache_disk_limit_mb,
-            )?;
-            config.cache_dir = prompt_text(&theme, "Cache directory", &config.cache_dir)?;
-        }
-        CacheStrategy::Hybrid => {
-            config.cache_memory_limit_mb = prompt_text(
-                &theme,
-                "Cache memory limit in MB",
-                &config.cache_memory_limit_mb,
-            )?;
-            config.cache_disk_limit_mb = prompt_text(
-                &theme,
-                "Cache disk limit in MB",
-                &config.cache_disk_limit_mb,
-            )?;
+    if config.cache_strategy != CacheStrategy::Disk {
+        config.cache_memory_limit_mb = prompt_text(
+            &theme,
+            "Cache memory limit in MB",
+            &config.cache_memory_limit_mb,
+        )?;
+    }
+    if config.cache_strategy != CacheStrategy::Memory {
+        config.cache_disk_limit_mb = prompt_text(
+            &theme,
+            "Cache disk limit in MB",
+            &config.cache_disk_limit_mb,
+        )?;
+        if !config.vps {
             config.cache_dir = prompt_text(&theme, "Cache directory", &config.cache_dir)?;
         }
     }
@@ -474,7 +501,7 @@ fn prompt_for_config(config: &mut Config) -> Result<(), String> {
         &config.single_file_limit_mb,
     )?;
 
-    if config.output.exists() && !config.force {
+    if !config.vps && config.output.exists() && !config.force {
         config.force = prompt_confirm(
             &theme,
             &format!("{} already exists. Overwrite it?", config.output.display()),
@@ -518,9 +545,20 @@ fn prompt_database(theme: &ColorfulTheme, config: &mut Config) -> Result<(), Str
 
 fn prompt_s3(theme: &ColorfulTheme, config: &mut Config) -> Result<(), String> {
     println!("\nS3-compatible storage");
-    config.s3_access_key_id = prompt_text(theme, "S3 access key ID", &config.s3_access_key_id)?;
-    config.s3_secret_access_key =
-        prompt_secret_with_fallback(theme, "S3 secret access key", &config.s3_secret_access_key)?;
+    if config.vps {
+        config.s3_access_key_id = Input::<String>::with_theme(theme)
+            .with_prompt("S3 access key ID")
+            .interact_text()
+            .map_err(|err| format!("failed to read S3 access key ID: {err}"))?;
+        config.s3_secret_access_key = prompt_secret_required(theme, "S3 secret access key")?;
+    } else {
+        config.s3_access_key_id = prompt_text(theme, "S3 access key ID", &config.s3_access_key_id)?;
+        config.s3_secret_access_key = prompt_secret_with_fallback(
+            theme,
+            "S3 secret access key",
+            &config.s3_secret_access_key,
+        )?;
+    }
     config.s3_region = prompt_text(theme, "S3 region", &config.s3_region)?;
     config.s3_bucket = prompt_text(theme, "S3 bucket name", &config.s3_bucket)?;
     config.s3_addressing_style = prompt_s3_addressing_style(theme, config.s3_addressing_style)?;
@@ -531,6 +569,7 @@ fn prompt_s3(theme: &ColorfulTheme, config: &mut Config) -> Result<(), String> {
             &config.s3_region,
             &config.s3_bucket,
             config.s3_addressing_style,
+            config.vps,
         ),
     )?;
     let default_public_url = default_s3_public_url(
@@ -569,8 +608,10 @@ fn prompt_s3_addressing_style(
 
 fn prompt_local_storage(theme: &ColorfulTheme, config: &mut Config) -> Result<(), String> {
     println!("\nLocal file storage");
-    config.local_storage_dir =
-        prompt_text(theme, "Local storage directory", &config.local_storage_dir)?;
+    if !config.vps {
+        config.local_storage_dir =
+            prompt_text(theme, "Local storage directory", &config.local_storage_dir)?;
+    }
     config.local_storage_limit_mb = prompt_text(
         theme,
         "Local storage limit in MB",
@@ -724,6 +765,27 @@ fn prompt_confirm(theme: &ColorfulTheme, label: &str, default: bool) -> Result<b
 
 fn validate_config(config: &Config) -> Result<(), String> {
     require_non_empty("site", &config.site)?;
+    if config.vps {
+        validate_public_hostname(&config.site)?;
+        if config.local_storage_dir != DEFAULT_LOCAL_STORAGE_DIR
+            || config.cache_dir != DEFAULT_CACHE_DIR
+        {
+            return Err(format!(
+                "VPS Compose mounts storage at {DEFAULT_LOCAL_STORAGE_DIR} and cache at {DEFAULT_CACHE_DIR}"
+            ));
+        }
+        if config.database_mode == DatabaseMode::External && config.postgres_password.is_none() {
+            return Err("external Postgres requires a password".into());
+        }
+        if config.storage_provider == StorageProvider::S3
+            && (config.s3_access_key_id == TODO_S3_ACCESS_KEY_ID
+                || config.s3_secret_access_key == TODO_S3_SECRET_ACCESS_KEY
+                || config.s3_access_key_id.trim().is_empty()
+                || config.s3_secret_access_key.trim().is_empty())
+        {
+            return Err("S3 storage requires an access key ID and a secret access key".into());
+        }
+    }
     require_positive_integer("single file limit", &config.single_file_limit_mb)?;
     require_non_empty("Postgres host", &config.postgres_host)?;
     require_positive_integer("Postgres port", &config.postgres_port)?;
@@ -787,10 +849,42 @@ fn normalize_site(site: String) -> String {
         .to_string()
 }
 
-fn default_s3_endpoint(region: &str, bucket: &str, addressing_style: S3AddressingStyle) -> String {
+fn validate_public_hostname(site: &str) -> Result<(), &'static str> {
+    let valid_label = |label: &str| {
+        !label.is_empty()
+            && label.len() <= 63
+            && !label.starts_with('-')
+            && !label.ends_with('-')
+            && label
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || c == b'-')
+    };
+    if site.len() <= 253
+        && site.contains('.')
+        && site.split('.').all(valid_label)
+        && site.rsplit('.').next().is_some_and(|tld| {
+            tld.bytes().any(|c| c.is_ascii_alphabetic())
+                && !["localhost", "local", "internal"]
+                    .iter()
+                    .any(|suffix| tld.eq_ignore_ascii_case(suffix))
+        })
+    {
+        Ok(())
+    } else {
+        Err("Enter a public DNS hostname such as files.example.com, without a scheme, port or path")
+    }
+}
+
+fn default_s3_endpoint(
+    region: &str,
+    bucket: &str,
+    addressing_style: S3AddressingStyle,
+    dualstack: bool,
+) -> String {
+    let service = if dualstack { "s3.dualstack" } else { "s3" };
     match addressing_style {
-        S3AddressingStyle::Path => format!("https://s3.{region}.amazonaws.com"),
-        S3AddressingStyle::Virtual => format!("https://{bucket}.s3.{region}.amazonaws.com"),
+        S3AddressingStyle::Path => format!("https://{service}.{region}.amazonaws.com"),
+        S3AddressingStyle::Virtual => format!("https://{bucket}.{service}.{region}.amazonaws.com"),
     }
 }
 
@@ -839,9 +933,14 @@ fn render_env(config: &mut Config) -> Result<String, String> {
     let database_user = percent_encode_connection_component(&config.postgres_user);
     let database_password = percent_encode_connection_component(&postgres_password);
     let database_name = percent_encode_connection_component(&config.postgres_db);
+    let database_host = if let Ok(ip) = config.postgres_host.parse::<std::net::Ipv6Addr>() {
+        format!("[{ip}]")
+    } else {
+        config.postgres_host.clone()
+    };
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",
-        database_user, database_password, config.postgres_host, config.postgres_port, database_name
+        database_user, database_password, database_host, config.postgres_port, database_name
     );
 
     let mut env = format!(
@@ -985,7 +1084,7 @@ CACHE_DIR={cache_dir}
     Ok(env)
 }
 
-fn write_output(output: &PathBuf, content: &str) -> Result<(), String> {
+fn write_output(output: &PathBuf, content: &str, overwrite: bool) -> Result<(), String> {
     if let Some(parent) = output.parent().filter(|path| !path.as_os_str().is_empty()) {
         fs::create_dir_all(parent).map_err(|err| {
             format!(
@@ -996,7 +1095,12 @@ fn write_output(output: &PathBuf, content: &str) -> Result<(), String> {
     }
 
     let mut options = OpenOptions::new();
-    options.create(true).truncate(true).write(true);
+    options.write(true);
+    if overwrite {
+        options.create(true).truncate(true);
+    } else {
+        options.create_new(true);
+    }
 
     #[cfg(unix)]
     options.mode(0o600);
@@ -1074,6 +1178,110 @@ mod tests {
         }
     }
 
+    #[test]
+    fn vps_defaults_write_a_private_configuration_once() {
+        let output = std::env::temp_dir().join(format!("hdrop-vps-{}", random_hex(8).unwrap()));
+        let args = [
+            "hdrop-env",
+            "--vps",
+            "--site",
+            "Files.Example.COM",
+            "--non-interactive",
+            "--output",
+            output.to_str().unwrap(),
+        ];
+        run(Cli::try_parse_from(args).unwrap()).unwrap();
+        let env = fs::read_to_string(&output).unwrap();
+        for setting in [
+            "HDROP_PUBLIC_URL='https://files.example.com'",
+            "STORAGE_PROVIDER=local",
+            "CACHE_STRATEGY=disk",
+            "COMPOSE_PROFILES=bundled-postgres",
+        ] {
+            assert!(env.lines().any(|line| line == setting));
+        }
+        let password = env
+            .lines()
+            .find_map(|line| line.strip_prefix("POSTGRES_PASSWORD="))
+            .unwrap()
+            .trim_matches('\'');
+        assert_eq!(password.len(), 2 * PASSWORD_BYTES);
+        assert!(password.bytes().all(|ch| ch.is_ascii_hexdigit()));
+        assert!(env.contains(&format!("postgres://hdrop:{password}@postgres:5432/hdrop")));
+        #[cfg(unix)]
+        assert_eq!(
+            fs::metadata(&output).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+        assert!(run(Cli::try_parse_from(args).unwrap()).is_err());
+        assert!(write_output(&output, "replacement", false).is_err());
+        assert_eq!(fs::read_to_string(&output).unwrap(), env);
+        fs::remove_file(output).unwrap();
+        assert!(Cli::try_parse_from(["hdrop-env", "--vps", "--force"]).is_err());
+    }
+
+    #[test]
+    fn vps_requires_public_hostname_and_mounted_paths() {
+        for value in [
+            "localhost",
+            "10.0.0.1",
+            "2001:db8::1",
+            "files.localhost",
+            "-files.example.net",
+            "files..org",
+            "foo.example:443",
+            "https://foo.example/",
+            "foo.example/test",
+        ] {
+            let cli =
+                Cli::try_parse_from(["hdrop-env", "--vps", &format!("--site={value}")]).unwrap();
+            assert!(validate_config(&Config::from_cli(cli)).is_err(), "{value}");
+        }
+        for flag in ["--local-storage-dir", "--cache-dir"] {
+            let cli = Cli::try_parse_from([
+                "hdrop-env",
+                "--vps",
+                "--site",
+                "files.example.net",
+                flag,
+                "/different",
+            ])
+            .unwrap();
+            assert!(validate_config(&Config::from_cli(cli)).is_err());
+        }
+    }
+
+    #[test]
+    fn vps_advanced_options_support_dualstack_s3_and_ipv6_postgres() {
+        let cli = Cli::try_parse_from([
+            "hdrop-env",
+            "--vps",
+            "--site",
+            "files.example.org",
+            "--storage-provider",
+            "s3",
+            "--s3-addressing-style",
+            "virtual",
+            "--s3-access-key-id",
+            "user",
+            "--s3-secret-access-key",
+            "secret",
+            "--database-mode",
+            "external",
+            "--postgres-host",
+            "2001:db8::2",
+            "--postgres-password",
+            "pass",
+        ])
+        .unwrap();
+        let mut config = Config::from_cli(cli);
+        validate_config(&config).unwrap();
+        let env = render_env(&mut config).unwrap();
+        assert!(env.contains("S3_ENDPOINT='https://hdrop.s3.dualstack.eu-west-1.amazonaws.com'"));
+        assert!(env.contains("DATABASE_URL='postgres://hdrop:pass@[2001:db8::2]:5432/hdrop'"));
+        assert!(!env.contains("COMPOSE_PROFILES="));
+    }
+
     #[cfg(unix)]
     #[test]
     fn write_output_uses_private_permissions() {
@@ -1089,7 +1297,7 @@ mod tests {
                 fs::set_permissions(&output, fs::Permissions::from_mode(0o644)).unwrap();
             }
 
-            write_output(&output, "secret").unwrap();
+            write_output(&output, "secret", precreate).unwrap();
 
             let mode = fs::metadata(&output).unwrap().permissions().mode() & 0o777;
             assert_eq!(mode, 0o600);

@@ -40,6 +40,43 @@ You will find extensive and up-to-date documentation there.
 
 ## Production environment
 
+### Install on a single VPS
+
+Log in as your usual Linux user and run this from the repository directory.
+
+```sh
+./scripts/vps-install.sh --start
+```
+
+Point a public hostname's AAAA record at your IPv6 VPS and allow inbound TCP
+80 and 443. On a host with native IPv6 and no IPv4 gateway, you can transfer a
+checkout or Git archive over SSH, preserving executable permissions. Cloning
+directly from GitHub requires a working route to GitHub, such as provider NAT64
+with DNS64. The installer works from a folder without Git metadata.
+
+The installer sets up Docker Engine, Buildx and Compose on supported Debian
+and Ubuntu hosts, using sudo when needed. If you already run Docker, Engine
+27 and newer allocate IPv6 subnets automatically. Older engines need a
+configured IPv6 address pool. Choose IPv6 networking (the default), enter the
+public hostname, and accept local storage, disk caching and bundled PostgreSQL,
+or choose advanced settings. Docker builds the wizard and application images on
+the VPS. The first build needs outbound access to Docker Hub and package
+repositories and can take a while on a small server.
+
+The installer saves a private `.env`, waits for the services, and checks the
+public homepage and API over trusted HTTPS. IPv6 mode checks both over IPv6,
+uses the host network for image builds, and enables IPv6 on the application
+bridge. Rerun the same command after a failed install or after updating the
+checkout. It reuses `.env`, database credentials, certificates and file volumes.
+To configure without starting, omit `--start`. For a full encrypted
+upload/download check from another machine, see the [browser checks](./frontend/README.md#checks).
+
+When reusing a manually created `.env`, the installer defaults to IPv6
+networking. Set `HDROP_IPV6=false` and `HDROP_BUILD_NETWORK=default` in
+that file for an IPv4-only deployment.
+
+### Manual production setup
+
 Caddy handles HTTPS and routes `/v1/*` and `/status` to the Rust API. The frontend
 defaults to static files served by unprivileged, read-only Nginx, with an optional
 Next.js runtime. See [frontend setup](./frontend/README.md) for configuration and tests.

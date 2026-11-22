@@ -63,6 +63,12 @@ or choose advanced settings. Docker builds the wizard and application images on
 the VPS. The first build needs outbound access to Docker Hub and package
 repositories and can take a while on a small server.
 
+With an existing rootless Docker Engine, publishing host TCP ports 80 and 443
+requires either a host `net.ipv4.ip_unprivileged_port_start` of 80 or lower, or
+`CAP_NET_BIND_SERVICE` on RootlessKit with the user Docker service restarted.
+The installer checks this before building on `--start` and `--update`.
+See [Docker's rootless port instructions](https://docs.docker.com/engine/security/rootless/tips/#exposing-privileged-ports).
+
 The installer saves a private `.env`, waits for the services, and checks the
 public homepage and API over trusted HTTPS. IPv6 mode checks both over IPv6,
 uses the host network for image builds, and enables IPv6 on the application

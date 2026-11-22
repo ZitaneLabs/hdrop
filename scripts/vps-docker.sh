@@ -144,3 +144,18 @@ ensure_docker() {
         "${elevate[@]}" apt-get install -y --no-remove ca-certificates curl || return 1
     fi
 }
+
+vps_check_rootless_ports() {
+    local first_unprivileged
+    first_unprivileged=$(cat /proc/sys/net/ipv4/ip_unprivileged_port_start) || return 1
+    if (( first_unprivileged <= 80 )); then return 0; fi
+
+    # Exercise the selected daemon's port driver. Docker picks a free privileged
+    # loopback port so an existing Caddy can keep serving on 80 and 443.
+    if ! "${docker_cmd[@]}" run --rm --publish 127.0.0.1:1-79:8080 --entrypoint /bin/true caddy:2-alpine; then
+        echo 'Rootless Docker could not complete the port check for host TCP 80 and 443.' >&2
+        echo 'For a privileged-port error, grant CAP_NET_BIND_SERVICE to rootlesskit and restart the user Docker service, or set net.ipv4.ip_unprivileged_port_start to 80 or lower on the host.' >&2
+        echo 'See https://docs.docker.com/engine/security/rootless/tips/#exposing-privileged-ports' >&2
+        return 1
+    fi
+}

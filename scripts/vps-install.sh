@@ -28,6 +28,10 @@ if [[ ! -f .env && ( ! -t 0 || ! -t 1 ) ]]; then
 fi
 
 ensure_docker
+security_options=$("${docker_cmd[@]}" info --format '{{json .SecurityOptions}}')
+if [[ -n $action && $security_options == *rootless* ]]; then
+    vps_check_rootless_ports
+fi
 umask 077
 setup_dir=$(mktemp -d "$PWD/.hdrop-setup.XXXXXXXX")
 cleanup() {
@@ -56,7 +60,7 @@ else
     "${docker_cmd[@]}" buildx build --load --network "$build_network" -f backend/hdrop-env/Dockerfile \
         -t hdrop-env:vps backend
     wizard_user="$(id -u):$(id -g)"
-    if [[ $("${docker_cmd[@]}" info --format '{{json .SecurityOptions}}') == *rootless* ]]; then
+    if [[ $security_options == *rootless* ]]; then
         wizard_user=0:0  # Root inside rootless Docker maps to the invoking user on the host.
     fi
     "${docker_cmd[@]}" run --rm -it --pull never --network none --user "$wizard_user" \

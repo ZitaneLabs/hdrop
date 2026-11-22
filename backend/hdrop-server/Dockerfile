@@ -7,7 +7,7 @@ RUN --mount=type=bind,source=hdrop-server/infra/install-apk.sh,target=/tmp/insta
     sh /tmp/install-apk.sh linux-headers libpq-dev
 
 # Install dependencies
-RUN --mount=type=cache,id=hdrop-cargo-registry,target=/usr/local/cargo/registry \
+RUN --mount=type=cache,id=hdrop-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
     cargo install --locked diesel_cli --no-default-features --features postgres
 
 # Copy workspace contents
@@ -22,7 +22,7 @@ COPY hdrop-shared ./hdrop-shared
 COPY hdrop-server ./hdrop-server
 
 # Build server
-RUN --mount=type=cache,id=hdrop-cargo-registry,target=/usr/local/cargo/registry \
+RUN --mount=type=cache,id=hdrop-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
     cargo build --release --locked -p hdrop-server
 
 FROM alpine:3.24

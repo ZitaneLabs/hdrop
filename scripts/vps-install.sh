@@ -2,22 +2,26 @@
 set -euo pipefail
 
 usage() {
-    echo 'Usage: ./scripts/vps-install.sh [--start]'
+    echo 'Usage: ./scripts/vps-install.sh [--start | --update]'
     echo 'Configure a single VPS. Add --start to build, start and check its public HTTPS endpoint.'
+    echo 'Use --update with an existing .env to pull service images, refresh build bases and deploy this checkout.'
 }
 
-start=false
+action=${1:-}
 if (( $# > 1 )); then usage >&2; exit 2; fi
-case "${1:-}" in
-    --start) start=true ;;
+case "$action" in
+    --start|--update|'') ;;
     -h|--help) usage; exit 0 ;;
-    '') ;;
     *) usage >&2; exit 2 ;;
 esac
 
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 source scripts/vps-docker.sh
 
+if [[ $action == --update && ! -f .env ]]; then
+    echo 'Update requires an existing .env. Run ./scripts/vps-install.sh --start for first-time setup.' >&2
+    exit 1
+fi
 if [[ ! -f .env && ( ! -t 0 || ! -t 1 ) ]]; then
     echo 'First-time setup needs an interactive terminal. Run this command in your SSH session.' >&2
     exit 1
@@ -66,12 +70,19 @@ fi
 
 compose+=(--env-file .env)
 "${compose[@]}" config --quiet
-if [[ $start == false ]]; then
+if [[ -z $action ]]; then
     echo 'To start hdrop, run ./scripts/vps-install.sh --start'
     exit 0
 fi
 
-"${compose[@]}" build
+up_pull=()
+if [[ $action == --update ]]; then
+    "${compose[@]}" pull --ignore-buildable --policy always
+    "${compose[@]}" build --pull
+    up_pull=(--pull never)
+else
+    "${compose[@]}" build
+fi
 # Compose --wait fails immediately on an old unhealthy status. Start those
 # containers again in dependency order after the new images are available.
 unhealthy=$("${compose[@]}" ps --orphans=false --format '{{if eq .Health "unhealthy"}}{{.ID}}{{end}}' | sed '/^$/d')
@@ -80,7 +91,7 @@ if [[ -n $unhealthy ]]; then
     mapfile -t containers <<< "$unhealthy"
     "${docker_cmd[@]}" stop "${containers[@]}"
 fi
-if ! "${compose[@]}" up -d --no-build --wait --wait-timeout 300; then
+if ! "${compose[@]}" up -d --no-build "${up_pull[@]}" --wait --wait-timeout 300; then
     echo 'Startup failed. Check docker compose ps -a and docker compose logs, then rerun --start.' >&2
     exit 1
 fi

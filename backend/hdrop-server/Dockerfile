@@ -1,4 +1,4 @@
-FROM rust:alpine AS builder
+FROM rust:alpine3.24 AS builder
 
 WORKDIR /app
 ENV RUSTFLAGS="-C target-feature=-crt-static"
@@ -25,7 +25,7 @@ COPY hdrop-server ./hdrop-server
 RUN --mount=type=cache,id=hdrop-cargo-registry,target=/usr/local/cargo/registry \
     cargo build --release --locked -p hdrop-server
 
-FROM alpine:3.23
+FROM alpine:3.24
 
 WORKDIR /app
 

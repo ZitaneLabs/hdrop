@@ -35,7 +35,9 @@ case "$1" in
             *'exec -T api printenv CORS_ORIGIN') sed -n 's/^HDROP_PUBLIC_URL=//p' .env ;;
             *'exec -T api printenv HDROP_IPV6') sed -n 's/^HDROP_IPV6=//p' .env ;;
             *'ps --orphans=false --format '*) printf '%s\n' "${UNHEALTHY_ID:-}" ;;
-            *'config --quiet'|*' build'|*'up -d --no-build --wait --wait-timeout 300') ;;
+            *'pull --ignore-buildable --policy always') [[ ${FAIL_REFRESH:-} != pull ]] ;;
+            *'build --pull') [[ ${FAIL_REFRESH:-} != build ]] ;;
+            *'config --quiet'|*' build'|*'up -d --no-build --wait --wait-timeout 300'|*'up -d --no-build --pull never --wait --wait-timeout 300') ;;
             *) exit 1 ;;
         esac ;;
     *) exit 1 ;;
@@ -56,8 +58,12 @@ chmod +x "$work/bin/"{docker,curl}
 installer=(bash scripts/vps-install.sh)
 "${installer[@]}" --help > "$work/output"
 grep -q -- '--start' "$work/output"
+grep -q -- '--update' "$work/output"
 if "${installer[@]}" --unknown 2>/dev/null; then exit 1; fi
 if "${installer[@]}" --start extra 2>/dev/null; then exit 1; fi
+if "${installer[@]}" --update --start 2>/dev/null; then exit 1; fi
+if "${installer[@]}" --update > "$work/output" 2>&1; then exit 1; fi
+grep -q 'Update requires an existing .env' "$work/output"
 if "${installer[@]}" </dev/null 2>/dev/null; then exit 1; fi
 [[ ! -s $VPS_TEST_LOG && ! -e .env ]]
 
@@ -86,5 +92,22 @@ for path in /status /; do
     grep -q 'public check failed' "$work/output"
 done
 if HOME_CODE=302 "${installer[@]}" --start > "$work/output" 2>&1; then exit 1; fi
+
+for step in pull build; do
+    : > "$VPS_TEST_LOG"
+    if FAIL_REFRESH=$step UNHEALTHY_ID=stale-proxy "${installer[@]}" --update > "$work/output" 2>&1; then exit 1; fi
+    grep -q ' pull --ignore-buildable --policy always$' "$VPS_TEST_LOG"
+    if [[ $step == build ]]; then grep -q ' build --pull$' "$VPS_TEST_LOG"; fi
+    if grep -Eq '^stop | up |^curl ' "$VPS_TEST_LOG"; then exit 1; fi
+done
+
+: > "$VPS_TEST_LOG"
+UNHEALTHY_ID=stale-proxy "${installer[@]}" --update > "$work/output"
+grep -Fxq 'stop stale-proxy' "$VPS_TEST_LOG"
+grep -q ' up -d --no-build --pull never --wait --wait-timeout 300$' "$VPS_TEST_LOG"
+grep -Eq '^curl .* -6 .*https://files.example/status$' "$VPS_TEST_LOG"
+grep -Eq '^curl .* -6 .*https://files.example/$' "$VPS_TEST_LOG"
+grep -q '^hdrop is ready at https://files.example' "$work/output"
+if grep -Eq '^(buildx build|run) ' "$VPS_TEST_LOG"; then exit 1; fi
 cmp "$work/original.env" .env
 echo 'VPS installer regression checks passed.'

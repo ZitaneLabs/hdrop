@@ -15,7 +15,5 @@ RUN npm ci
 COPY public ./public
 COPY src ./src
 
-COPY .env.local ./
-
 EXPOSE 3000
 CMD ["npm", "run", "dev"]

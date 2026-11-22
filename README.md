@@ -66,14 +66,34 @@ repositories and can take a while on a small server.
 The installer saves a private `.env`, waits for the services, and checks the
 public homepage and API over trusted HTTPS. IPv6 mode checks both over IPv6,
 uses the host network for image builds, and enables IPv6 on the application
-bridge. Rerun the same command after a failed install or after updating the
-checkout. It reuses `.env`, database credentials, certificates and file volumes.
+bridge. Rerun the same command after a failed install. It reuses `.env`, database
+credentials, certificates and file volumes.
 To configure without starting, omit `--start`. For a full encrypted
 upload/download check from another machine, see the [browser checks](./frontend/README.md#checks).
 
 When reusing a manually created `.env`, the installer defaults to IPv6
 networking. Set `HDROP_IPV6=false` and `HDROP_BUILD_NETWORK=default` in
 that file for an IPv4-only deployment.
+
+### Update an installed VPS
+
+Run the updater from the installed checkout.
+
+```sh
+./scripts/vps-install.sh --update
+```
+
+The updater pulls the enabled service images and rebuilds the API and frontend
+with fresh base images before restarting affected services. It uses the existing
+`.env` and volumes, waits for healthy services, and checks the public homepage
+and API over HTTPS. To deploy a new hdrop release, update the checkout first.
+
+Bundled PostgreSQL tracks patch releases within major version 19. Plan a database
+migration before changing the major version of a populated volume. Prometheus
+publishes exact patch tags for its LTS line, so new LTS patches require updating
+the tag in both Compose files before running the updater. When moving to a new
+Alpine release, update the Rust builder and runtime together in both backend
+Dockerfiles so they use the same system libraries.
 
 ### Manual production setup
 
@@ -109,6 +129,20 @@ startup, Postgres will keep the old password in that existing volume. Either
 update the database role password inside Postgres or, for a disposable installation,
 recreate the bundled database volume before starting with the new `.env`.
 Recreating the volume deletes its stored data.
+
+## Development database
+
+Start PostgreSQL 19 on its own for local development with this command.
+
+```sh
+docker compose -f docker-compose.dev.yml up -d postgres
+```
+
+The development database uses its own `dev_postgres_data` volume. If you have
+data to keep from the old PostgreSQL 15 development container, dump it before
+replacing the container and restore it into 19. For the full development stack,
+export `LOCALSTACK_AUTH_TOKEN` for the LocalStack S3 emulator, then run
+`docker compose -f docker-compose.dev.yml up --build`.
 
 ## License
 

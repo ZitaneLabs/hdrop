@@ -146,7 +146,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    image: postgres:18-alpine
+    image: postgres:19-alpine
     profiles:
       - bundled-postgres
     restart: unless-stopped
@@ -162,7 +162,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "PGPASSWORD=\"$${POSTGRES_PASSWORD}\" psql -U \"$${POSTGRES_USER:-hdrop}\" -d \"$${POSTGRES_DB:-hdrop}\" -c 'SELECT 1' >/dev/null"]
+      test: ["CMD-SHELL", "PGPASSWORD=\"$${POSTGRES_PASSWORD}\" psql -h 127.0.0.1 -U \"$${POSTGRES_USER:-hdrop}\" -d \"$${POSTGRES_DB:-hdrop}\" -c 'SELECT 1' >/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -181,7 +181,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    image: prom/prometheus:v3
+    image: prom/prometheus:v3.13.5
     restart: unless-stopped
     expose:
       - "9090"

@@ -12,12 +12,13 @@ jobs:
     runs-on: [ubuntu-latest]
     strategy:
       matrix:
-        node: [24, 26]
+        node: [24, 'lts/*']
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
+          check-latest: true
       - name: Install dependencies
         run: npm ci
         working-directory: ./frontend
@@ -33,7 +34,11 @@ jobs:
   license-check:
     runs-on: [ubuntu-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          check-latest: true
       - name: Install dependencies
         run: npm ci
         working-directory: ./frontend
@@ -46,13 +51,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 24
-      - uses: docker/setup-buildx-action@v3
+          node-version-file: frontend/.nvmrc
+          check-latest: true
+      - uses: docker/setup-buildx-action@v4
       - name: Build static production image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
           load: true
@@ -68,7 +74,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify frontend runtimes, routing, and browser flows
         run: bash frontend/scripts/test-static.sh hdrop-web:test hdrop-web:nextjs-test
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: static-browser-test-results

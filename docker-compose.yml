@@ -60,6 +60,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      network: ${HDROP_BUILD_NETWORK:-default}
       target: ${HDROP_WEB_RUNTIME:-static}
       args:
         NEXT_PUBLIC_WEB_BASE_URL: ${HDROP_PUBLIC_URL:?set HDROP_PUBLIC_URL, for example https://hdrop.io}
@@ -87,6 +88,7 @@ services:
     build:
       context: ./backend
       dockerfile: ./hdrop-server/Dockerfile
+      network: ${HDROP_BUILD_NETWORK:-default}
     restart: unless-stopped
     expose:
       - "3000"
@@ -111,6 +113,7 @@ services:
       - LOCAL_STORAGE_DIR=${LOCAL_STORAGE_DIR:-/data/hdrop-files}
       - LOCAL_STORAGE_LIMIT_MB=${LOCAL_STORAGE_LIMIT_MB:-}
       - CORS_ORIGIN=${HDROP_PUBLIC_URL:?set HDROP_PUBLIC_URL, for example https://hdrop.io}
+      - HDROP_IPV6=${HDROP_IPV6:-false}
       - CACHE_STRATEGY=${CACHE_STRATEGY:-memory}
       - CACHE_MEMORY_LIMIT_MB=${CACHE_MEMORY_LIMIT_MB:-}
       - CACHE_DISK_LIMIT_MB=${CACHE_DISK_LIMIT_MB:-}
@@ -143,7 +146,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    image: postgres:18-alpine
+    image: postgres:19-alpine
     profiles:
       - bundled-postgres
     restart: unless-stopped
@@ -153,12 +156,13 @@ services:
       - db
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-hdrop}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD to a secure password}
+      # Postgres requires a password on first initialization. External DBs only use DATABASE_URL.
+      - POSTGRES_PASSWORD
       - POSTGRES_DB=${POSTGRES_DB:-hdrop}
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "PGPASSWORD=\"$${POSTGRES_PASSWORD}\" psql -U \"$${POSTGRES_USER:-hdrop}\" -d \"$${POSTGRES_DB:-hdrop}\" -c 'SELECT 1' >/dev/null"]
+      test: ["CMD-SHELL", "PGPASSWORD=\"$${POSTGRES_PASSWORD}\" psql -h 127.0.0.1 -U \"$${POSTGRES_USER:-hdrop}\" -d \"$${POSTGRES_DB:-hdrop}\" -c 'SELECT 1' >/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -177,7 +181,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    image: prom/prometheus:v3
+    image: prom/prometheus:v3.13.5
     restart: unless-stopped
     expose:
       - "9090"
@@ -199,6 +203,7 @@ services:
       start_period: 10s
 networks:
   hdrop:
+    enable_ipv6: ${HDROP_IPV6:-false}
   db:
     internal: true
   metrics:

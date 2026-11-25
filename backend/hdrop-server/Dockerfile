@@ -1,12 +1,14 @@
-FROM rust:alpine AS builder
+FROM rust:alpine3.24 AS builder
 
 WORKDIR /app
 ENV RUSTFLAGS="-C target-feature=-crt-static"
 
-RUN apk add --no-cache build-base git openssl-dev pkgconfig postgresql-dev
+RUN --mount=type=bind,source=hdrop-server/infra/install-apk.sh,target=/tmp/install-apk.sh \
+    sh /tmp/install-apk.sh linux-headers libpq-dev
 
 # Install dependencies
-RUN cargo install --locked diesel_cli --no-default-features --features postgres
+RUN --mount=type=cache,id=hdrop-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
+    cargo install --locked diesel_cli --no-default-features --features postgres
 
 # Copy workspace contents
 COPY .cargo ./.cargo
@@ -20,13 +22,15 @@ COPY hdrop-shared ./hdrop-shared
 COPY hdrop-server ./hdrop-server
 
 # Build server
-RUN cargo build --release --locked -p hdrop-server
+RUN --mount=type=cache,id=hdrop-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
+    cargo build --release --locked -p hdrop-server
 
-FROM alpine:3.23
+FROM alpine:3.24
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates libgcc openssl postgresql-libs
+RUN --mount=type=bind,source=hdrop-server/infra/install-apk.sh,target=/tmp/install-apk.sh \
+    sh /tmp/install-apk.sh ca-certificates libgcc openssl libpq
 RUN addgroup -S hdrop && adduser -S -D -H -G hdrop hdrop
 
 COPY --from=builder /app/target/release/hdrop-server /usr/local/bin/hdrop-server

@@ -40,6 +40,70 @@ You will find extensive and up-to-date documentation there.
 
 ## Production environment
 
+### Install on a single VPS
+
+Log in as your usual Linux user and run this from the repository directory.
+
+```sh
+./scripts/vps-install.sh --start
+```
+
+Point a public hostname's AAAA record at your IPv6 VPS and allow inbound TCP
+80 and 443. On a host with native IPv6 and no IPv4 gateway, you can transfer a
+checkout or Git archive over SSH, preserving executable permissions. Cloning
+directly from GitHub requires a working route to GitHub, such as provider NAT64
+with DNS64. The installer works from a folder without Git metadata.
+
+The installer sets up Docker Engine, Buildx and Compose on supported Debian
+and Ubuntu hosts, using sudo when needed. If you already run Docker, Engine
+27 and newer allocate IPv6 subnets automatically. Older engines need a
+configured IPv6 address pool. Choose IPv6 networking (the default), enter the
+public hostname, and accept local storage, disk caching and bundled PostgreSQL,
+or choose advanced settings. Docker builds the wizard and application images on
+the VPS. The first build needs outbound access to Docker Hub and package
+repositories and can take a while on a small server.
+
+With an existing rootless Docker Engine, a host `net.ipv4.ip_unprivileged_port_start`
+of 80 or lower allows publishing TCP ports 80 and 443. With RootlessKit's built-in
+port driver, you can instead grant `CAP_NET_BIND_SERVICE` to the `rootlesskit`
+executable and restart the user Docker service.
+The installer checks this before building on `--start` and `--update`.
+See [Docker's rootless port instructions](https://docs.docker.com/engine/security/rootless/tips/#exposing-privileged-ports).
+
+The installer saves a private `.env`, waits for the services, and checks the
+public homepage and API over trusted HTTPS. IPv6 mode checks both over IPv6,
+uses the host network for image builds, and enables IPv6 on the application
+bridge. Rerun the same command after a failed install. It reuses `.env`, database
+credentials, certificates and file volumes.
+To configure without starting, omit `--start`. For a full encrypted
+upload/download check from another machine, see the [browser checks](./frontend/README.md#checks).
+
+When reusing a manually created `.env`, the installer defaults to IPv6
+networking. Set `HDROP_IPV6=false` and `HDROP_BUILD_NETWORK=default` in
+that file for an IPv4-only deployment.
+
+### Update an installed VPS
+
+Run the updater from the installed checkout.
+
+```sh
+./scripts/vps-install.sh --update
+```
+
+The updater pulls the enabled service images and rebuilds the API and frontend
+with fresh base images before restarting affected services. It uses the existing
+`.env` and volumes, waits for healthy services, and checks the public homepage
+and API over HTTPS. To deploy a new hdrop release, update the checkout first.
+
+Bundled PostgreSQL tracks patch releases within major version 19. Plan a database
+migration before changing the major version of a populated volume. Prometheus
+publishes exact patch tags for its LTS line, so new LTS patches require updating
+the tag in both Compose files before running the updater. When moving to a new
+Alpine release, update the Rust builder and runtime together in both backend
+Dockerfiles so they use the same system libraries.
+
+### Manual production setup
+
 Caddy handles HTTPS and routes `/v1/*` and `/status` to the Rust API. The frontend
 defaults to static files served by unprivileged, read-only Nginx, with an optional
 Next.js runtime. See [frontend setup](./frontend/README.md) for configuration and tests.
@@ -72,6 +136,20 @@ startup, Postgres will keep the old password in that existing volume. Either
 update the database role password inside Postgres or, for a disposable installation,
 recreate the bundled database volume before starting with the new `.env`.
 Recreating the volume deletes its stored data.
+
+## Development database
+
+Start PostgreSQL 19 on its own for local development with this command.
+
+```sh
+docker compose -f docker-compose.dev.yml up -d postgres
+```
+
+The development database uses its own `dev_postgres_data` volume. If you have
+data to keep from the old PostgreSQL 15 development container, dump it before
+replacing the container and restore it into 19. For the full development stack,
+export `LOCALSTACK_AUTH_TOKEN` for the LocalStack S3 emulator, then run
+`docker compose -f docker-compose.dev.yml up --build`.
 
 ## License
 

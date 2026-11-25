@@ -58,3 +58,11 @@ bash frontend/scripts/test-static.sh hdrop-web:test
 
 To check both runtimes, build another image with `--target nextjs` and pass it as
 the script's second argument. Checks use a mocked API and run without Caddy.
+
+To verify an installed VPS from a workstation with IPv6 access, run the following
+from this directory with Chromium installed. It uploads a small file through the
+public frontend, decrypts it in a second browser tab, and deletes it.
+
+```sh
+HDROP_TEST_URL=https://files.example.com npx playwright test e2e/vps.spec.ts
+```

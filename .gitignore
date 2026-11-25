@@ -1,6 +1,7 @@
 # Secrets
 .env
 .env.production
+/.hdrop-setup.*/
 .notes/
 
 # macOS

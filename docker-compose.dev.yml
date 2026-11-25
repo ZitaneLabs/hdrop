@@ -13,7 +13,7 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - NEXT_PUBLIC_WEB_BASE_URL=http://localhost:3000
-      - NEXT_PUBLIC_API_BASE_URL=http://api:8080
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -42,33 +42,34 @@ services:
       - SINGLE_FILE_LIMIT_MB=500
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/hdrop
     depends_on:
-      - postgres
-      - localstack
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/status"]
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack:stable
     ports:
       - "4566:4566"
-      - "4567:4567"
     networks:
       - hdrop
       - backend
     environment:
+      - LOCALSTACK_AUTH_TOKEN
       - DEBUG=1
       - SERVICES=s3
       - AWS_ACCESS_KEY_ID=dev
       - AWS_SECRET_ACCESS_KEY=dev
       - AWS_DEFAULT_REGION=eu-west-1
       - SKIP_SSL_CERT_DOWNLOAD=1
-      - EDGE_BIND_HOST=0.0.0.0
       - EXTRA_CORS_ALLOWED_ORIGINS=*
     volumes:
       - ./aws:/etc/localstack/init/ready.d
     healthcheck:
       test: ["CMD", "awslocal", "s3api", "wait", "bucket-exists", "--bucket", "hdrop"]
   postgres:
-    image: postgres:15-alpine
+    image: postgres:19-alpine
     ports:
       - "5432:5432"
     networks:
@@ -77,8 +78,15 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=hdrop
+    volumes:
+      - dev_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "hdrop"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.13.5
     ports:
       - "9090:9090"
     networks:
@@ -88,3 +96,5 @@ services:
 networks:
   hdrop:
   backend:
+volumes:
+  dev_postgres_data:

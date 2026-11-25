@@ -34,9 +34,9 @@ Keep the [Nginx routing rules](./infra/nginx/nginx.conf) if you use another stat
 (5 to 64 lowercase hex characters) serve `download.html`. Passwords remain in URL
 fragments. Caddy routes `/v1/*` and `/status` to the API.
 
-See [deployment](../README.md#production-environment) and the
-[security model](../docs/security.md). Upload and download clients must use the
-same PBKDF2 iteration count, including for existing files.
+See the [installation guide](../docs/installation.md) and the
+[cryptography guide](../docs/crypto.md). Upload and download clients must use
+the same PBKDF2 iteration count, including for existing files.
 
 ## Checks
 

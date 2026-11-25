@@ -19,7 +19,8 @@ Open `http://localhost:3000`. Start the Rust API separately at
 
 ## Configuration and hosting
 
-`npm run build` exports static files to `out/`. For the Next.js server, keep
+For static hosting, use `frontend` as the project root, run `npm ci` and
+`npm run build`, then publish `out/`. For the Next.js server, keep
 `HDROP_WEB_RUNTIME=nextjs` set for both `npm run build` and `npm start`.
 Docker uses the `static` target by default, or use `--target nextjs`.
 
@@ -27,7 +28,10 @@ Docker uses the `static` target by default, or use `--target nextjs`.
 Set them in `.env.local` or Docker `--build-arg` values, then rebuild. Changing env
 vars on a running container won't update the frontend. Don't put secrets here.
 Leave URL settings unset to use the browser origin for share links and `/v1/*` requests.
-A separate API origin needs matching CORS configuration.
+For separate hosts, build with `NEXT_PUBLIC_WEB_BASE_URL` set to the frontend's
+HTTPS origin and `NEXT_PUBLIC_API_BASE_URL` to the API's HTTPS origin.
+Set the API's `CORS_ORIGIN` to the full frontend origin, such as `https://drop.example.com`.
+`NEXT_PUBLIC_APP_NAME` sets the navigation bar name (default `hdrop`).
 
 Keep the [Nginx routing rules](./infra/nginx/nginx.conf) if you use another static host:
 `/` serves `index.html`, `/privacy` serves `privacy.html`, and access-token paths

@@ -41,9 +41,30 @@ Point your domain at the VPS and run `./scripts/vps-install.sh --start` from the
 The wizard configures HTTPS, local file storage and PostgreSQL. The
 [installation guide](./docs/installation.md) covers prerequisites, managed services, backups and updates.
 
-## Development database
+## Development
 
-Start PostgreSQL 19 on its own for local development with this command.
+Export `LOCALSTACK_AUTH_TOKEN` on your workstation, then start the development stack from the repository root.
+
+```sh
+docker compose -f docker-compose.dev.yml up --build
+```
+
+The stack uses local test credentials and publishes the ports below. Next.js reloads when you edit the frontend source.
+
+| Service | Local address |
+| --- | --- |
+| Frontend | `http://localhost:3000` |
+| API health check | `http://localhost:8080/status` |
+| PostgreSQL | `localhost:5432` |
+| LocalStack S3 | `http://localhost:4566` |
+| Prometheus | `http://localhost:9090` |
+
+To test edits faster, run the [Rust API](./backend/hdrop-server/README.md) or
+[frontend dev server](./frontend/README.md#development) directly on your workstation.
+
+### Development database
+
+For native API development, use the same Compose file to start PostgreSQL 19 alone.
 
 ```sh
 docker compose -f docker-compose.dev.yml up -d postgres
@@ -51,9 +72,7 @@ docker compose -f docker-compose.dev.yml up -d postgres
 
 The development database uses its own `dev_postgres_data` volume. If you have
 data to keep from the old PostgreSQL 15 development container, dump it before
-replacing the container and restore it into 19. For the full development stack,
-export `LOCALSTACK_AUTH_TOKEN` for the LocalStack S3 emulator, then run
-`docker compose -f docker-compose.dev.yml up --build`.
+replacing the container and restore it into 19.
 
 ## License
 

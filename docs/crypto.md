@@ -1,5 +1,6 @@
-# Security
-> This document describes the hdrop security model in detail.
+# Encryption and cryptography
+
+The sender's browser encrypts each file. The recipient's browser decrypts it.
 
 ## Crypto APIs
 
@@ -132,6 +133,6 @@ Decrypting under a different domain fails authentication. This means if a malici
 
 #### Notes
 
-The client can - given the right access token - always request the encrypted file challenge. The challenge is mainly a solution to improve UX by avoiding having to download the entirety of encrypted file contents before attempting decryption. It also has the added benefit of completely denying access to the encrypted file data and name for people without the right password.
+Anyone with the share's access token can request the encrypted challenge. The recipient's browser solves it before downloading a potentially large file. The API verifies the solution before returning the encrypted filename and either the ciphertext or its S3 URL. Anyone with a public object URL can fetch the ciphertext directly. Decryption requires the password. See [object storage permissions](./installation.md#prepare-the-database-and-space).
 
 [^1]: The two fixed 12-byte XOR masks are non-zero and different. Thus `IV`, `IV XOR filename_mask`, and `IV XOR challenge_mask` are deterministically pairwise distinct **within one encryption context**. The masks are public domain-separation constants/tags. They are **not** used as secret pads. They allow the client to reconstruct all three IVs from one stored base IV. Runtime checks reject invalid IV/mask lengths and zero masks. Regression tests also verify the fixed masks differ. This does not provide global IV uniqueness: independent contexts can have overlapping IV sets. AES-GCM **must never** encrypt distinct messages with the same key and IV, and AAD does not remove that requirement. Each upload generates a fresh random password and salt to derive a fresh key. Reusing an AES key across independent uploads would require separate nonce-collision prevention, the XOR construction alone is insufficient.

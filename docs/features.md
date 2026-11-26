@@ -12,7 +12,7 @@ This repository contains a self-hosted file hosting solution that offers a wide 
 - **Full Backend and UI Frontend**: Benefit from a complete solution that includes both a rust backend for file management and a nextjs UI frontend for easy interaction.
 - **Metrics with Prometheus**: Monitor and analyze system performance and usage statistics using Prometheus.
 - **Extensive Logging/Tracing**: Gain valuable insights into system operations through comprehensive logging and tracing capabilities, facilitating troubleshooting and auditing.
-- **Protection Against Unauthorized Downloads**: Implemented safeguards to prevent unauthorized downloads by requiring the correct password.
+- **Password-protected downloads.** The recipient's browser solves a challenge before the API returns file data or an object URL. Anyone with a public object URL can fetch the ciphertext. Decryption requires the password. [Encryption and cryptography](./crypto.md)
 - **Direct Accessibility of Content**: Enables users to directly access and view downloaded content, such as text files, images, and videos, directly in their browsers.
 
 Refer to the repository documentation and guides for detailed instructions on deploying and configuring Hdrop.
